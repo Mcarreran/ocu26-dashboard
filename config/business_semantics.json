@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "_description": "Metadata semantica de negocio para OCU26 Gate 3B. Reglas comerciales, NO datos de campanas. Toda entrada nueva de MAESTRO_ELEMENTOS que no matchee ninguna regla recibe el default seguro (NO_CLASIFICADO) y una advertencia; nunca cae automaticamente en performance core.",
+
+  "resolution_order": [
+    "elemento_overrides",
+    "circuito_subcircuito_rules",
+    "circuito_dashboard_rules",
+    "generic_rules",
+    "defaults"
+  ],
+
+  "defaults": {
+    "circuito_negocio": "NO_CLASIFICADO",
+    "portfolio_tier": "NO_CLASIFICADO",
+    "incluye_performance_core": false,
+    "incluye_conteo_general": true,
+    "visible_por_defecto": true,
+    "cobertura_catalogo": "DESCONOCIDO",
+    "completitud_maestro": "NO_APLICA",
+    "modo_disponibilidad": "CONSULTA",
+    "certeza_dato_regla": "requiere_revision"
+  },
+
+  "elemento_overrides": [],
+
+  "circuito_subcircuito_rules": [
+    {
+      "_comment": "Cencosud vive dentro de Shoppings Estatico/Digital, distinguido solo por Subcircuito (Gate3A Sec.5,18.2)",
+      "circuito_dashboard": ["Shoppings Estático", "Shoppings Digital"],
+      "subcircuito": ["CENCOSUD"],
+      "circuito_negocio": "CENCOSUD",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "COMPLETO",
+      "modo_disponibilidad": "CALCULABLE",
+      "certeza_dato_regla": "cerrado_gobernado"
+    },
+    {
+      "_comment": "Remeros comparte CircuitoDashboard con Cencosud/APSA; ver tambien Pantalla Led Ubicacion=REMEROS (Gate3A Sec.6)",
+      "circuito_dashboard": ["Shoppings Estático", "Shoppings Digital"],
+      "subcircuito": ["REMEROS"],
+      "circuito_negocio": "REMEROS",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "COMPLETO",
+      "modo_disponibilidad": "CALCULABLE",
+      "certeza_dato_regla": "cerrado_gobernado"
+    },
+    {
+      "_comment": "APSA es el unico circuito LEGACY: fuera de conteo general/core por defecto, disponible solo en universo COMPLETO_HISTORICO (Gate3A Sec.12,18.2)",
+      "circuito_dashboard": ["Shoppings Estático"],
+      "subcircuito": ["APSA"],
+      "circuito_negocio": "APSA",
+      "portfolio_tier": "LEGACY",
+      "incluye_performance_core": false,
+      "incluye_conteo_general": false,
+      "visible_por_defecto": false,
+      "cobertura_catalogo": "DESCONOCIDO",
+      "completitud_maestro": "NO_APLICA",
+      "modo_disponibilidad": "CONSULTA",
+      "certeza_dato_regla": "legacy"
+    }
+  ],
+
+  "circuito_dashboard_rules": [
+    {
+      "_comment": "11 ubicaciones reales incluyendo Cordoba; capacidad legacy uniforme 40/75000 (Gate3A Sec.7)",
+      "circuito_dashboard": ["Pantalla Led"],
+      "circuito_negocio": "PANTALLAS_LED",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "COMPLETO",
+      "modo_disponibilidad": "CALCULABLE",
+      "certeza_dato_regla": "cerrado_gobernado"
+    },
+    {
+      "_comment": "Contracara estatica confirmada de Pantalla Led Pilar (mismo sitio Ubicacion=PILAR, distinto Medio) (Gate3A Sec.7,18.2)",
+      "circuito_dashboard": ["Pilar"],
+      "circuito_negocio": "PILAR_FRONTLIGHT",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "COMPLETO",
+      "modo_disponibilidad": "CALCULABLE",
+      "certeza_dato_regla": "cerrado_gobernado"
+    },
+    {
+      "_comment": "Universo comercial conocido (COMPLETO) pero maestro con carga parcial: faltan Mendoza/Cordoba (Gate3A Sec.8,15.1)",
+      "circuito_dashboard": ["AA2000"],
+      "circuito_negocio": "AA2000",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "PARCIAL",
+      "modo_disponibilidad": "MIXTO",
+      "certeza_dato_regla": "cerrado_gobernado"
+    },
+    {
+      "_comment": "TipoCatalogo=Abierto se mantiene tal cual en el Excel; semanticamente CORE con certeza progresiva via campana (Gate3A Sec.13)",
+      "circuito_dashboard": ["YPF Digital", "YPF Estático"],
+      "circuito_negocio": "YPF",
+      "portfolio_tier": "CORE",
+      "incluye_performance_core": true,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "DESCONOCIDO",
+      "completitud_maestro": "NO_APLICA",
+      "modo_disponibilidad": "CONSULTA",
+      "certeza_dato_regla": "campana_confirma"
+    },
+    {
+      "_comment": "Universo informado y conocido, pero disponibilidad no autoservicio; vigente, no legacy (Gate3A Sec.11,18.2)",
+      "circuito_dashboard": ["London Supply"],
+      "circuito_negocio": "LONDON_SUPPLY",
+      "portfolio_tier": "COMPLEMENTARIO",
+      "incluye_performance_core": false,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "COMPLETO",
+      "completitud_maestro": "COMPLETO",
+      "modo_disponibilidad": "CONSULTA",
+      "certeza_dato_regla": "registro_confirmado"
+    },
+    {
+      "_comment": "TipoCatalogo=Cerrado en el Excel pero tratado como soporte movil/flexible; ubicacion actual no es permanente (Gate3A Sec.4,18.2)",
+      "circuito_dashboard": ["MAB"],
+      "circuito_negocio": "MAB",
+      "portfolio_tier": "COMPLEMENTARIO",
+      "incluye_performance_core": false,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "DESCONOCIDO",
+      "completitud_maestro": "NO_APLICA",
+      "modo_disponibilidad": "CONSULTA",
+      "certeza_dato_regla": "registrado"
+    }
+  ],
+
+  "generic_rules": [
+    {
+      "_comment": "Cencomedia (Jumbo/Disco) no tiene CircuitoDashboard agrupador propio; se identifica por regla semantica generica (AplicaCantidad=SI <=> TipoInventario=Flexible grafico), robusta a nuevas cadenas/sucursales (Gate3A Sec.10,42.2)",
+      "id": "cencomedia_por_tipo_inventario",
+      "when": {"field": "TipoInventario", "equals": "Flexible gráfico"},
+      "circuito_negocio": "CENCOMEDIA",
+      "portfolio_tier": "COMPLEMENTARIO",
+      "incluye_performance_core": false,
+      "incluye_conteo_general": true,
+      "visible_por_defecto": true,
+      "cobertura_catalogo": "DESCONOCIDO",
+      "completitud_maestro": "NO_APLICA",
+      "modo_disponibilidad": "CONSULTA",
+      "certeza_dato_regla": "no_evaluado"
+    }
+  ],
+
+  "certeza_dato": {
+    "_description": "Cada regla de circuito referencia un certeza_dato_regla id resuelto aqui. 'campana_confirma' es la unica regla que depende de TieneActividadComercial (especifica de YPF, Gate3A Sec.16). El override tecnico se aplica DESPUES de la regla base y la reemplaza.",
+    "rule_outputs": {
+      "cerrado_gobernado": "CONFIRMADO",
+      "registro_confirmado": "CONFIRMADO",
+      "campana_confirma_con_actividad": "CONFIRMADO",
+      "campana_confirma_sin_actividad": "REGISTRADO_NO_CONFIRMADO",
+      "no_evaluado": "NO_EVALUADO",
+      "registrado": "REGISTRADO",
+      "legacy": "LEGACY",
+      "requiere_revision": "REQUIERE_REVISION"
+    },
+    "technical_override_value": "PROVISORIO_REQUIERE_REVISION",
+    "technical_override_condition": "medio_digital_y_capacidad_legacy_cero"
+  },
+
+  "sitio_negocio": {
+    "_description": "Dimension de sitio, ortogonal a CircuitoNegocio: permite unir elementos del mismo sitio fisico con distinto Medio/circuito (ej. Pilar Frontlight + Pantalla Led Pilar, o Remeros shopping + Pantalla Led Remeros) sin fusionar CircuitoNegocio.",
+    "default_field": "Ubicacion",
+    "circuito_field_overrides": {
+      "YPF": "Subcircuito",
+      "CENCOMEDIA": "CircuitoDashboard"
+    },
+    "ubicacion_lookup": {
+      "UNICENTER": "Unicenter",
+      "P.PILAR": "Palmas del Pilar",
+      "P.OESTE": "Plaza Oeste",
+      "P.PALERMO": "Portal Palermo",
+      "P.LOMAS": "Portal Lomas",
+      "P.ESCOBAR": "Portal Escobar",
+      "F.QUILMES": "Factory Quilmes",
+      "F.P.BROWN": "Factory Parque Brown",
+      "F.SAN MARTIN": "Factory San Martin",
+      "F.SANMARTIN": "Factory San Martin",
+      "P.ROSARIO": "Portal Rosario",
+      "P.TUCUMAN": "Portal Tucuman",
+      "P.SANTIAGO": "Portal Santiago",
+      "P.SALTA": "Portal Salta",
+      "P.TRELEW": "Portal Trelew",
+      "P.LOSANDES": "Portal Los Andes",
+      "P.PATAGONIA": "Portal Patagonia",
+      "REMEROS": "Remeros",
+      "PILAR": "Pilar"
+    }
+  },
+
+  "formato_negocio": {
+    "_description": "Resolucion en orden: (1) YPF por token de ElementoID, (2) CircuitoDashboard con formato fijo, (3) palabra clave en Descripcion (case-insensitive, primera coincidencia), (4) default OTRO.",
+    "ypf_elemento_id_token_map": {
+      "MB": "YPF_MENU_BOARD",
+      "TT": "YPF_TORRE",
+      "PPUNTER": "YPF_PUNTERA",
+      "FB": "YPF_MUPI_FOTOBOX"
+    },
+    "circuito_dashboard_formato_fijo": {
+      "Pantalla Led": "PANTALLA_LED"
+    },
+    "descripcion_keyword_rules": [
+      {"contains": "Totem", "formato": "TOTEM"},
+      {"contains": "Triedro", "formato": "TRIEDRO"},
+      {"contains": "Puente", "formato": "PUENTE_LED"},
+      {"contains": "Frontlight", "formato": "FRONTLIGHT"},
+      {"contains": "Panel movil", "formato": "MAB"},
+      {"contains": "Cubre alarmas", "formato": "CUBRE_ALARMAS"},
+      {"contains": "Stoppers", "formato": "STOPPER"},
+      {"contains": "Floorgraphics", "formato": "FLOORGRAPHIC"},
+      {"contains": "Carros", "formato": "CARRO"}
+    ],
+    "default": "OTRO"
+  },
+
+  "digital_capacity": {
+    "_description": "Separacion estricta valor-legacy (CapacidadSlotsReel/SegundosDia del Excel, nunca sobrescrito) vs capacidad comercial efectiva (SlotsComerciales/SegundosComerciales, resuelta aqui). Solo aplica a Medio=Digital.",
+    "default_segundos_comerciales": 72000,
+    "spot_duracion_base_seg": 10,
+    "spot_segundos_por_salida": 1800,
+    "slots_profiles": {
+      "TOTEM": 20,
+      "PUENTE_LED": 13,
+      "TRIEDRO": 20,
+      "PANTALLA_LED": 20,
+      "YPF_TORRE": 20,
+      "YPF_PUNTERA": 20,
+      "YPF_MENU_BOARD": 20
+    },
+    "_comment_fallback": "Circuitos sin perfil de FormatoNegocio confirmado: usar CapacidadSlotsReel legacy si es > 0; si es 0, marcar REQUIERE_CONFIRMACION en vez de asumir 0 (Gate3A Sec.21, prompt Sec.21 London Supply Digital)",
+    "use_legacy_source_if_positive_for_circuitos": ["LONDON_SUPPLY"],
+    "requiere_confirmacion_sentinel": "REQUIERE_CONFIRMACION"
+  },
+
+  "universes": {
+    "OPERATIVO_GENERAL": {"require_flag": "IncluyeConteoGeneral"},
+    "PERFORMANCE_CORE": {"require_flag": "IncluyePerformanceCore"},
+    "COMPLETO_HISTORICO": {"require_flag": null}
+  },
+
+  "metric_policies": {
+    "_description": "Politicas declarativas de aplicabilidad por CircuitoNegocio, para no hardcodear 'if CircuitoNegocio == X' dentro del motor. Un circuito nuevo se agrega editando esta lista, sin tocar metrics_engine.py.",
+    "_comment_ypf": "Brand Plus vende espacios en YPF pero no administra el CMS del soporte: no conoce la ocupacion real de terceros. Las metricas de ocupacion slots/segundos quedan NO_APLICA; usar actividad_sobre_registrados_pct (Gate3B.1 Sec.2).",
+    "slot_seconds_no_aplica_circuitos": ["YPF"],
+    "slot_seconds_no_aplica_metrics": [
+      "slots_ocupados",
+      "slots_disponibles",
+      "fill_rate_slots",
+      "segundos_vendidos",
+      "segundos_disponibles",
+      "fill_rate_segundos"
+    ],
+    "slot_seconds_no_aplica_warning": "Brand Plus no dispone de ocupacion total de CMS para este circuito; usar actividad_sobre_registrados_pct sobre elementos registrados."
+  }
+}
