@@ -179,3 +179,6 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Gate 4A - salida generada por scripts/export_data.py, 100% regenerable a partir del Excel fuente
+output/
