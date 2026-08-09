@@ -1,0 +1,60 @@
+// Familia CALENDARIO. Replica metrics_engine._compute_static_metric /
+// _compute_actividad_sobre_registrados / _element_day_stats. Requiere un
+// rango de fechas activo sobre DIM_CALENDARIO[Fecha] (slicer, page filter, o
+// CALCULATE + DATESBETWEEN).
+
+Días Período =
+DISTINCTCOUNT ( DIM_CALENDARIO[Fecha] )
+
+// --- ocupacion_calendario_pct (solo Medio=Estático, exige cobertura COMPLETA) ---
+
+Elemento Días Disponibles =
+VAR ElementosEstatico = CALCULATE ( DISTINCTCOUNT ( DIM_ELEMENTOS[ElementoID] ), DIM_ELEMENTOS[Medio] = "Estático" )
+RETURN
+    ElementosEstatico * [Días Período]
+
+// Union de dias ocupados por ElementoID (FACT_METRICAS_DIARIA ya tiene grain
+// unico ElementoID x Fecha: COUNTROWS = pares distintos, sin duplicar un dia
+// solapado - igual que exploded.groupby('ElementoID')['_day'].nunique() en Python).
+Elemento Días Ocupados =
+CALCULATE (
+    COUNTROWS ( FACT_METRICAS_DIARIA ),
+    DIM_ELEMENTOS[Medio] = "Estático"
+)
+
+_CalendarioCoberturaOK =
+VAR NoCompletos =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Estático",
+        NOT ( DIM_ELEMENTOS[CoberturaCatalogo] = "COMPLETO" && DIM_ELEMENTOS[CompletitudMaestro] = "COMPLETO" )
+    )
+RETURN
+    NoCompletos = 0
+
+// NO_APLICA (blanco) si CoberturaCatalogo/CompletitudMaestro != COMPLETO para
+// algun elemento del grupo (universo comercial conocido pero maestro
+// incompleto, ej. AA2000) - nunca 0. Ver dax/06_metric_status.dax para el
+// texto de status equivalente a MetricStatus de Python.
+Ocupación Calendario % =
+VAR Disponibles = [Elemento Días Disponibles]
+RETURN
+    IF (
+        Disponibles = 0 || NOT [_CalendarioCoberturaOK],
+        BLANK (),
+        DIVIDE ( [Elemento Días Ocupados], Disponibles ) * 100
+    )
+
+// --- actividad_sobre_registrados_pct (cualquier Medio, sin exigir cobertura
+// completa - funciona para YPF Digital, London Supply, etc.) ---
+
+Actividad Días Disponibles =
+DISTINCTCOUNT ( DIM_ELEMENTOS[ElementoID] ) * [Días Período]
+
+Actividad Días Ocupados =
+COUNTROWS ( FACT_METRICAS_DIARIA )
+
+Actividad Sobre Registrados % =
+VAR Disponibles = [Actividad Días Disponibles]
+RETURN
+    IF ( Disponibles = 0, BLANK (), DIVIDE ( [Actividad Días Ocupados], Disponibles ) * 100 )

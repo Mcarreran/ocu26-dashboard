@@ -1,0 +1,142 @@
+// Familia DIGITAL. Replica metrics_engine._compute_digital_metric /
+// _digital_period_activity. Requiere rango de fechas activo sobre
+// DIM_CALENDARIO[Fecha]. Ningun IF por circuito: PolicyBloqueadaSlotSeconds
+// (ej. YPF) y CapacidadSlotsDesconocida ya vienen resueltos en DIM_ELEMENTOS.
+//
+// Simplificacion algebraica clave (demostrada en README Sec.5): el promedio
+// diario por elemento sumado en el grupo (formula Python) es igual a
+// SUM total del grupo / n_dias del periodo - por eso alcanza con 1 SUM + 1
+// DIVIDE, sin iterar por ElementoID en DAX. Validado en
+// validation/validate_gate4b.py.
+
+// --- capacidad pura: NO depende de politica de circuito (Gate3B.1.1:
+// slots_comerciales/segundos_comerciales no estan en metric_policies) ---
+
+Slots Comerciales =
+CALCULATE (
+    SUM ( DIM_ELEMENTOS[SlotsComercialesValor] ),
+    DIM_ELEMENTOS[Medio] = "Digital",
+    DIM_ELEMENTOS[CapacidadSlotsDesconocida] = FALSE
+)
+
+Segundos Comerciales =
+CALCULATE (
+    SUM ( DIM_ELEMENTOS[SegundosComercialesValor] ),
+    DIM_ELEMENTOS[Medio] = "Digital"
+)
+
+// --- capacidad "operable": excluye politica de circuito. Denominador propio
+// de Fill Rate / Disponibles (Python recalcula el denominador EXCLUYENDO
+// politica solo para estas metricas, no para el KPI de capacidad standalone
+// de arriba - son poblaciones distintas, ver README Sec.4/prompt Sec.7-9) ---
+
+_Slots Comerciales Operables =
+CALCULATE (
+    SUM ( DIM_ELEMENTOS[SlotsComercialesValor] ),
+    DIM_ELEMENTOS[Medio] = "Digital",
+    DIM_ELEMENTOS[CapacidadSlotsDesconocida] = FALSE,
+    DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE
+)
+
+_Segundos Comerciales Operables =
+CALCULATE (
+    SUM ( DIM_ELEMENTOS[SegundosComercialesValor] ),
+    DIM_ELEMENTOS[Medio] = "Digital",
+    DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE
+)
+
+_Todos Bloqueados Por Política (Digital) =
+VAR TotalDigital = CALCULATE ( COUNTROWS ( DIM_ELEMENTOS ), DIM_ELEMENTOS[Medio] = "Digital" )
+VAR Bloqueados =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = TRUE
+    )
+RETURN
+    TotalDigital > 0 && Bloqueados = TotalDigital
+
+// --- actividad (excluye elementos bloqueados por politica) ---
+
+// Total (sin excluir capacidad desconocida): es el KPI "slots_ocupados"
+// standalone de Python (usable = solo excluye politica, no capacidad).
+Slots Ocupados =
+DIVIDE (
+    CALCULATE (
+        SUM ( FACT_METRICAS_DIARIA[SlotsOcupadosDia] ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE
+    ),
+    [Días Período]
+)
+
+// Restringido a capacidad conocida: usado SOLO dentro de Fill Rate Slots /
+// Slots Disponibles (numerador y denominador deben ser la misma poblacion).
+_Slots Ocupados (Capacidad Conocida) =
+DIVIDE (
+    CALCULATE (
+        SUM ( FACT_METRICAS_DIARIA[SlotsOcupadosDia] ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[CapacidadSlotsDesconocida] = FALSE
+    ),
+    [Días Período]
+)
+
+Slots Disponibles =
+IF (
+    [_Todos Bloqueados Por Política (Digital)],
+    BLANK (),
+    [_Slots Comerciales Operables] - [_Slots Ocupados (Capacidad Conocida)]
+)
+
+Fill Rate Slots % =
+VAR Denom = [_Slots Comerciales Operables]
+RETURN
+    IF (
+        [_Todos Bloqueados Por Política (Digital)] || Denom <= 0,
+        BLANK (),
+        DIVIDE ( [_Slots Ocupados (Capacidad Conocida)], Denom ) * 100
+    )
+
+// SalidasVendidas vacio en el periodo NUNCA se asume 0 (Gate3B.1 Sec.5):
+// FACT_METRICAS_DIARIA[HasSalidasIndeterminada] ya marca ese dia/elemento -
+// si aparece alguno en el grupo/periodo, el valor queda en blanco
+// (REQUIERE_CONFIRMACION), nunca se estima.
+Segundos Vendidos =
+VAR TieneIndeterminadas =
+    CALCULATE (
+        COUNTROWS ( FACT_METRICAS_DIARIA ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        FACT_METRICAS_DIARIA[HasSalidasIndeterminada] = TRUE
+    ) > 0
+RETURN
+    IF (
+        TieneIndeterminadas,
+        BLANK (),
+        DIVIDE (
+            CALCULATE (
+                SUM ( FACT_METRICAS_DIARIA[SegundosVendidosDia] ),
+                DIM_ELEMENTOS[Medio] = "Digital",
+                DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE
+            ),
+            [Días Período]
+        )
+    )
+
+Segundos Disponibles =
+IF (
+    [_Todos Bloqueados Por Política (Digital)] || ISBLANK ( [Segundos Vendidos] ),
+    BLANK (),
+    [_Segundos Comerciales Operables] - [Segundos Vendidos]
+)
+
+Fill Rate Segundos % =
+VAR Denom = [_Segundos Comerciales Operables]
+RETURN
+    IF (
+        [_Todos Bloqueados Por Política (Digital)] || Denom <= 0 || ISBLANK ( [Segundos Vendidos] ),
+        BLANK (),
+        DIVIDE ( [Segundos Vendidos], Denom ) * 100
+    )

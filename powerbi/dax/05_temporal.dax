@@ -1,0 +1,36 @@
+// Familia TEMPORAL. Requiere DIM_CALENDARIO marcada como tabla de fechas
+// (columna Fecha) - habilita SAMEPERIODLASTYEAR/DATEADD/PREVIOUSMONTH
+// nativos de Power BI Desktop Free, sin reimplementar calendario en DAX
+// (README Sec.2). Las comparaciones se resuelven BLANK() automaticamente
+// cuando la medida base es NO_APLICA/REQUIERE_CONFIRMACION en ese contexto
+// - "comparacion cuando sea matematicamente valida" (prompt Sec.7).
+
+// "Actual" / "mes" / "periodo elegido": son la medida base evaluada en el
+// contexto de filtro vigente (slicer de DIM_CALENDARIO) - no necesitan
+// medida DAX propia. "Evolucion mensual": agrupar cualquier medida base
+// (ej. [Fill Rate Slots %]) por DIM_CALENDARIO[MesAño] en una matriz/gráfico
+// de líneas - el motor de filtros ya recalcula por mes automaticamente.
+
+Fill Rate Slots % (Mes Anterior) =
+CALCULATE ( [Fill Rate Slots %], DATEADD ( DIM_CALENDARIO[Fecha], -1, MONTH ) )
+
+Var. Fill Rate Slots vs Mes Anterior (pp) =
+[Fill Rate Slots %] - [Fill Rate Slots % (Mes Anterior)]
+
+Ocupación Calendario % (Mismo Período Año Anterior) =
+CALCULATE ( [Ocupación Calendario %], SAMEPERIODLASTYEAR ( DIM_CALENDARIO[Fecha] ) )
+
+Fill Rate Segundos % (Mes Anterior) =
+CALCULATE ( [Fill Rate Segundos %], DATEADD ( DIM_CALENDARIO[Fecha], -1, MONTH ) )
+
+// Ranking de circuitos por ocupacion de slots dentro del periodo/filtro
+// vigente (ALLSELECTED respeta slicers de pagina pero re-rankea sobre el
+// universo de circuitos visible, no sobre 1 sola fila).
+Ranking Circuitos por Fill Rate Slots =
+RANKX (
+    ALLSELECTED ( DIM_ELEMENTOS[CircuitoNegocio] ),
+    [Fill Rate Slots %],
+    ,
+    DESC,
+    DENSE
+)

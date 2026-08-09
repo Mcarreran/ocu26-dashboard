@@ -1,0 +1,116 @@
+// MetricStatus reconstruido en DAX, EXACTO a metrics_engine (OK/PARTIAL/
+// NO_APLICA/REQUIERE_CONFIRMACION), usando solo flags ya resueltos en
+// DIM_ELEMENTOS / FACT_METRICAS_DIARIA. Severidad igual a
+// metrics_engine._STATUS_RANK: OK(0) < PARTIAL(1) < REQUIERE_CONFIRMACION(2)
+// < NO_APLICA(3) - "gana la mas severa" (README Sec.4). Nunca se traduce
+// NO_APLICA/REQUIERE_CONFIRMACION a 0: las medidas de valor (dax/03,04) ya
+// devuelven BLANK() en esos casos: estas medidas de texto son el
+// complemento para tarjetas/tooltips ("¿por que esta en blanco?").
+
+Ocupación Calendario % (Status) =
+VAR Disponibles = [Elemento Días Disponibles]
+VAR TieneFechaIncompleta =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Estático",
+        DIM_ELEMENTOS[FechaIncompletaCalendario] = TRUE
+    ) > 0
+RETURN
+    SWITCH (
+        TRUE (),
+        Disponibles = 0, "NO_APLICA",
+        NOT [_CalendarioCoberturaOK], "NO_APLICA",
+        TieneFechaIncompleta, "PARTIAL",
+        "OK"
+    )
+
+Actividad Sobre Registrados % (Status) =
+VAR Disponibles = [Actividad Días Disponibles]
+VAR TieneFechaIncompleta =
+    CALCULATE ( COUNTROWS ( DIM_ELEMENTOS ), DIM_ELEMENTOS[FechaIncompletaCalendario] = TRUE ) > 0
+RETURN
+    SWITCH (
+        TRUE (),
+        Disponibles = 0, "NO_APLICA",
+        TieneFechaIncompleta, "PARTIAL",
+        "OK"
+    )
+
+Fill Rate Slots % (Status) =
+VAR TotalDigital = CALCULATE ( COUNTROWS ( DIM_ELEMENTOS ), DIM_ELEMENTOS[Medio] = "Digital" )
+VAR Bloqueados =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = TRUE
+    )
+VAR TodosBloqueados = TotalDigital > 0 && Bloqueados = TotalDigital
+VAR Denom = [_Slots Comerciales Operables]
+VAR SinCapacidadConocida = NOT TodosBloqueados && Denom <= 0
+VAR HayParcialPolítica = Bloqueados > 0 && NOT TodosBloqueados
+VAR HayCompletitudParcial =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[CompletitudMaestro] <> "COMPLETO"
+    ) > 0
+VAR HayCapacidadDesconocida =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[CapacidadSlotsDesconocida] = TRUE
+    ) > 0
+VAR HayFechaIncompleta =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[FechaIncompletaDigital] = TRUE
+    ) > 0
+RETURN
+    SWITCH (
+        TRUE (),
+        TodosBloqueados, "NO_APLICA",
+        SinCapacidadConocida, "NO_APLICA",
+        HayParcialPolítica || HayCompletitudParcial || HayCapacidadDesconocida || HayFechaIncompleta, "PARTIAL",
+        "OK"
+    )
+
+Fill Rate Segundos % (Status) =
+VAR TotalDigital = CALCULATE ( COUNTROWS ( DIM_ELEMENTOS ), DIM_ELEMENTOS[Medio] = "Digital" )
+VAR Bloqueados =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital",
+        DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = TRUE
+    )
+VAR TodosBloqueados = TotalDigital > 0 && Bloqueados = TotalDigital
+VAR Denom = [_Segundos Comerciales Operables]
+VAR SinCapacidadConocida = NOT TodosBloqueados && Denom <= 0
+VAR HaySalidasIndeterminadas =
+    CALCULATE (
+        COUNTROWS ( FACT_METRICAS_DIARIA ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        FACT_METRICAS_DIARIA[HasSalidasIndeterminada] = TRUE
+    ) > 0
+VAR HayParcialPolítica = Bloqueados > 0 && NOT TodosBloqueados
+VAR HayCompletitudParcial =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[CompletitudMaestro] <> "COMPLETO"
+    ) > 0
+VAR HayFechaIncompleta =
+    CALCULATE (
+        COUNTROWS ( DIM_ELEMENTOS ),
+        DIM_ELEMENTOS[Medio] = "Digital", DIM_ELEMENTOS[PolicyBloqueadaSlotSeconds] = FALSE,
+        DIM_ELEMENTOS[FechaIncompletaDigital] = TRUE
+    ) > 0
+RETURN
+    SWITCH (
+        TRUE (),
+        TodosBloqueados, "NO_APLICA",
+        SinCapacidadConocida, "NO_APLICA",
+        HaySalidasIndeterminadas, "REQUIERE_CONFIRMACION",
+        HayParcialPolítica || HayCompletitudParcial || HayFechaIncompleta, "PARTIAL",
+        "OK"
+    )

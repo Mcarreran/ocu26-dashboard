@@ -1,0 +1,24 @@
+// Familia INVENTARIO. Replica metrics_engine.MetricsEngine._count_elements /
+// _count_elementos_con_actividad. Ningun IF por circuito: toda la
+// diferenciacion viene de columnas ya resueltas en DIM_ELEMENTOS.
+
+Elementos Registrados =
+DISTINCTCOUNT ( DIM_ELEMENTOS[ElementoID] )
+
+Elementos Confirmados =
+CALCULATE ( [Elementos Registrados], DIM_ELEMENTOS[CertezaDato] = "CONFIRMADO" )
+
+// Sin periodo (global) - replica _count_elementos_con_actividad cuando se
+// llama sin start_date/end_date: usa el flag ya resuelto TieneActividadComercial.
+Elementos Con Actividad (Global) =
+CALCULATE ( [Elementos Registrados], DIM_ELEMENTOS[TieneActividadComercial] = TRUE )
+
+// Con periodo (via DIM_CALENDARIO, R2+R3) - replica _count_elementos_con_actividad
+// (start_date, end_date): un elemento cuenta si tiene >=1 dia con registro en
+// FACT_METRICAS_DIARIA dentro del rango filtrado (familia calendario, Medio
+// indistinto, igual que Gate 3B/4A).
+Elementos Con Actividad (Período) =
+CALCULATE (
+    DISTINCTCOUNT ( FACT_METRICAS_DIARIA[ElementoID] ),
+    FACT_METRICAS_DIARIA[DiasOcupado] = 1
+)

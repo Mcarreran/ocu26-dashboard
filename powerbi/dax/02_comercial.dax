@@ -1,0 +1,64 @@
+// Familia COMERCIAL. FACT_CAMPANAS: 1 fila = 1 CargaID (campaña x elemento).
+// IDCampaña es agrupacion comercial, NO clave (README Sec.6, prompt Sec.9/13.8):
+// nunca usar COUNTROWS/DISTINCTCOUNT(CargaID) para "cuantas campañas" - eso
+// cuenta despliegues, no campañas.
+
+Cargas =
+COUNTROWS ( FACT_CAMPANAS )
+
+Campañas =
+CALCULATE (
+    DISTINCTCOUNT ( FACT_CAMPANAS[IDCampaña] ),
+    FACT_CAMPANAS[IDCampaña] <> BLANK ()
+)
+
+Campañas Activas (Estado) =
+CALCULATE ( [Campañas], FACT_CAMPANAS[Estado] = "Activa" )
+
+Campañas Reservadas (Estado) =
+CALCULATE ( [Campañas], FACT_CAMPANAS[Estado] = "Reservada" )
+
+Clientes Activos =
+CALCULATE (
+    DISTINCTCOUNT ( FACT_CAMPANAS[Cliente] ),
+    FACT_CAMPANAS[Cliente] <> BLANK ()
+)
+
+Marcas Activas =
+CALCULATE (
+    DISTINCTCOUNT ( FACT_CAMPANAS[Marca] ),
+    FACT_CAMPANAS[Marca] <> BLANK ()
+)
+
+Elementos por Campaña =
+DIVIDE ( DISTINCTCOUNT ( FACT_CAMPANAS[ElementoID] ), [Campañas] )
+
+Circuitos por Campaña =
+DIVIDE ( DISTINCTCOUNT ( DIM_ELEMENTOS[CircuitoNegocio] ), [Campañas] )
+
+// --- Vigentes en un rango, via BRIDGE_CAMPANA_DIA (R4+R5): el rango se fija
+// filtrando DIM_CALENDARIO[Fecha] (slicer/page filter/CALCULATE explicito).
+// BRIDGE_CAMPANA_DIA hereda ese filtro por R4 y cualquier filtro de
+// FACT_CAMPANAS/DIM_ELEMENTOS por R1+R5 (cadena single-direction). Como R5
+// es FACT_CAMPANAS(1) -> BRIDGE(N), volver el filtro "hacia atras" (que
+// CargaID vigentes existen en el contexto actual) se resuelve con un
+// filtro de tabla explicito (IN VALUES) en vez de una relacion bidireccional
+// - evita ambiguedad (README Sec.2), nunca reimplementa el overlap de fechas.
+
+Campañas Vigentes (Rango) =
+CALCULATE (
+    [Campañas],
+    FACT_CAMPANAS[CargaID] IN VALUES ( BRIDGE_CAMPANA_DIA[CargaID] )
+)
+
+Clientes Activos (Rango) =
+CALCULATE (
+    [Clientes Activos],
+    FACT_CAMPANAS[CargaID] IN VALUES ( BRIDGE_CAMPANA_DIA[CargaID] )
+)
+
+Marcas Activas (Rango) =
+CALCULATE (
+    [Marcas Activas],
+    FACT_CAMPANAS[CargaID] IN VALUES ( BRIDGE_CAMPANA_DIA[CargaID] )
+)

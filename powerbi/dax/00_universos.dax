@@ -1,0 +1,27 @@
+// Universos (Gate3A/Gate4A) - implementados como FILTRO sobre flags ya
+// presentes en DIM_ELEMENTOS, no como tablas separadas ni recalculo por
+// circuito (README Sec.3):
+//
+//   OPERATIVO_GENERAL    -> DIM_ELEMENTOS[IncluyeConteoGeneral]  = TRUE
+//   PERFORMANCE_CORE     -> DIM_ELEMENTOS[IncluyePerformanceCore] = TRUE
+//   COMPLETO_HISTORICO   -> sin filtro
+//
+// Patron recomendado para Gate 5: filtro de pagina/reporte (panel de
+// filtros) sobre esas 2 columnas booleanas, igual que el parametro
+// `universe` de MetricsEngine.query(). Las medidas de dax/01.. a dax/06..
+// son agnosticas al universo (no lo referencian) por diseno: el universo
+// se decide una vez por pagina/visual, no se codifica adentro de cada
+// medida (evita explotar el catalogo de medidas x3).
+//
+// Uso alternativo (una pagina que necesita mostrar 2 universos a la vez,
+// ej. "Registrados vs Core" en la misma tabla, sin duplicar visuales):
+
+Elementos Registrados (Performance Core) =
+CALCULATE ( [Elementos Registrados], DIM_ELEMENTOS[IncluyePerformanceCore] = TRUE )
+
+Elementos Registrados (Operativo General) =
+CALCULATE ( [Elementos Registrados], DIM_ELEMENTOS[IncluyeConteoGeneral] = TRUE )
+
+// COMPLETO_HISTORICO = [Elementos Registrados] sin filtro adicional: ya es
+// el comportamiento por defecto de la medida base cuando no hay filtro de
+// pagina/universo aplicado.
