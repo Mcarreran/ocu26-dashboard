@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV2 · Core Comercial Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV2 · Core Comercial Digital
+   Identidad institucional obligatoria (manual de marca)
+   Reutiliza el sistema visual productivo de TV1 (mismo stage,
+   header, tipografia, paleta, insight de 3 columnas).
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:190px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+
+/* ======================= KPIs (5 en una fila) ======================= */
+/* Tarjetas 1-4 mas compactas, "Slots disponibles" (5ta) mas ancha para su
+   desglose por familia; ancho total del dashboard sin cambios. */
+.kpis{display:grid;grid-template-columns:0.9fr 0.9fr 0.9fr 0.9fr 1.4fr;gap:16px;margin-top:18px;flex:none}
+.kpi{
+  position:relative;min-height:152px;padding:19px 20px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.kpi-notes{display:flex;flex-direction:column;gap:3px}
+.kpi-note-sub{font-size:10.5px;color:var(--bp-muted);opacity:.85;line-height:1.35}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+/* Tarjetas 1-4: mas compactas horizontalmente (ver .kpis grid-template-columns)
+   pero con numeros/porcentajes algo mas grandes para aprovechar el espacio. */
+.kpi-lead .kpi-split .main .sv{font-size:40px}
+.kpi-lead .kpi-split .sec .sv{font-size:24px}
+/* Tarjeta 5 "Slots disponibles": mas ancha, desglose por familia mas prolijo. */
+.kpi-wide{padding:19px 26px}
+.kpi-wide .kpi-note-sub{font-size:11.5px}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
+.split{display:grid;grid-template-rows:1fr 1fr;gap:22px;min-height:0}
+.panel{
+  position:relative;padding:22px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;flex:none}
+.panel-title{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:12.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-body{flex:1;min-height:0;position:relative}
+.chart-wrap{position:absolute;inset:0}
+
+/* ======================= RANKINGS ======================= */
+.rank{display:flex;flex-direction:column;gap:10px;height:100%;justify-content:space-around}
+.rank.tight{gap:14px;justify-content:space-evenly}
+.rrow{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:12px}
+.rrow .rk{font-size:14px;font-weight:700;color:var(--bp-blue-soft);text-align:center}
+.rname{font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rname .sub{display:block;font-size:11.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em}
+.rbar{grid-column:1 / -1;height:7px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
+.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bp-blue),var(--bp-blue-soft))}
+.dual{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.01em;white-space:nowrap}
+.chip.fill{background:rgba(28,96,255,.22);color:var(--bp-blue-soft);border:1px solid rgba(28,96,255,.36)}
+.chip.ocup{background:rgba(47,224,132,.16);color:var(--bp-success);border:1px solid rgba(47,224,132,.30)}
+.rank-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+
+/* ======================= INSIGHT (3 columnas, igual TV1) ======================= */
+.insight{
+  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.25)}
+.insight-col .lab{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.note-aa2000{font-size:11px;color:rgba(167,176,194,.7);margin-top:8px;flex:none;font-style:italic}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv2">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap"><img src="data:image/png;base64,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" alt="Brand Plus"></div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 2</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Core Comercial Digital</div>
+            <div class="hdr-sub">Rendimiento Pantallas LED + Shoppings Digital + AA2000</div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv2"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Pantallas LED &middot; ranking de julio</div><div class="panel-sub">Fill rate + ocupaci&oacute;n calendario</div></div>
+          <div class="panel-body"><div class="rank tight" data-rank="pantallas"></div></div>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Shoppings Digital &middot; ranking de julio</div><div class="panel-sub">Fill rate + ocupaci&oacute;n calendario</div></div>
+            <div class="panel-body"><div class="rank" data-rank="shoppings"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual &middot; Core Digital</div><div class="panel-sub">Fill rate &middot; Pantallas LED vs Shoppings Digital</div></div>
+            <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv2-evol"></canvas></div></div>
+            <div class="note-aa2000">AA2000 incluido en KPIs generales del Core</div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV2_DATA = {"meta":{"generado":"19/08/2026 10:52","report_year":2026,"report_month":7,"report_month_label":"Julio","previous_month":6,"previous_month_label":"Junio","period_start":"2026-07-01","period_end":"2026-07-31","fuente":"OCU26 · Base maestra + base campañas"},"kpis":{"ocupacion_calendario":{"activos":71,"elegibles":91,"anterior_activos":72,"pct_actual":78.0,"pct_anterior":79.1,"delta_pp":-1.1},"fill_digital":{"numerador":321,"numerador_raw":321.03225806451616,"denominador":1575,"pct_actual":20.4,"pct_anterior":27.3,"delta_pp":-6.9,"status":"PARTIAL","status_anterior":"PARTIAL"},"pantallas":{"activos":11,"elegibles":11,"anterior_activos":11,"pct_actual":100.0,"pct_anterior":100.0,"delta_pp":0.0},"shoppings":{"activos":60,"elegibles":68,"anterior_activos":61,"pct_actual":88.2,"pct_anterior":89.7,"delta_pp":-1.5},"slots_disponibles":{"disponibles":1254,"capacidad_total":1575,"pct_actual":79.6,"pct_anterior":72.7,"delta_pp":6.9,"apertura":{"pantallas":{"disponibles":135,"pct":61.2,"status":"OK"},"shoppings":{"disponibles":919,"pct":79.6,"status":"OK"},"aa2000":{"disponibles":200,"pct":100.0,"status":"PARTIAL"}}}},"core_digital":{"elegibles":{"pantallas":11,"shoppings":68,"aa2000":12,"total":91},"con_campana":{"pantallas":11,"shoppings":60,"aa2000":0,"total":71},"aa2000_fill":{"numerador":0,"numerador_raw":0.0,"denominador":200,"pct_actual":0.0,"pct_anterior":0.0,"delta_pp":0.0,"status":"PARTIAL","status_anterior":"PARTIAL","_activos":0},"pantallas_fill":{"numerador":85,"numerador_raw":85.35483870967742,"denominador":220,"pct_actual":38.8,"pct_anterior":56.5,"delta_pp":-17.7,"status":"OK","status_anterior":"OK","_activos":11},"shoppings_fill":{"numerador":236,"numerador_raw":235.67741935483866,"denominador":1155,"pct_actual":20.4,"pct_anterior":26.4,"delta_pp":-6.0,"status":"OK","status_anterior":"OK","_activos":60}},"ranking_pantallas":[{"sitio":"CABILDO","fill_pct":78.1,"ocup_pct":100.0,"elegibles":1,"activos":1,"status":"OK"},{"sitio":"Pilar","fill_pct":68.2,"ocup_pct":100.0,"elegibles":1,"activos":1,"status":"OK"},{"sitio":"CERRITO","fill_pct":47.4,"ocup_pct":100.0,"elegibles":1,"activos":1,"status":"OK"},{"sitio":"Remeros","fill_pct":47.4,"ocup_pct":100.0,"elegibles":1,"activos":1,"status":"OK"},{"sitio":"AVELLANEDA","fill_pct":45.3,"ocup_pct":100.0,"elegibles":1,"activos":1,"status":"OK"}],"ranking_shoppings":[{"sitio":"Unicenter","fill_pct":30.0,"ocup_pct":97.1,"elegibles":35,"activos":34,"status":"OK"},{"sitio":"Palmas del Pilar","fill_pct":17.5,"ocup_pct":100.0,"elegibles":6,"activos":6,"status":"OK"},{"sitio":"Portal Escobar","fill_pct":15.0,"ocup_pct":100.0,"elegibles":2,"activos":2,"status":"OK"}],"evolution":{"meses":["Ene","Feb","Mar","Abr","May","Jun","Jul"],"pantallas":[39.4,40.1,50.4,51.5,57.9,56.5,38.8],"shoppings":[13.6,20.5,22.5,20.2,24.4,26.4,20.4]},"insights":{"lectura":"Julio registra 71 de 91 elementos del Core Digital con campaña (<b>78,0%</b>). El fill rate alcanza <b>20,4%</b> y quedan <b>1.254 slots disponibles</b>.","punto_positivo":"Shoppings Digital concentra la mayor parte de la actividad del Core (<b>60</b> elementos activos), sosteniendo el negocio del mes.","a_atender":"El fill rate de Pantallas LED cae <b>17,7 pp</b> frente a junio."}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV2 app.js
+   Renderiza el tablero desde window.TV2_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV2_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF',
+          teal:'#35B8C4', violet:'#8C7AE6' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+var cap = function(s){
+  if(s==null) return '—';
+  s = String(s).toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();});
+  return s.replace(/\bAa2000\b/gi,'AA2000');
+};
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
+}
+
+/* ---------- KPI helpers (mismo patron que TV1) ---------- */
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+function kpiSplitBigLeftDual(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,note2,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
+    '</div>'+
+  '</div>';
+}
+function setKpis(html){ var el=$('[data-kpis="tv2"]'); if(el) el.innerHTML=html; }
+
+function signedPp(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+Number(v).toFixed(1).replace('.',',')+' pp';
+}
+/* Regla estandar: sube = mejora (verde), baja = atencion (rojo). */
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+/* Disponibilidad es inversa: MENOS disponible = mejor utilizacion (verde),
+   MAS disponible = capacidad ociosa (rojo). Spec TV2 Sec.16. */
+function noteClsForAvailability(v){
+  if(v==null) return '';
+  if(v<0) return 'pos';
+  if(v>0) return 'alert';
+  return '';
+}
+
+/* =========================================================
+   TV 2 · render principal
+   ========================================================= */
+function render(){
+  var k = D.kpis || {};
+  var oc = k.ocupacion_calendario || {};
+  var fd = k.fill_digital || {};
+  var pant = k.pantallas || {};
+  var shop = k.shoppings || {};
+  var sd = k.slots_disponibles || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var html = '';
+  html += kpiSplitBigLeft('Ocupaci&oacute;n por calendario', 'Activos', fmt(oc.activos), '% con campa&ntilde;a', pctEs(oc.pct_actual),
+    (prevLbl+' '+pctEs(oc.pct_anterior)+' &middot; '+signedPp(oc.delta_pp)), noteClsForDelta(oc.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Fill rate digital', 'Slots ocupados', fmt(fd.numerador), '% capacidad vendida', pctEs(fd.pct_actual),
+    (prevLbl+' '+pctEs(fd.pct_anterior)+' &middot; '+signedPp(fd.delta_pp)), noteClsForDelta(fd.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Pantallas LED', 'Activos', fmt(pant.activos), '% con campa&ntilde;a', pctEs(pant.pct_actual),
+    (prevLbl+' '+pctEs(pant.pct_anterior)+' &middot; '+signedPp(pant.delta_pp)), noteClsForDelta(pant.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Shoppings Digital', 'Activos', fmt(shop.activos), '% con campa&ntilde;a', pctEs(shop.pct_actual),
+    (prevLbl+' '+pctEs(shop.pct_anterior)+' &middot; '+signedPp(shop.delta_pp)), noteClsForDelta(shop.delta_pp), 'kpi-lead k-fijo');
+  var ap = sd.apertura || {};
+  var apLine = 'Disponibles: Pantallas '+pctEs(ap.pantallas?ap.pantallas.pct:null)+' &middot; Shoppings '+pctEs(ap.shoppings?ap.shoppings.pct:null)+' &middot; AA2000 '+pctEs(ap.aa2000?ap.aa2000.pct:null);
+  html += kpiSplitBigLeftDual('Slots disponibles', 'Disponibles', fmt(sd.disponibles), '% de capacidad', pctEs(sd.pct_actual),
+    (prevLbl+' '+pctEs(sd.pct_anterior)+' &middot; '+signedPp(sd.delta_pp)), noteClsForAvailability(sd.delta_pp), apLine, 'kpi-wide k-opp');
+  setKpis(html);
+
+  renderRank('pantallas', D.ranking_pantallas || []);
+  renderRank('shoppings', D.ranking_shoppings || []);
+
+  var ev = D.evolution || {};
+  lineChart('c-tv2-evol', ev.meses||[], [
+    {label:'Pantallas LED', data:ev.pantallas||[], color:C.blue},
+    {label:'Shoppings Digital', data:ev.shoppings||[], color:C.cream}
+  ], '%', true);
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+function renderRank(key, rows){
+  var el = $('[data-rank="'+key+'"]');
+  if(!el) return;
+  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de ranking</div>'; return; }
+  el.innerHTML = rows.map(function(r,i){
+    var fillTxt = r.fill_pct==null ? 'S/D' : pctEs(r.fill_pct);
+    var ocupTxt = r.ocup_pct==null ? 'S/D' : pctEs(r.ocup_pct);
+    var w = Math.max(2, Math.min(100, r.fill_pct||0));
+    return '<div class="rrow">'+
+      '<div class="rk">'+(i+1)+'</div>'+
+      '<div class="rname">'+cap(r.sitio)+'</div>'+
+      '<div class="dual"><span class="chip fill">'+fillTxt+' fill</span><span class="chip ocup">'+ocupTxt+' ocup</span></div>'+
+      '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* =========================================================
+   CHART HELPERS (Chart.js) — solo panel de evolucion
+   ========================================================= */
+var charts={};
+function baseOpts(suffix){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:700},
+    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:13,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:14 } } },
+    scales:{
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12}} },
+      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12},callback:function(v){return v+(suffix||'')}} }
+    }
+  };
+}
+function lineChart(id,labels,series,suffix,showLastVal){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var opts=baseOpts(suffix);
+  var plugins=[];
+  if(showLastVal){
+    /* Etiqueta numerica SOLO en el ultimo punto (mes vigente del tablero,
+       julio): evita ruido visual sobre Ene-Jun. Offset por dataset para
+       que las 2 etiquetas de julio no se superpongan entre si. */
+    plugins.push({ id:'lastvals', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        var i=meta.data.length-1;
+        var pt=meta.data[i], v=ds.data[i];
+        if(!pt||v==null) return;
+        cx.save();
+        cx.font='700 12px Poppins, sans-serif';
+        cx.fillStyle=ds.borderColor; cx.textAlign='center';
+        var yOff = -10 - (di*15);
+        cx.fillText(Number(v).toFixed(1).replace('.',',')+'%', pt.x, pt.y+yOff);
+        cx.restore();
+      });
+    }});
+    opts.layout={padding:{top:26,bottom:4}};
+  }
+  charts[id]=new Chart(ctx,{ type:'line',
+    data:{ labels:labels, datasets:series.map(function(s){return {
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+    options:opts, plugins:plugins
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

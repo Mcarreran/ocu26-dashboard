@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV6 · Demanda Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV6 · Demanda Comercial
+   Composicion visual aprobada de audit_sources/TV6_REFERENCE.html.html
+   (header, 5 KPIs, panel ranking dinamico, panel "Demanda por circuito",
+   insight unico "Lectura"). Cambio confirmado: ciclo Marcas -> Agencias ->
+   Programatica (reemplaza Clientes -> Marcas -> Agencias de la referencia).
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:40px 48px 36px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:96px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:196px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:18px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:4px}
+.clock{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:14px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:13px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:15px;color:var(--bp-white);font-weight:500;margin-top:6px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 14px;border-radius:999px;max-width:520px
+}
+
+/* ======================= KPIs ======================= */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:22px;flex:none}
+.kpi{
+  position:relative;min-height:158px;padding:22px 24px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:13.5px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--bp-muted);line-height:1.3}
+.kpi-value{font-size:46px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:24px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:13.5px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:22px;flex:1;min-height:0}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head.col{display:flex;flex-direction:column;gap:3px;margin-bottom:14px;flex:none}
+.panel-title{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:13.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
+
+/* ======================= RANKINGS ======================= */
+.rank{display:flex;flex-direction:column;gap:11px;height:100%;justify-content:space-around}
+.rrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:14px}
+.rrow .rk{font-size:15px;font-weight:700;color:var(--bp-blue-soft);text-align:center}
+.rname{font-size:16.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rmetric{font-size:19px;font-weight:800;letter-spacing:-.02em;text-align:right;min-width:64px}
+.rmetric small{font-size:12.5px;color:var(--bp-muted);font-weight:500}
+.rbar{grid-column:1 / -1;height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
+.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bp-blue),var(--bp-blue-soft))}
+
+/* ======================= MATRIZ ======================= */
+.matrix{width:100%;border-collapse:collapse}
+.matrix th,.matrix td{padding:10px 8px;text-align:center;font-size:14.5px}
+.matrix th{font-size:12px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--panel-border)}
+.matrix th:first-child,.matrix td:first-child{text-align:left;font-weight:700}
+.matrix td{border-bottom:1px solid rgba(255,255,255,.05)}
+.cell{display:inline-flex;min-width:34px;justify-content:center;padding:4px 8px;border-radius:8px;font-weight:700;font-size:14.5px}
+.cell.z{color:var(--bp-muted);background:transparent;font-weight:400}
+
+/* ======================= PROGRAMATICA · estado A VALIDAR ======================= */
+.tag-pending{font-size:12px;font-weight:600;color:var(--bp-warning);background:rgba(255,200,87,.12);padding:3px 9px;border-radius:7px;border:1px solid rgba(255,200,87,.28)}
+.rank-empty{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;height:100%;text-align:center;padding:0 20px}
+.rank-empty p{font-size:15px;line-height:1.5;color:var(--bp-white)}
+
+/* ======================= INSIGHT (3 columnas, igual TV1-4) ======================= */
+.insight{
+  margin-top:20px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.24)}
+.insight-col .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+.note{font-size:13px;color:var(--bp-muted);font-style:italic}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv6">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 6</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">As&iacute; se comporta la demanda</div>
+            <div class="hdr-sub">Marcas, agencias y program&aacute;tica &middot; d&oacute;nde pautan</div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;QUI&Eacute;N PAUTA, EN QU&Eacute; CIRCUITOS Y CON QU&Eacute; CONCENTRACI&Oacute;N?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv6"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title" data-rank-title>Top marcas</div>
+            <div class="panel-sub"><span id="tv6-cyc">marcas &middot; agencias &middot; program&aacute;tica</span> &middot; activaciones acumuladas <span data-rank-period></span></div>
+          </div>
+          <div class="panel-body"><div class="rank" data-rank></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title">Demanda por circuito</div>
+            <div class="panel-sub" data-matrix-sub>Top marcas &times; grupo comercial &middot; activaciones acumuladas</div>
+          </div>
+          <div class="panel-body"><div data-matrix></div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script>window.TV6_DATA = {{TV6_DATA_JSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV6 app.js
+   Renderiza el tablero desde window.TV6_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV6_DATA || {};
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+function cap(s){ if(s==null)return '—'; s=String(s).toLowerCase();
+  return s.replace(/\b\w/g,function(m){return m.toUpperCase();})
+          .replace(/\bYpf\b/g,'YPF').replace(/\bGcba\b/gi,'GCBA').replace(/\bKfc\b/gi,'KFC')
+          .replace(/\bLg\b/g,'LG').replace(/\bAa2000\b/gi,'AA2000'); }
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  var meta = D.meta || {};
+  $$('[data-period]').forEach(function(e){ e.textContent = meta.report_month_label ? ('Período: '+meta.report_month_label+' '+meta.report_year) : ''; });
+}
+
+/* ---------- KPI helpers ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function setKpis(html){ var el=$('[data-kpis="tv6"]'); if(el) el.innerHTML=html; }
+
+/* ---------- RANK bar row ---------- */
+function rankRow(rank, name, metricHtml, pct){
+  var w = Math.max(2, Math.min(100, pct||0));
+  return '<div class="rrow">'+
+      '<div class="rk">'+rank+'</div>'+
+      '<div class="rname">'+name+'</div>'+
+      '<div class="rmetric">'+metricHtml+'</div>'+
+      '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
+    '</div>';
+}
+
+/* =========================================================
+   TV 6 · render principal
+   ========================================================= */
+var CYCLE_LABELS = {marcas:'Marcas', agencias:'Agencias', programatica:'Programática'};
+var CYCLE_TITLES = {marcas:'Top marcas', agencias:'Top agencias', programatica:'Programática'};
+var cycleKeys = (D.ranking && D.ranking.ciclo) || ['marcas','agencias','programatica'];
+var cycleI = 0, cycleTimer = null;
+
+function render(){
+  var k = D.kpis || {};
+  var pend = D.pendientes || {};
+  var top = k.cliente_top_identificado;
+  var conc = k.concentracion_top5 || {};
+
+  setKpis(
+    kpi('Clientes directos activos &middot; Julio', fmt(k.clientes_directos_activos), '',
+      'Excluye '+fmt(pend.clientes_via_agencia)+' v&iacute;a agencia y '+fmt(pend.agencias_a_confirmar)+' A confirmar', '', '') +
+    kpi('Marcas activas &middot; Julio', fmt(k.marcas_activas), '', 'Distintas &middot; Core Comercial + YPF', 'pos', 'k-ok') +
+    kpi('Agencias activas &middot; Julio', fmt(k.agencias_activas), '',
+      fmt(pend.agencias_a_confirmar)+' activ. con agencia A confirmar', '', '') +
+    kpi('Cliente top identificado', top ? cap(top.nombre) : '&mdash;', '',
+      top ? (fmt(top.activaciones)+' activaciones directas') : 'Sin cliente identificado', 'pos', 'k-ok') +
+    kpi('Concentraci&oacute;n Top 5', (conc.pct!=null ? pctEs(conc.pct) : 'S/D'), '',
+      'Top 5 marcas del total de '+fmt(conc.denominador)+' activaciones', 'warn', 'k-opp')
+  );
+
+  drawRank();
+  renderMatrix(D.matriz || {});
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+function drawRank(){
+  var key = cycleKeys[cycleI % cycleKeys.length];
+  var periodo = (D.ranking && D.ranking.periodo_label) || '';
+  $('[data-rank-title]').textContent = (CYCLE_TITLES[key] || key) + (periodo ? ' · ' + periodo : '');
+  $$('[data-rank-period]').forEach(function(e){ e.textContent = periodo; });
+
+  var cyc = $('#tv6-cyc');
+  if(cyc){
+    cyc.innerHTML = cycleKeys.map(function(k,ix){
+      return '<span style="opacity:'+(ix===(cycleI%cycleKeys.length)?1:.4)+'">'+(CYCLE_LABELS[k]||k)+'</span>';
+    }).join(' &middot; ');
+  }
+
+  var el = $('[data-rank]');
+  if(!el) return;
+
+  if(key === 'programatica'){
+    var prog = (D.ranking && D.ranking.programatica) || {};
+    var pendNota = prog.pendientes_sin_agencia ? ('<p class="note">'+prog.nota+'</p>') : '';
+    if(!prog.ranking_top || !prog.ranking_top.length){
+      el.innerHTML = '<div class="rank-empty">'+
+        '<span class="tag-pending">A validar</span>'+
+        '<p>'+(prog.nota || 'Sin agencias program&aacute;ticas identificadas en el per&iacute;odo.')+'</p>'+
+      '</div>';
+      return;
+    }
+    renderRankList(el, prog.ranking_top);
+    if(pendNota) el.insertAdjacentHTML('beforeend', pendNota);
+    return;
+  }
+
+  var list = (D.ranking && D.ranking[key]) || [];
+  renderRankList(el, list);
+}
+
+function renderRankList(el, list){
+  if(!list.length){ el.innerHTML = '<div class="muted">Sin datos</div>'; return; }
+  var max = Math.max.apply(null, list.map(function(r){return r.activaciones||0})) || 1;
+  el.innerHTML = list.map(function(r,i){
+    var metric = fmt(r.activaciones)+'<small> activ.</small>';
+    return rankRow(i+1, cap(r.nombre), metric, r.activaciones/max*100);
+  }).join('');
+}
+
+function renderMatrix(m){
+  var sub = $('[data-matrix-sub]');
+  if(sub) sub.textContent = 'Top marcas × grupo comercial · activaciones acumuladas ' + (m.periodo_label || '');
+  var cols = m.columnas || [];
+  var head = '<tr><th>Marca</th>'+cols.map(function(c){return '<th>'+c.replace('Shoppings ','Sh. ')+'</th>';}).join('')+'</tr>';
+  var rows = (m.filas || []).map(function(r){
+    return '<tr><td>'+cap(r.nombre)+'</td>'+r.valores.map(function(v){
+      return '<td>'+(v>0 ? '<span class="cell" style="background:rgba(28,96,255,'+Math.min(.32,0.06+v/40)+')">'+v+'</span>' : '<span class="cell z">&mdash;</span>')+'</td>';
+    }).join('')+'</tr>';
+  }).join('');
+  $('[data-matrix]').innerHTML = '<table class="matrix">'+head+rows+'</table>';
+}
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+  cycleTimer = setInterval(function(){ cycleI=(cycleI+1)%cycleKeys.length; drawRank(); },5000);
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

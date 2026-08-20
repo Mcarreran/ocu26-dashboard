@@ -1,0 +1,72 @@
+TV2_BUILD_OK
+{
+  "generado": "19/08/2026 10:52",
+  "report_year": 2026,
+  "report_month": 7,
+  "report_month_label": "Julio",
+  "previous_month": 6,
+  "previous_month_label": "Junio",
+  "period_start": "2026-07-01",
+  "period_end": "2026-07-31",
+  "fuente": "OCU26 · Base maestra + base campañas"
+}
+{
+  "ocupacion_calendario": {
+    "activos": 71,
+    "elegibles": 91,
+    "anterior_activos": 72,
+    "pct_actual": 78.0,
+    "pct_anterior": 79.1,
+    "delta_pp": -1.1
+  },
+  "fill_digital": {
+    "numerador": 321,
+    "numerador_raw": 321.03225806451616,
+    "denominador": 1575,
+    "pct_actual": 20.4,
+    "pct_anterior": 27.3,
+    "delta_pp": -6.9,
+    "status": "PARTIAL",
+    "status_anterior": "PARTIAL"
+  },
+  "pantallas": {
+    "activos": 11,
+    "elegibles": 11,
+    "anterior_activos": 11,
+    "pct_actual": 100.0,
+    "pct_anterior": 100.0,
+    "delta_pp": 0.0
+  },
+  "shoppings": {
+    "activos": 60,
+    "elegibles": 68,
+    "anterior_activos": 61,
+    "pct_actual": 88.2,
+    "pct_anterior": 89.7,
+    "delta_pp": -1.5
+  },
+  "slots_disponibles": {
+    "disponibles": 1254,
+    "capacidad_total": 1575,
+    "pct_actual": 79.6,
+    "pct_anterior": 72.7,
+    "delta_pp": 6.9,
+    "apertura": {
+      "pantallas": {
+        "disponibles": 135,
+        "pct": 61.2,
+        "status": "OK"
+      },
+      "shoppings": {
+        "disponibles": 919,
+        "pct": 79.6,
+        "status": "OK"
+      },
+      "aa2000": {
+        "disponibles": 200,
+        "pct": 100.0,
+        "status": "PARTIAL"
+      }
+    }
+  }
+}

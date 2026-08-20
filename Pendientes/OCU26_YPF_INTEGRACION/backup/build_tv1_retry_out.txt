@@ -1,0 +1,79 @@
+TV1_BUILD_OK
+{
+  "generado": "18/08/2026 16:41",
+  "report_year": 2026,
+  "report_month": 7,
+  "report_month_label": "Julio",
+  "previous_month": 6,
+  "previous_month_label": "Junio",
+  "period_start": "2026-07-01",
+  "period_end": "2026-07-31",
+  "ytd_start": "2026-01-01",
+  "fuente": "OCU26 · Base maestra + base campañas"
+}
+{
+  "core_comercial": {
+    "value": 1064,
+    "non_ypf": 513,
+    "ypf_estaciones": 551
+  },
+  "campanas_unicas": {
+    "ytd": 443,
+    "mes_actual": 133,
+    "mes_anterior": 159,
+    "label_kpi": "CAMPAÑAS ÚNICAS",
+    "label_kpi_reason": "Se implementó Campañas únicas en lugar de Campañas vendidas porque la fuente no contiene una fecha inequívoca de venta (FechaInicio/FechaFin son fechas de flight, FechaHoraCarga es fecha de carga en el sistema, no de venta)."
+  },
+  "unidades_actividad": {
+    "value": 600,
+    "anterior": 562,
+    "delta": 38,
+    "pct_core": 56.4,
+    "non_ypf_activo": 217,
+    "ypf_estaciones_activas": 383,
+    "ypf_estaciones_anterior": 346,
+    "digital_activo": 71,
+    "digital_anterior": 72,
+    "estatico_activo": 146,
+    "estatico_anterior": 144
+  },
+  "ypf": {
+    "estaciones_activas": 383,
+    "anterior": 346,
+    "delta": 37,
+    "pct_sobre_unidades_campana": 63.8,
+    "mix_estatico_pct": 0.0,
+    "mix_digital_pct": 100.0
+  },
+  "estatico": {
+    "activos": 146,
+    "ocupacion_actual": 35.7,
+    "ocupacion_anterior": 36.1,
+    "delta_pp": -0.4,
+    "ytd": 32.6,
+    "status": "OK",
+    "numerador": 4227,
+    "denominador": 11842,
+    "universo_elegible": [
+      "CENCOSUD",
+      "PILAR_FRONTLIGHT",
+      "REMEROS"
+    ]
+  },
+  "digital_calendario": {
+    "activos": 71,
+    "elegibles": 91,
+    "pct_actual": 78.0,
+    "pct_anterior": 79.1,
+    "delta_pp": -1.1
+  },
+  "digital_fill": {
+    "numerador": 321,
+    "denominador": 1575,
+    "unidad": "slots ocupados",
+    "pct_actual": 20.4,
+    "pct_anterior": 27.3,
+    "delta_pp": -6.9,
+    "status": "PARTIAL"
+  }
+}

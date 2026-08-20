@@ -1,0 +1,44 @@
+C:\brand plus\ocu26-dashboard\.venv\Lib\site-packages\openpyxl\worksheet\_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+  warn(msg)
+=== Building TV1 ===
+core_comercial.value = 1064
+  non_ypf = 513 ypf_estaciones = 551
+campanas_unicas.ytd = 443
+estatico.status = OK
+digital_fill.status = PARTIAL
+
+=== Building TV3 ===
+reconciliacion_tv1 = {"ocupacion_dia_based_pct": 35.7, "numerador_dias": 4227, "denominador_dias": 11842, "circuitos_elegibles": ["CENCOSUD", "PILAR_FRONTLIGHT", "REMEROS"], "status": "OK"}
+ocupacion_calendario.activos = 146
+
+=== Building TV4 ===
+actividad_actual.campanas_unicas = 82
+
+=== Building TV5 ===
+formato_lider.actual = {"formato": "YPF_PUNTERA", "label": "Punteras", "campanas_unicas": 17, "elementos_activos": 951, "empate_resuelto_por_elementos_activos": false, "detalle_campanas_unicas": {"YPF_MENU_BOARD": 6, "YPF_TORRE": 12, "YPF_PUNTERA": 17}}
+formato_lider.anterior = {"formato": "YPF_PUNTERA", "label": "Punteras", "campanas_unicas": 7, "elementos_activos": 951, "empate_resuelto_por_elementos_activos": false, "detalle_campanas_unicas": {"YPF_MENU_BOARD": 2, "YPF_TORRE": 6, "YPF_PUNTERA": 7}}
+
+=== Building TV6 ===
+clientes_directos_activos = 10
+marcas_activas = 95
+agencias_activas = 15
+cliente_top_identificado = {'nombre': 'TAGGIFY', 'activaciones': 7}
+concentracion_top5 = {'pct': 67.4, 'numerador': 7753, 'denominador': 11497, 'unidad': 'activaciones', 'base': 'Top 5 marcas', 'marcas': ['SEGURIDAD VIAL', 'MEDIFE', 'BRIDGESTONE', 'MEDIFE MUNDIAL', 'TURISMO CORDOBA']}
+universo.julio.activaciones_totales = 11497
+universo.hist.activaciones_totales = 13299
+universo.hist.periodo_label = Ene–Jul 2026  HIST_LABEL const = Ene–Jul 2026
+ranking.marcas[0] = {'nombre': 'SEGURIDAD VIAL', 'activaciones': 3065}
+ranking.agencias (nombres) = ['SEGURIDAD VIAL', 'BRIDGESTONE', 'MEDIFE', 'MEDIFE MUNDIAL', 'TURISMO CORDOBA', 'MILKA']
+len(ranking.agencias) = 6
+matriz GCBA fila sum = NO EXISTE FILA GCBA
+marcas_hist.get('GCBA') = None
+
+=== export_data pipeline ===
+fact_campanas IDCampaña vacias = 25
+  CargaID notna all = True  unique = True
+len(bridge) = 1185499
+bridge.columns = ['CargaID', 'Fecha']
+len(fact_metricas) = 737475
+digital count = 677894  no-digital = 59581
+
+DONE

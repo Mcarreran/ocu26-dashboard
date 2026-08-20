@@ -141,10 +141,14 @@ def test_fact_metricas_diaria_referencia_solo_elementoid_existentes(production_p
 # ---------------------------------------------------------------------------
 
 
-def test_26_idcampana_vacias_se_conservan_en_produccion(production_pipeline):
+# Recalibrado 2026-08-18 (promocion base OCU26+YPF): 26 -> 25. Una de las
+# filas legacy con IDCampaña vacio pertenecia al bloque YPF 10000-10009,
+# retirado; las 13.616 filas nuevas de YPF Etapa 2 y las 4 filas CENCOSUD ya
+# autorizadas en FINAL_V2 tienen IDCampaña siempre completo (0 vacios).
+def test_25_idcampana_vacias_se_conservan_en_produccion(production_pipeline):
     fact_campanas = production_pipeline["fact_campanas"]
     vacias = fact_campanas[fact_campanas["IDCampaña"].isna()]
-    assert len(vacias) == 26
+    assert len(vacias) == 25
     assert vacias["CargaID"].notna().all()
     assert vacias["CargaID"].is_unique
 
@@ -380,8 +384,12 @@ def test_bridge_fecha_incompleta_no_inventa_pertenencia():
     assert bridge.empty  # fecha incompleta: no se inventa, no se cuenta
 
 
+# Recalibrado 2026-08-18 (promocion base OCU26+YPF): 881.210 -> 1.185.499.
+# Verificado con calculo independiente en pandas directo (suma de dias por
+# CargaID sobre el rango resuelto, sin pasar por build_bridge_campana_dia):
+# coincide exacto, 1.185.499.
 def test_bridge_volumen_produccion(production_pipeline):
-    assert len(production_pipeline["bridge"]) == 881_210
+    assert len(production_pipeline["bridge"]) == 1_185_499
     assert list(production_pipeline["bridge"].columns) == ["CargaID", "Fecha"]
 
 
@@ -420,12 +428,17 @@ def test_elemento_estatico_no_lleva_componentes_digitales():
     assert pd.isna(fact.iloc[0]["HasSalidasIndeterminada"])
 
 
+# Recalibrado 2026-08-18 (promocion base OCU26+YPF): 573.675 -> 737.475
+# (digital 520.648 -> 677.894, no-digital 53.027 -> 59.581). Verificado con
+# calculo independiente en pandas directo (pares unicos ElementoID+dia por
+# explosion de rango, sin pasar por build_fact_metricas_diaria): coincide
+# exacto en los 3 valores.
 def test_fact_metricas_diaria_volumen_produccion(production_pipeline):
     fact = production_pipeline["fact_metricas"]
-    assert len(fact) == 573_675
+    assert len(fact) == 737_475
     digital = int(fact["ElementoID"].map(production_pipeline["dim_elementos"].set_index("ElementoID")["Medio"]).eq("Digital").sum())
-    assert digital == 520_648
-    assert len(fact) - digital == 53_027
+    assert digital == 677_894
+    assert len(fact) - digital == 59_581
 
 
 def test_fact_metricas_diaria_falla_si_hay_exclusividad_en_el_rango():

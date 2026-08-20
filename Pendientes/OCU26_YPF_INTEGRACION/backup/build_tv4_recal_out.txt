@@ -1,0 +1,35 @@
+TV4_BUILD_OK
+{
+  "generado": "19/08/2026 10:53",
+  "cutoff_iso": "2026-07-31",
+  "cutoff_label": "31/07/2026",
+  "window_end_iso": "2026-08-30",
+  "window_end_label": "30/08/2026",
+  "window_days": 30,
+  "fuente": "OCU26 · Base maestra + base campañas",
+  "advertencia_fechas_incompletas": ""
+}
+{
+  "actividad_actual": {
+    "campanas_unicas": 82,
+    "activaciones": 448
+  },
+  "reservas_futuras": {
+    "campanas_unicas": 6,
+    "activaciones": 35
+  },
+  "inician_30d": {
+    "campanas_unicas": 4,
+    "activaciones": 15
+  },
+  "finalizan_30d": {
+    "campanas_unicas": 9,
+    "activaciones": 30
+  },
+  "pipeline_core": {
+    "pct": 88.2,
+    "campanas_core": 82,
+    "campanas_general": 93
+  }
+}
+UNIVERSE: {"circuitos": ["AA2000", "CENCOSUD", "PANTALLAS_LED", "PILAR_FRONTLIGHT", "REMEROS"], "elementos": 513}

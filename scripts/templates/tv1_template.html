@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV1 · Visión General del Negocio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV1 · Vision general del negocio
+   Identidad institucional obligatoria (manual de marca)
+   Evolucion de audit_sources/TV1_REFERENCE.html (arte conservado)
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:190px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-src{font-size:13px;font-weight:400;color:rgba(167,176,194,.85);letter-spacing:.02em;margin-left:4px;white-space:nowrap}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:14.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 14px;border-radius:999px;max-width:560px
+}
+
+/* ======================= KPIs (6 en una fila) ======================= */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:18px;flex:none}
+.kpi{
+  position:relative;min-height:152px;padding:19px 18px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-value{font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:22px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.kpi-notes{display:flex;flex-direction:column;gap:3px}
+.kpi-note-sub{font-size:11px;color:var(--bp-muted);opacity:.85}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex:none}
+.panel-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
+.panel-body{flex:1;min-height:0;position:relative}
+.chart-wrap{position:absolute;inset:0}
+.panel-foot{flex:none;margin-top:12px;font-size:14.5px;color:var(--bp-muted)}
+.panel-foot b{color:var(--bp-white);font-weight:700}
+
+/* ======================= COMPOSICION (barras split) ======================= */
+.comp{display:flex;flex-direction:column;gap:16px;height:100%;justify-content:center}
+.comp-row{display:flex;flex-direction:column;gap:6px}
+.comp-head{display:flex;justify-content:space-between;align-items:baseline}
+.comp-name{font-size:15.5px;font-weight:600}
+.comp-total{font-size:14px;font-weight:700;color:var(--bp-blue-soft)}
+.comp-bar{position:relative;height:26px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.comp-seg{position:relative;height:100%;display:flex;align-items:center;min-width:0}
+.comp-seg.digital{background:var(--bp-teal)}
+.comp-seg.estatico{background:var(--bp-muted)}
+.comp-seg.ypf{background:var(--bp-violet)}
+.comp-seg span{font-size:12px;font-weight:700;color:var(--bp-black-deep);padding-left:8px;white-space:nowrap;background:transparent}
+.comp-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+.comp-foot{font-size:11.5px;color:var(--bp-muted);line-height:1.4;margin-top:2px}
+
+/* ======================= INSIGHT (3 columnas, 1 contenedor) ======================= */
+.insight{
+  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.25)}
+.insight-col .lab{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv1">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 1</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Visi&oacute;n general del negocio</div>
+            <div class="hdr-sub">Inventario, actividad y performance comercial <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;QU&Eacute; TENEMOS, CU&Aacute;NTO SE EST&Aacute; USANDO Y C&Oacute;MO RINDI&Oacute; EL MES?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv1"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual <span data-year></span></div><div class="panel-tag">Unidades con campa&ntilde;a</div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv1-evol"></canvas></div></div>
+          <div class="panel-foot" data-evol-foot></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Composici&oacute;n del cat&aacute;logo comercial</div><div class="panel-tag" data-comp-tag></div></div>
+          <div class="panel-body"><div class="comp" data-comp></div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV1_DATA = {{TV1_DATA_JSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV1 app.js
+   Renderiza el tablero desde window.TV1_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV1_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF',
+          teal:'#35B8C4', violet:'#8C7AE6' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-year]').forEach(function(e){ e.textContent = (D.meta?D.meta.report_year:''); });
+  $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
+}
+
+/* ---------- KPI helper ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'">'+(noteCls?'<span class="dot"></span>':'')+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function kpiSplit(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="sec"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="main"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+/* Jerarquia visual estandar: cantidad (izquierda) blanca/grande, % (derecha) azul/menor.
+   Aplica a TODAS las tarjetas con cantidad+porcentaje (Unidades con campaña, YPF, Estático,
+   Digital por calendario, Digital por fill rate). */
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+/* Variante con 2 lineas de nota: comparacion vs mes anterior (coloreada por signo) + una
+   segunda linea informativa neutra (desglose o mix de presencia). */
+function kpiSplitBigLeftDual(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,note2,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
+    '</div>'+
+  '</div>';
+}
+
+/* =========================================================
+   TV 1 · render principal
+   ========================================================= */
+function renderTV1(){
+  var k = D.kpis || {};
+  var core = k.core_comercial || {};
+  var act = k.unidades_actividad || {};
+  var ypf = k.ypf || {};
+  var est = k.estatico || {};
+  var dcal = k.digital_calendario || {};
+  var dfill = k.digital_fill || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var html = '';
+  html += kpi('Core comercial', fmt(core.value), '', 'Universo comercial core', '', '');
+  html += kpiSplitBigLeft('Unidades con campaña', 'Activas', fmt(act.value), '% del core', pctEs(act.pct_core),
+    (prevLbl+' '+fmt(act.anterior)+' &middot; '+signedInt(act.delta)), noteClsForDelta(act.delta), '');
+  html += kpiSplitBigLeftDual('YPF', 'Estaciones', fmt(ypf.estaciones_activas), '% del total', pctEs(ypf.pct_sobre_unidades_campana),
+    (prevLbl+' '+fmt(ypf.anterior)+' &middot; '+signedInt(ypf.delta)), noteClsForDelta(ypf.delta),
+    ('Presencia en activas: Est '+pctEs(ypf.mix_estatico_pct)+' &middot; Dig '+pctEs(ypf.mix_digital_pct)), '');
+  html += kpiSplitBigLeft('Estático', 'Activos', fmt(est.activos), 'Ocupación', pctEs(est.ocupacion_actual), (prevLbl+' '+pctEs(est.ocupacion_anterior)+' &middot; '+signedPp(est.delta_pp)+(est.ytd!=null?' &middot; YTD '+pctEs(est.ytd):'')), noteClsForDelta(est.delta_pp), 'k-fijo');
+  html += kpiSplitBigLeft('Digital por calendario', 'Activos', fmt(dcal.activos), '% con actividad', pctEs(dcal.pct_actual), (prevLbl+' '+pctEs(dcal.pct_anterior)+' &middot; '+signedPp(dcal.delta_pp)), noteClsForDelta(dcal.delta_pp), '');
+  html += kpiSplitBigLeft('Digital por fill rate', dfill.unidad||'Vendidos', fmt(dfill.numerador), '% capacidad vendida', pctEs(dfill.pct_actual), (prevLbl+' '+pctEs(dfill.pct_anterior)+' &middot; '+signedPp(dfill.delta_pp)), noteClsForDelta(dfill.delta_pp), '');
+  setKpis('tv1', html);
+
+  var ev = D.evolution || {};
+  lineChart('c-tv1-evol', ev.meses||[], [
+    {label:'Digital', data:ev.digital||[], color:C.teal},
+    {label:'Estático', data:ev.estatico||[], color:C.muted},
+    {label:'YPF', data:ev.ypf||[], color:C.violet}
+  ], '', true);
+
+  var camp = k.campanas_unicas || {};
+  $('[data-evol-foot]').innerHTML = 'Campañas únicas acumuladas a '+(D.meta?D.meta.report_month_label.toLowerCase():'')+': <b>'+fmt(camp.ytd)+'</b>';
+
+  var comp = D.composition || {};
+  var catTotal = D.catalogo_comercial ? D.catalogo_comercial.value : comp.denominador;
+  $('[data-comp-tag]').textContent = 'Participación sobre '+fmt(catTotal)+' unidades comerciales';
+  renderComposition(comp);
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+function signedPp(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+Number(v).toFixed(1).replace('.',',')+' pp';
+}
+function signedInt(v){
+  if(v==null) return 'S/D';
+  return (v>0?'+':'')+fmt(v);
+}
+/* Regla de negocio: en TODAS estas KPIs, subir = mejora (verde), bajar =
+   atencion (rojo), sin cambio = neutral (gris). Coloreado por signo, no por
+   umbral de magnitud. */
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+
+function renderComposition(comp){
+  var fams = comp.familias || [];
+  var el = $('[data-comp]');
+  if(!fams.length){ el.innerHTML = '<div class="comp-empty">Sin datos de composición</div>'; return; }
+  var rows = fams.map(function(f){
+    var segs = '';
+    /* Ancho de cada segmento = % sobre el catálogo comercial TV1 (misma escala para todas las barras).
+       "u." desambigua cantidad vs porcentaje (11 u. · 1,0% ≠ 11%). */
+    if(f.split===false){
+      /* YPF: una sola barra de estaciones YPF, sin split Digital/Estatico */
+      if(f.total>0){
+        segs = '<div class="comp-seg ypf" style="width:'+f.pct_total+'%;min-width:64px"><span>'+fmt(f.total)+' estaciones &middot; '+pctEs(f.pct_total)+'</span></div>';
+      }
+    } else {
+      if(f.digital>0){
+        segs += '<div class="comp-seg digital" style="width:'+f.digital_pct+'%;min-width:64px"><span>Dig '+fmt(f.digital)+' u. &middot; '+pctEs(f.digital_pct)+'</span></div>';
+      }
+      if(f.estatico>0){
+        segs += '<div class="comp-seg estatico" style="width:'+f.estatico_pct+'%;min-width:64px"><span>Est '+fmt(f.estatico)+' u. &middot; '+pctEs(f.estatico_pct)+'</span></div>';
+      }
+    }
+    if(f.total===0){
+      segs = '<div class="comp-empty" style="padding-left:2px">Sin unidades en el catálogo</div>';
+    }
+    return '<div class="comp-row"><div class="comp-head"><div class="comp-name">'+f.nombre+'</div><div class="comp-total">'+pctEs(f.pct_total)+'</div></div>'+
+      '<div class="comp-bar">'+segs+'</div></div>';
+  }).join('');
+
+  var foot = '';
+  var cat = D.catalogo_comercial || {};
+  if(cat.nota_catalogo_ampliado){
+    foot += '<div class="comp-foot">* '+cat.nota_catalogo_ampliado+'</div>';
+  }
+  if(comp.nota_otros){
+    foot += '<div class="comp-foot">* '+comp.nota_otros+'</div>';
+  }
+  el.innerHTML = rows + foot;
+}
+
+function setKpis(tv, html){ var el=$('[data-kpis="'+tv+'"]'); if(el) el.innerHTML=html; }
+
+/* =========================================================
+   CHART HELPERS (Chart.js) — solo panel de evolucion
+   ========================================================= */
+var charts={};
+function baseOpts(suffix){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:700},
+    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:14,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:16 } } },
+    scales:{
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13}} },
+      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13},callback:function(v){return v+(suffix||'')}} }
+    }
+  };
+}
+function lineChart(id,labels,series,suffix,showVals){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var opts=baseOpts(suffix);
+  var plugins=[];
+  if(showVals){
+    plugins.push({ id:'ptlabels', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i]; if(v==null) return;
+          cx.save();
+          cx.font='700 11px Poppins, sans-serif';
+          cx.fillStyle=ds.borderColor; cx.textAlign='center';
+          var yOff = -10 - (di*13);
+          cx.fillText(Math.round(v), pt.x, pt.y+yOff);
+          cx.restore();
+        });
+      });
+    }});
+    opts.layout={padding:{top:30,bottom:6}};
+  }
+  charts[id]=new Chart(ctx,{ type:'line',
+    data:{ labels:labels, datasets:series.map(function(s){return {
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+    options:opts, plugins:plugins
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  renderTV1();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

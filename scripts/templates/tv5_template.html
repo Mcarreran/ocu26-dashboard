@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV5 · YPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV5 · YPF
+   Sistema visual identico a TV1/TV4/TV6 (audit_sources/TV5_REFERENCE.html:
+   paleta, tipografia, cards, panel, insight triple). El body de esa
+   referencia solo conserva la seccion TV6 (carrusel legacy): se reutiliza
+   su hoja de estilos compartida (kpi/panel/rank/insight), no su contenido.
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:118px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:190px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-src{font-size:13px;font-weight:400;color:rgba(167,176,194,.85);letter-spacing:.02em;margin-left:4px;white-space:nowrap}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:14.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 14px;border-radius:999px;max-width:560px
+}
+
+/* ======================= KPIs (5 en una fila) ======================= */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:20px;flex:none}
+.kpi{
+  position:relative;min-height:158px;padding:22px 24px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:13px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-value{font-size:48px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:24px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:13px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.kpi-notes{display:flex;flex-direction:column;gap:3px}
+.kpi-note-sub{font-size:11.5px;color:var(--bp-muted);opacity:.85}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:14px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:40px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex:none}
+.panel-head.col{flex-direction:column;align-items:flex-start;gap:3px}
+.panel-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:13.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.chart-wrap{position:absolute;inset:0}
+
+/* ======================= MAPA GEOGRAFICO REAL (lat/lon, fuente auxiliar) ======================= */
+/* input/OCU26_BASE_DATOS.xlsx no tiene lat/lon (auditado). El usuario
+   incorporo input_aux/YPF_GEO_COORDENADAS.xlsx.xlsx (fuera del pipeline
+   central); el builder la joinea por prefijo numerico de estacion.
+   Cobertura parcial real (no se inventan posiciones para el resto). */
+.map-legend{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex:none}
+.map-legend .bar{flex:1;max-width:220px;height:8px;border-radius:6px;background:linear-gradient(90deg,rgba(28,96,255,.35),var(--bp-blue),var(--bp-warning))}
+.map-legend .lbl{font-size:11.5px;color:var(--bp-muted);letter-spacing:.03em;white-space:nowrap}
+.geo-meta{font-size:12.5px;color:var(--bp-muted);margin-bottom:8px;flex:none}
+.geo-meta b{color:var(--bp-white);font-weight:700}
+.map-svg-wrap{flex:1;min-height:0;position:relative;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--panel-border);overflow:hidden}
+.map-svg-wrap svg{display:block;width:100%;height:100%}
+.map-point{transition:none}
+.map-point-label{font-size:9.5px;fill:rgba(255,255,255,.55);font-family:'Poppins',sans-serif}
+.map-prov-label{font-size:11px;font-weight:600;fill:rgba(126,166,255,.5);font-family:'Poppins',sans-serif;letter-spacing:.02em}
+.geo-note{font-size:11.5px;color:var(--bp-muted);line-height:1.4;margin-top:9px;flex:none}
+
+/* ======================= INSIGHT (3 columnas) ======================= */
+.insight{
+  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.25)}
+.insight-col .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:15.5px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv5">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 5</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Pulso comercial YPF</div>
+            <div class="hdr-sub">Cat&aacute;logo, actividad y territorio de la red YPF <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;CU&Aacute;NTO CAT&Aacute;LOGO YPF TENEMOS Y CU&Aacute;NTO SE EST&Aacute; USANDO?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv5"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title">Hist&oacute;rico anual de activaciones</div>
+            <div class="panel-sub">Por tipo de elemento &middot; <span data-hist-period></span><span data-hist-note></span></div>
+          </div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv5-hist"></canvas></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title" data-mapa-titulo>Mapa de intensidad comercial</div>
+            <div class="panel-sub" data-mapa-subtitulo></div>
+          </div>
+          <div class="panel-body">
+            <div class="map-legend"><span class="lbl">Menor</span><span class="bar"></span><span class="lbl">Mayor</span></div>
+            <div class="geo-meta" data-geo-meta></div>
+            <div class="map-svg-wrap"><svg data-geo-svg></svg></div>
+            <div class="geo-note" data-geo-note></div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV5_DATA = {{TV5_DATA_JSON}};</script>
+<script>window.ARG_PAIS_GEOJSON = {{ARG_PAIS_GEOJSON}};</script>
+<script>window.ARG_PROVINCIAS_GEOJSON = {{ARG_PROVINCIAS_GEOJSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV5 app.js
+   Renderiza el tablero desde window.TV5_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV5_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF',
+          teal:'#35B8C4', violet:'#8C7AE6' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  var meta = D.meta || {};
+  $$('[data-period]').forEach(function(e){ e.textContent = meta.report_month_label ? ('Período: '+meta.report_month_label+' '+meta.report_year) : ''; });
+}
+
+/* ---------- KPI helpers ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function kpiDual(label,note1,note1Cls,note2,cardCls){
+  return {
+    open: '<div class="kpi '+(cardCls||'')+'"><div class="kpi-label">'+label+'</div>',
+    notes: '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
+    '</div></div>'
+  };
+}
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+function signedInt(v){ if(v==null) return 'S/D'; return (v>0?'+':'')+fmt(v); }
+function signedPp(v){ if(v==null) return 'S/D'; var s=v>0?'+':''; return s+Number(v).toFixed(1).replace('.',',')+' pp'; }
+function setKpis(html){ var el=$('[data-kpis="tv5"]'); if(el) el.innerHTML=html; }
+
+/* =========================================================
+   TV 5 · render principal
+   ========================================================= */
+function render(){
+  var k = D.kpis || {};
+  var cat = k.catalogo || {};
+  var est = k.estaciones_activas || {};
+  var camp = k.campanas || {};
+  var elem = k.elementos_activos || {};
+  var fl = k.formato_lider || {};
+  var flA = fl.actual || {};
+  var flP = fl.anterior || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var html = '';
+  html += kpiSplitBigLeft('Catálogo YPF', 'Estaciones', fmt(cat.estaciones_registradas), 'Elementos', fmt(cat.elementos_totales),
+    cat.nota ? 'Catálogo actual · sin histórico' : '', '', '');
+
+  html += kpiSplitBigLeft('Estaciones activas · '+(D.meta?D.meta.report_month_label:''), 'Con campaña', fmt(est.actual), '% catálogo', pctEs(est.pct_actual),
+    prevLbl+' '+fmt(est.anterior)+' ('+pctEs(est.pct_anterior)+') · '+signedInt(est.delta_abs)+' est. · '+signedPp(est.delta_pp),
+    noteClsForDelta(est.delta_abs), est.delta_abs>0?'k-ok':'');
+
+  html += kpiSplitBigLeft('Campañas · '+(D.meta?D.meta.report_month_label:''), 'Únicas', fmt(camp.campanas_unicas_actual), 'Activaciones', fmt(camp.activaciones_actual),
+    prevLbl+': '+fmt(camp.campanas_unicas_anterior)+' campañas · '+fmt(camp.activaciones_anterior)+' activ.'+(camp.promedio_actual!=null?(' · '+fmt(camp.promedio_actual)+' activ./campaña'):''),
+    noteClsForDelta(camp.delta_campanas), '');
+
+  html += (function(){
+    var d = kpiDual('Elementos activos · '+(D.meta?D.meta.report_month_label:''),
+      prevLbl+' '+fmt(elem.anterior)+' · '+signedInt(elem.delta), noteClsForDelta(elem.delta),
+      'Elementos ≠ activaciones ('+fmt(camp.activaciones_actual)+')', '');
+    return d.open+'<div class="kpi-value">'+fmt(elem.actual)+'</div>'+d.notes;
+  })();
+
+  html += kpi('Formato líder · '+(D.meta?D.meta.report_month_label:''), flA.label||'—', '',
+    fmt(flA.campanas_unicas)+' campañas únicas'+(flA.empate_resuelto_por_elementos_activos?' (desempate por elementos activos)':'')+' · '+prevLbl+': '+(flP.label||'—')+' ('+fmt(flP.campanas_unicas)+')',
+    '', 'k-opp');
+
+  setKpis(html);
+
+  drawHistorico(D.historico || {});
+  drawMapa(D.mapa || {});
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+/* ---------- HISTORICO: barras agrupadas por formato ---------- */
+/* El payload trae Ene-Jul completo (sin tocar datos/builder); la vista
+   muestra solo los ultimos 3 meses con actividad real (May-Jul) y aclara
+   por que se ocultan los anteriores, derivado de los datos mismos (nunca
+   hardcodeado): solo se oculta un mes si su suma real es 0 en las 3 series. */
+var chartRef = null;
+var HIST_SHOW_N = 3;
+function drawHistorico(h){
+  var allMeses = h.meses || [];
+  var allSeries = h.series || {};
+  var order = ['Menu Board','Torres','Punteras'];
+  var colors = { 'Menu Board': C.warning, 'Torres': C.blue, 'Punteras': C.blueSoft };
+
+  var n = Math.min(HIST_SHOW_N, allMeses.length);
+  var hiddenCount = allMeses.length - n;
+  var labels = allMeses.slice(-n);
+  var series = {};
+  order.forEach(function(k){ series[k] = (allSeries[k]||[]).slice(-n); });
+
+  $('[data-hist-period]').textContent = labels.length ? (labels[0]+'–'+labels[labels.length-1]+' '+(D.meta?D.meta.report_year:'')) : ((D.meta && D.meta.hist_label) || '');
+
+  var hiddenSum = 0;
+  order.forEach(function(k){ (allSeries[k]||[]).slice(0, hiddenCount).forEach(function(v){ hiddenSum += (v||0); }); });
+  var noteEl = $('[data-hist-note]');
+  if(noteEl){
+    noteEl.textContent = (hiddenCount>0 && hiddenSum===0)
+      ? (' · Sin actividad registrada '+allMeses[0]+'–'+allMeses[hiddenCount-1]+' '+(D.meta?D.meta.report_year:''))
+      : '';
+  }
+
+  if(!window.Chart){ return fallbackNote('c-tv5-hist'); }
+  var ctx = document.getElementById('c-tv5-hist'); if(!ctx) return;
+  if(chartRef) chartRef.destroy();
+
+  var barLabelsPlugin = { id:'barlabels', afterDatasetsDraw:function(chart){
+    var cx = chart.ctx;
+    chart.data.datasets.forEach(function(ds,di){
+      var meta = chart.getDatasetMeta(di);
+      meta.data.forEach(function(bar,i){
+        var v = ds.data[i]; if(v==null) return;
+        cx.save();
+        cx.font = '700 12px Poppins, sans-serif';
+        cx.fillStyle = ds.backgroundColor;
+        cx.textAlign = 'center';
+        cx.fillText(fmt(v), bar.x, bar.y - 7);
+        cx.restore();
+      });
+    });
+  }};
+
+  chartRef = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets: order.filter(function(k){return series[k];}).map(function(k){
+        return { label:k, data:series[k]||[], backgroundColor:colors[k], borderRadius:5, maxBarThickness:36 };
+      })
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:700},
+      layout:{ padding:{ top:26 } },
+      plugins:{ legend:{ position:'top', labels:{ color:C.muted, font:{family:'Poppins',size:13,weight:'500'}, usePointStyle:true, pointStyleWidth:10, padding:14 } } },
+      scales:{
+        x:{ grid:{display:false,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13}} },
+        y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12}}, beginAtZero:true }
+      }
+    },
+    plugins:[barLabelsPlugin]
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MAPA: base cartografica REAL (Natural Earth 1:10m, Argentina
+   pais + provincias, descargada una vez con autorizacion y embebida
+   offline) + puntos de estacion georreferenciados sobre esa geometria.
+   Intensidad = activaciones acumuladas Ene-Jul. Cobertura parcial real
+   (nunca se inventan posiciones). ---------- */
+var SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  var el = document.createElementNS(SVG_NS, tag);
+  Object.keys(attrs||{}).forEach(function(k){ el.setAttribute(k, attrs[k]); });
+  return el;
+}
+function mapHeatColor(t){
+  var lo=[28,96,255], hi=[255,200,87];
+  var r=Math.round(lo[0]+(hi[0]-lo[0])*t), g=Math.round(lo[1]+(hi[1]-lo[1])*t), b=Math.round(lo[2]+(hi[2]-lo[2])*t);
+  return 'rgb('+r+','+g+','+b+')';
+}
+function geoRingCentroid(geometry){
+  var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+  var best = null, bestLen = 0;
+  polys.forEach(function(rings){
+    var ring = rings[0];
+    if(ring && ring.length > bestLen){ bestLen = ring.length; best = ring; }
+  });
+  if(!best) return null;
+  var sx=0, sy=0;
+  best.forEach(function(pt){ sx+=pt[0]; sy+=pt[1]; });
+  return [sx/best.length, sy/best.length];
+}
+function geoPathD(geometry, projX, projY){
+  var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+  var d = '';
+  polys.forEach(function(rings){
+    rings.forEach(function(ring){
+      ring.forEach(function(pt, i){
+        var x = projX(pt[0]), y = projY(pt[1]);
+        d += (i===0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+      });
+      d += 'Z ';
+    });
+  });
+  return d;
+}
+function drawMapa(m){
+  $('[data-mapa-titulo]').textContent = m.titulo || 'Mapa de intensidad comercial';
+  $('[data-mapa-subtitulo]').textContent = (m.subtitulo || '') + (m.periodo_label ? (' · '+m.periodo_label) : '');
+  $('[data-geo-note]').textContent = m.nota || '';
+  $('[data-geo-meta]').innerHTML = '<b>'+fmt(m.n_estaciones_con_geo)+'</b> de <b>'+fmt(m.n_estaciones_con_actividad)+'</b> estaciones con actividad tienen ubicación geográfica disponible ('+pctEs(m.pct_cobertura_geo)+')';
+
+  var wrap = $('.map-svg-wrap');
+  var svg = $('[data-geo-svg]');
+  var puntos = m.puntos || [];
+  var bounds = m.bounds;
+
+  if(!puntos.length || !bounds){
+    svg.innerHTML = '';
+    var msg = svgEl('text', {x:'50%', y:'50%', 'text-anchor':'middle', fill:'#A7B0C2', 'font-size':'14', 'font-family':'Poppins'});
+    msg.textContent = 'Sin estaciones georreferenciadas para el período.';
+    svg.appendChild(msg);
+    return;
+  }
+
+  var cw = wrap.clientWidth || 560, ch = wrap.clientHeight || 380;
+  svg.setAttribute('viewBox', '0 0 '+cw+' '+ch);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.innerHTML = '';
+
+  /* Zoom regional centrado en los puntos reales, con margen generoso para
+     que las provincias vecinas (CABA/AMBA incluidas) queden reconocibles
+     y no solo un recorte ajustado a los puntos. */
+  var latPad = Math.max((bounds.lat_max - bounds.lat_min) * 0.35, 1.0);
+  var lonPad = Math.max((bounds.lon_max - bounds.lon_min) * 0.35, 1.0);
+  var viewLatMin = bounds.lat_min - latPad, viewLatMax = bounds.lat_max + latPad;
+  var viewLonMin = bounds.lon_min - lonPad, viewLonMax = bounds.lon_max + lonPad;
+
+  var pad = 10;
+  var latSpan = Math.max(viewLatMax - viewLatMin, 0.01);
+  var lonSpan = Math.max(viewLonMax - viewLonMin, 0.01);
+  function projX(lon){ return pad + (lon - viewLonMin) / lonSpan * (cw - 2*pad); }
+  function projY(lat){ return pad + (viewLatMax - lat) / latSpan * (ch - 2*pad); }
+
+  var pais = window.ARG_PAIS_GEOJSON, provincias = window.ARG_PROVINCIAS_GEOJSON;
+  if(pais && pais.features){
+    pais.features.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'rgba(126,166,255,.10)', stroke:'rgba(126,166,255,.55)', 'stroke-width':'2'
+      }));
+    });
+  }
+  if(provincias && provincias.features){
+    provincias.features.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'none', stroke:'rgba(126,166,255,.30)', 'stroke-width':'1'
+      }));
+    });
+    /* nombre de provincia solo si su centroide cae dentro del recorte
+       visible (evita saturar con las ~24 provincias del pais completo) */
+    provincias.features.forEach(function(f){
+      var c = geoRingCentroid(f.geometry);
+      if(!c) return;
+      if(c[0]<viewLonMin || c[0]>viewLonMax || c[1]<viewLatMin || c[1]>viewLatMax) return;
+      var label = svgEl('text', {
+        x:projX(c[0]), y:projY(c[1]), 'text-anchor':'middle', class:'map-prov-label'
+      });
+      label.textContent = f.properties.name || '';
+      svg.appendChild(label);
+    });
+  }
+
+  var maxV = Math.max.apply(null, puntos.map(function(p){return p.activaciones||0;})) || 1;
+  var minR = 4, maxR = 20;
+  var sorted = puntos.slice().sort(function(a,b){ return (a.activaciones||0)-(b.activaciones||0); });
+
+  sorted.forEach(function(p){
+    var t = (p.activaciones||0) / maxV;
+    var r = minR + (maxR-minR) * Math.sqrt(t);
+    var cx = projX(p.lon), cy = projY(p.lat);
+    var circle = svgEl('circle', {
+      cx:cx, cy:cy, r:r, fill:mapHeatColor(t), 'fill-opacity':'0.82',
+      stroke:'rgba(255,255,255,.35)', 'stroke-width':'1', class:'map-point'
+    });
+    var title = svgEl('title', {});
+    title.textContent = (p.ciudad||'—')+' · '+fmt(p.activaciones)+' activaciones';
+    circle.appendChild(title);
+    svg.appendChild(circle);
+  });
+
+  /* etiquetas solo para las estaciones de mayor intensidad, para no saturar */
+  var topLabeled = sorted.slice(-5);
+  topLabeled.forEach(function(p){
+    var label = svgEl('text', {
+      x:projX(p.lon), y:projY(p.lat) - (minR + (maxR-minR)*Math.sqrt((p.activaciones||0)/maxV)) - 5,
+      'text-anchor':'middle', class:'map-point-label'
+    });
+    label.textContent = p.ciudad || '';
+    svg.appendChild(label);
+  });
+}
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

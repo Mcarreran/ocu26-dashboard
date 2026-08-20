@@ -1,0 +1,118 @@
+{
+  "result": "VALID_WITH_WARNINGS",
+  "file": "input\\OCU26_BASE_DATOS.xlsx",
+  "file_name": "OCU26_BASE_DATOS.xlsx",
+  "size_bytes": 2202362,
+  "sha256": "d3b780898af3b7ca36ccd3ca351be478cc9fd31d560876a4f8f684d48a69f050",
+  "errors": [],
+  "warnings": [
+    "MAESTRO_ELEMENTOS: 5304 TipoInventario vacío(s)",
+    "MAESTRO_ELEMENTOS: 5304 AplicaCantidad vacío(s)",
+    "MAESTRO_ELEMENTOS: 1421 RevisionMaestro vacío(s)",
+    "MAESTRO_ELEMENTOS: 5304 Proveedor vacío(s)",
+    "MAESTRO_ELEMENTOS: 2566 CapacidadSlotsReel almacenado(s) como texto numérico",
+    "MAESTRO_ELEMENTOS: 2566 SegundosDia almacenado(s) como texto numérico",
+    "CAMPANAS: 13620 FilaOrigen vacío(s)",
+    "CAMPANAS: 1713 FechaHoraCarga vacío(s)",
+    "CAMPANAS: 5 FechaFin vacío(s)",
+    "CAMPANAS: 15330 HoraInicio vacío(s)",
+    "CAMPANAS: 15330 HoraFin vacío(s)",
+    "CAMPANAS: 13890 CANJE vacío(s)",
+    "CAMPANAS: 13631 PROGRAMATICA vacío(s)",
+    "CAMPANAS: 94 fila(s) con EstadoValidacion pendiente (distinto de OK)",
+    "CAMPANAS: 25 IDCampaña vacío(s)",
+    "CAMPANAS: 95 Cliente vacío(s)",
+    "CAMPANAS: 24 Marca vacío(s)",
+    "CAMPANAS: 263 Agencia vacío(s)",
+    "CAMPANAS: 13655 Proveedor vacío(s)",
+    "CAMPANAS: 1717 CantidadUnidades vacío(s)",
+    "CAMPANAS: 15333 TipoExclusividad vacío(s)"
+  ],
+  "stats": {
+    "tables": {
+      "MAESTRO_ELEMENTOS": {
+        "table_name": "tblElementos",
+        "ref": "A1:Z5305",
+        "data_rows": 5304
+      },
+      "CAMPANAS": {
+        "table_name": "tblCampanas",
+        "ref": "A1:AD15334",
+        "data_rows": 15333
+      },
+      "PARAMETROS": {
+        "table_name": "tblParametros",
+        "ref": "A1:B24",
+        "data_rows": 23
+      }
+    },
+    "formula_cells_found": 0,
+    "error_cells_found": 0,
+    "maestro_elementos": {
+      "total_rows": 5304,
+      "elemento_id_unique": 5304,
+      "elemento_id_empty": 0,
+      "elemento_id_duplicates_exact": 0,
+      "elemento_id_duplicates_normalized": 0
+    },
+    "numeric_fields": {
+      "CapacidadSlotsReel": {
+        "native": 2738,
+        "text_numeric": 2566,
+        "empty": 0,
+        "invalid": 0,
+        "min": 0.0,
+        "max": 40.0
+      },
+      "SegundosDia": {
+        "native": 2738,
+        "text_numeric": 2566,
+        "empty": 0,
+        "invalid": 0,
+        "min": 0.0,
+        "max": 100800.0
+      }
+    },
+    "campanas": {
+      "total_rows": 15333,
+      "elemento_id_distinct": 3644,
+      "elemento_id_empty": 0,
+      "elemento_id_orphans": 0,
+      "carga_id_empty": 0,
+      "carga_id_duplicates": 0,
+      "fila_origen_empty": 13620,
+      "fila_origen_duplicates": 0,
+      "fila_origen_invalid": 0
+    },
+    "fechas": {
+      "FechaHoraCarga": {
+        "empty": 1713,
+        "invalid": 0
+      },
+      "FechaInicio": {
+        "empty": 0,
+        "invalid": 0
+      },
+      "FechaFin": {
+        "empty": 5,
+        "invalid": 0
+      }
+    },
+    "horas": {
+      "HoraInicio": {
+        "empty": 15330,
+        "with_data": 3
+      },
+      "HoraFin": {
+        "empty": 15330,
+        "with_data": 3
+      }
+    },
+    "estado_validacion": {
+      "OK": 15239,
+      "PENDIENTE_DUPLICADO": 12,
+      "PENDIENTE_COLISION": 2,
+      "PENDIENTE_HISTORICO": 80
+    }
+  }
+}

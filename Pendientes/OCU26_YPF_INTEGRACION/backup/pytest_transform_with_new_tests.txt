@@ -1,0 +1,47 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- C:\brand plus\ocu26-dashboard\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\brand plus\ocu26-dashboard
+collecting ... collected 39 items
+
+tests/test_transform_data.py::test_production_file_transforms_successfully PASSED [  2%]
+tests/test_transform_data.py::test_production_file_via_cli_does_not_modify_input PASSED [  5%]
+tests/test_transform_data.py::test_tipo_inventario_digital_sin_keywords PASSED [  7%]
+tests/test_transform_data.py::test_tipo_inventario_estatico_sin_keywords PASSED [ 10%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_produces_flexible_grafico[CARRO] PASSED [ 12%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_produces_flexible_grafico[STOPPER] PASSED [ 15%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_produces_flexible_grafico[FLOORGRAPHIC] PASSED [ 17%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_produces_flexible_grafico[CUBRE] PASSED [ 20%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_produces_flexible_grafico[ALARMA] PASSED [ 23%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_case_insensitive PASSED [ 25%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_detected_in_any_search_field[Ubicacion] PASSED [ 28%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_detected_in_any_search_field[Descripcion] PASSED [ 30%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_detected_in_any_search_field[Subcircuito] PASSED [ 33%]
+tests/test_transform_data.py::test_tipo_inventario_keyword_detected_in_any_search_field[CircuitoDashboard] PASSED [ 35%]
+tests/test_transform_data.py::test_derive_tipo_inventario_blank_elemento_id_returns_empty PASSED [ 38%]
+tests/test_transform_data.py::test_aplica_cantidad_flexible_grafico_es_si PASSED [ 41%]
+tests/test_transform_data.py::test_aplica_cantidad_digital_es_no PASSED  [ 43%]
+tests/test_transform_data.py::test_aplica_cantidad_fisico_estatico_es_no PASSED [ 46%]
+tests/test_transform_data.py::test_tipo_inventario_fuente_vacia_se_completa PASSED [ 48%]
+tests/test_transform_data.py::test_tipo_inventario_fuente_correcta_se_acepta PASSED [ 51%]
+tests/test_transform_data.py::test_tipo_inventario_fuente_contradictoria_lanza_transform_error PASSED [ 53%]
+tests/test_transform_data.py::test_aplica_cantidad_fuente_contradictoria_lanza_transform_error PASSED [ 56%]
+tests/test_transform_data.py::test_capacidad_slots_reel_numero_y_texto_dan_mismo_valor PASSED [ 58%]
+tests/test_transform_data.py::test_segundos_dia_numero_y_texto_dan_mismo_valor PASSED [ 61%]
+tests/test_transform_data.py::test_maestro_non_target_columns_unchanged PASSED [ 64%]
+tests/test_transform_data.py::test_campanas_equivalent_value_by_value PASSED [ 66%]
+tests/test_transform_data.py::test_parametros_equivalent_value_by_value PASSED [ 69%]
+tests/test_transform_data.py::test_invalid_input_aborts_transformation PASSED [ 71%]
+tests/test_transform_data.py::test_invalid_input_via_cli_returns_exit_code_1 PASSED [ 74%]
+tests/test_transform_data.py::test_cli_json_output_is_valid_json PASSED  [ 76%]
+tests/test_transform_data.py::test_read_excel_table_uses_real_table_range_not_hardcoded_size PASSED [ 79%]
+tests/test_transform_data.py::test_filaorigen_nan_en_mismas_posiciones_no_bloquea PASSED [ 82%]
+tests/test_transform_data.py::test_filaorigen_equals_semantics_valor_distinto_bloquea PASSED [ 84%]
+tests/test_transform_data.py::test_filaorigen_equals_semantics_nan_en_mismas_posiciones_no_bloquea PASSED [ 87%]
+tests/test_transform_data.py::test_filaorigen_equals_semantics_nan_vs_valor_real_bloquea PASSED [ 89%]
+tests/test_transform_data.py::test_filaorigen_equals_semantics_cambio_de_orden_bloquea PASSED [ 92%]
+tests/test_transform_data.py::test_filaorigen_equals_semantics_diferencia_de_filas_bloquea PASSED [ 94%]
+tests/test_transform_data.py::test_pre_ypf_backup_sigue_pasando_el_gate PASSED [ 97%]
+tests/test_transform_data.py::test_base_final_ypf_pasa_el_gate_sin_alterar_filaorigen PASSED [100%]
+
+======================= 39 passed in 122.71s (0:02:02) ========================

@@ -1,0 +1,79 @@
+C:\brand plus\ocu26-dashboard\.venv\Lib\site-packages\openpyxl\worksheet\_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+  warn(msg)
+TV5_BUILD_OK
+{
+  "generado": "19/08/2026 10:54",
+  "report_year": 2026,
+  "report_month": 7,
+  "report_month_label": "Julio",
+  "previous_month": 6,
+  "previous_month_label": "Junio",
+  "periodo_inicio_iso": "2026-07-01",
+  "periodo_fin_iso": "2026-07-31",
+  "previous_inicio_iso": "2026-06-01",
+  "previous_fin_iso": "2026-06-30",
+  "hist_label": "Ene–Jul 2026",
+  "fuente": "OCU26 · Base maestra + base campañas",
+  "station_key_method": "StationKey (surrogate temporal): prefijo numérico de ElementoID + localidad normalizada de Ubicación. No existe columna APIE en la fuente."
+}
+{
+  "catalogo": {
+    "estaciones_registradas": 551,
+    "elementos_totales": 4048,
+    "status": "catalogo_actual",
+    "metric_status": "NO_APLICA",
+    "nota": "Catálogo actual. Sin histórico de catálogo disponible: la fuente es un snapshot vigente, no permite reconstruir cuántas estaciones/elementos existían en junio."
+  },
+  "estaciones_activas": {
+    "actual": 383,
+    "anterior": 346,
+    "catalogo": 551,
+    "pct_actual": 69.5,
+    "pct_anterior": 62.8,
+    "delta_abs": 37,
+    "delta_pp": 6.7
+  },
+  "campanas": {
+    "campanas_unicas_actual": 17,
+    "campanas_unicas_anterior": 7,
+    "delta_campanas": 10,
+    "activaciones_actual": 10945,
+    "activaciones_anterior": 6214,
+    "delta_activaciones": 4731,
+    "promedio_actual": 643.8,
+    "promedio_anterior": 887.7
+  },
+  "elementos_activos": {
+    "actual": 3359,
+    "anterior": 3187,
+    "delta": 172,
+    "metric_status": "OK"
+  },
+  "formato_lider": {
+    "actual": {
+      "formato": "YPF_PUNTERA",
+      "label": "Punteras",
+      "campanas_unicas": 17,
+      "elementos_activos": 951,
+      "empate_resuelto_por_elementos_activos": false,
+      "detalle_campanas_unicas": {
+        "YPF_MENU_BOARD": 6,
+        "YPF_TORRE": 12,
+        "YPF_PUNTERA": 17
+      }
+    },
+    "anterior": {
+      "formato": "YPF_PUNTERA",
+      "label": "Punteras",
+      "campanas_unicas": 7,
+      "elementos_activos": 951,
+      "empate_resuelto_por_elementos_activos": false,
+      "detalle_campanas_unicas": {
+        "YPF_MENU_BOARD": 2,
+        "YPF_TORRE": 6,
+        "YPF_PUNTERA": 7
+      }
+    }
+  }
+}
+UNIVERSE: {"circuito": "YPF", "estaciones_catalogo": 551, "elementos_catalogo": 4048}

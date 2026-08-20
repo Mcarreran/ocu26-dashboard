@@ -1,0 +1,54 @@
+TV3_BUILD_OK
+{
+  "generado": "18/08/2026 16:42",
+  "report_year": 2026,
+  "report_month": 7,
+  "report_month_label": "Julio",
+  "previous_month": 6,
+  "previous_month_label": "Junio",
+  "period_start": "2026-07-01",
+  "period_end": "2026-07-31",
+  "fuente": "OCU26 · Base maestra + base campañas"
+}
+{
+  "ocupacion_calendario": {
+    "activos": 146,
+    "elegibles": 422,
+    "anterior_activos": 144,
+    "pct_actual": 34.6,
+    "pct_anterior": 34.1,
+    "delta_pp": 0.5
+  },
+  "shoppings_estatico": {
+    "activos": 146,
+    "elegibles": 381,
+    "anterior_activos": 144,
+    "pct_actual": 38.3,
+    "pct_anterior": 37.8,
+    "delta_pp": 0.5
+  },
+  "aa2000_estatico": {
+    "activos": 0,
+    "elegibles": 40,
+    "anterior_activos": 0,
+    "pct_actual": 0.0,
+    "pct_anterior": 0.0,
+    "delta_pp": 0.0
+  },
+  "cobertura_shoppings": {
+    "activos": 10,
+    "elegibles": 17,
+    "anterior_activos": 10,
+    "pct_actual": 58.8,
+    "pct_anterior": 58.8,
+    "delta_pp": 0.0
+  },
+  "disponibles": {
+    "disponibles": 276,
+    "elegibles": 422,
+    "pct_actual": 65.4,
+    "pct_anterior": 65.9,
+    "delta_pp": -0.5
+  }
+}
+RECONCILIACION_TV1: {"ocupacion_dia_based_pct": 35.7, "numerador_dias": 4227, "denominador_dias": 11842, "circuitos_elegibles": ["CENCOSUD", "PILAR_FRONTLIGHT", "REMEROS"], "status": "OK"}

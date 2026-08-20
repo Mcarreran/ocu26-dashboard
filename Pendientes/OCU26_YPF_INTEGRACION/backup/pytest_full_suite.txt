@@ -1,0 +1,94 @@
+........................................................................ [ 16%]
+........................................................................ [ 32%]
+...................................FFFF.....F........................... [ 48%]
+........................................................................ [ 64%]
+........................................................................ [ 80%]
+........................................................................ [ 96%]
+..............                                                           [100%]
+================================== FAILURES ===================================
+________________ test_mapa_payload_never_contains_lat_lon_keys ________________
+
+production_json = '{"meta": {"generado": "18/08/2026 16:17", "report_year": 2026, "report_month": 7, "report_month_label": "Julio", "pre... el 67,6% del catálogo de estaciones tuvo campaña en julio: queda margen de penetración comercial sobre la red YPF."}}'
+
+    def test_mapa_payload_never_contains_lat_lon_keys(production_json):
+        payload = json.loads(production_json)
+        mapa = payload["mapa"]
+        forbidden_keys = {"lat", "lon", "lat_lon", "latitud", "longitud", "latitude", "longitude", "coordinates", "lng"}
+        assert forbidden_keys.isdisjoint(mapa.keys())
+>       for row in mapa["top_localidades"]:
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'top_localidades'
+
+tests\test_build_tv5_dashboard.py:377: KeyError
+______________ test_mapa_marked_as_a_validar_with_metric_status _______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:17', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...6e9ce669f976afa6e57470aca2cd', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 451, 'elementos_catalogo': 3082}}
+
+    def test_mapa_marked_as_a_validar_with_metric_status(production_result):
+        mapa = production_result["data"]["mapa"]
+>       assert mapa["estado"] == "A_VALIDAR"
+E       AssertionError: assert 'PARTIAL' == 'A_VALIDAR'
+E         
+E         - A_VALIDAR
+E         + PARTIAL
+
+tests\test_build_tv5_dashboard.py:384: AssertionError
+____________ test_mapa_top_localidades_use_real_ciudad_field_only _____________
+
+    def test_mapa_top_localidades_use_real_ciudad_field_only():
+        ubic_a = "1 - ALFA - X"
+        maestro_rows = [_ypf_digital("1 - TT - 1", ubic_a, Ciudad="ALFA")]
+        campana_rows = [_campana_row("C1", "1 - TT - 1", IDCampaña="C1", FechaInicio=pd.Timestamp("2026-01-05"), FechaFin=pd.Timestamp("2026-01-10"))]
+        semantic_result = _semantic(maestro_rows, campana_rows)
+        engine = MetricsEngine(semantic_result)
+        universe = td.build_tv5_universe(semantic_result)
+>       mapa = td.compute_mapa(engine, universe, 2026, 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: compute_mapa() missing 1 required positional argument: 'geo_map'
+
+tests\test_build_tv5_dashboard.py:396: TypeError
+__________ test_metric_status_present_on_catalogo_elementos_and_mapa __________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:17', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...6e9ce669f976afa6e57470aca2cd', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 451, 'elementos_catalogo': 3082}}
+
+    def test_metric_status_present_on_catalogo_elementos_and_mapa(production_result):
+        k = production_result["data"]["kpis"]
+        assert k["catalogo"]["metric_status"] == "NO_APLICA"
+        assert k["elementos_activos"]["metric_status"] in {"OK", "PARTIAL", "NO_APLICA", "REQUIERE_CONFIRMACION"}
+>       assert production_result["data"]["mapa"]["metric_status"] == "REQUIERE_CONFIRMACION"
+E       AssertionError: assert 'PARTIAL' == 'REQUIERE_CONFIRMACION'
+E         
+E         - REQUIERE_CONFIRMACION
+E         + PARTIAL
+
+tests\test_build_tv5_dashboard.py:409: AssertionError
+___________ test_builder_source_has_no_hardcoded_production_values ____________
+
+    def test_builder_source_has_no_hardcoded_production_values():
+        for literal in ("451", "3082", "305", "263", "7681", "4286", "2651", "2371"):
+>           assert literal not in BUILDER_SOURCE
+E           assert '451' not in '"""Capa de ...it(main())\n'
+E             
+E             '451' is contained here:
+E               03 de las 451 estaciones del
+E             ?           +++
+E               # catalogo YPF (45.0%) y 79 de las 305 estaciones activas de julio (25.9%)
+E               # obtienen coordenada valida. Cobertura parcial real, documentada como tal
+E               # (MetricStatus PARTIAL): nunca se inventa una posicion para el resto....
+E             
+E             ...Full output truncated (434 lines hidden), use '-vv' to show
+
+tests\test_build_tv5_dashboard.py:458: AssertionError
+============================== warnings summary ===============================
+tests/test_build_tv5_dashboard.py::test_payload_top_level_keys_are_tv5_only
+  C:\brand plus\ocu26-dashboard\.venv\Lib\site-packages\openpyxl\worksheet\_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+    warn(msg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_payload_never_contains_lat_lon_keys
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_marked_as_a_validar_with_metric_status
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_top_localidades_use_real_ciudad_field_only
+FAILED tests/test_build_tv5_dashboard.py::test_metric_status_present_on_catalogo_elementos_and_mapa
+FAILED tests/test_build_tv5_dashboard.py::test_builder_source_has_no_hardcoded_production_values
+5 failed, 441 passed, 1 warning in 1243.76s (0:20:43)

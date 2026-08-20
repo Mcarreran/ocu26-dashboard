@@ -288,7 +288,18 @@ def transform_data(path: str | Path = DEFAULT_INPUT_PATH) -> dict[str, Any]:
         raise TransformError("MAESTRO_ELEMENTOS: el orden/contenido de ElementoID cambió")
     if list(campanas["CargaID"]) != list(campanas_raw["CargaID"]):
         raise TransformError("CAMPANAS: el orden/contenido de CargaID cambió")
-    if list(campanas["FilaOrigen"]) != list(campanas_raw["FilaOrigen"]):
+    # No se usa list(...) != list(...) aquí (a diferencia de los invariantes
+    # de arriba/abajo): FilaOrigen es el único de estos campos que puede
+    # contener NaN legítimamente (los demás son obligatorios y ya bloqueados
+    # por Gate 1 si vinieran vacíos). list(...) != list(...) compara NaN con
+    # NaN vía `==`, que en Python siempre da False, generando un falso
+    # positivo de "cambio" aunque la columna sea un passthrough idéntico.
+    # Series.equals() compara forma + valores y trata NaN en la misma
+    # posición como iguales; reset_index solo por prolijidad (ambas Series
+    # ya comparten el mismo RangeIndex 0..N-1 en este punto).
+    origen_transformado = campanas["FilaOrigen"].reset_index(drop=True)
+    origen_original = campanas_raw["FilaOrigen"].reset_index(drop=True)
+    if not origen_transformado.equals(origen_original):
         raise TransformError("CAMPANAS: el orden/contenido de FilaOrigen cambió")
     if list(campanas["ElementoID"]) != list(campanas_raw["ElementoID"]):
         raise TransformError("CAMPANAS: el orden/contenido de ElementoID cambió")

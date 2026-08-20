@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -327,3 +328,102 @@ def test_read_excel_table_uses_real_table_range_not_hardcoded_size(tmp_path):
     campanas = td.read_excel_table(path, "CAMPANAS", "tblCampanas")
     assert len(maestro) == 1
     assert len(campanas) == 1
+
+
+# ---------------------------------------------------------------------------
+# Fix Gate 2 (integración YPF, 2026-08-18): la validación de passthrough de
+# CAMPANAS.FilaOrigen usaba list(...) != list(...), que compara NaN con NaN
+# vía `==` de Python y siempre da False -> falso positivo de "cambio" en
+# columnas con blancos legítimos (FilaOrigen es opcional; ElementoID/CargaID
+# no lo son y ya están bloqueados por Gate 1 si vinieran vacíos, por eso no
+# comparten el mismo riesgo y no se tocaron). Ahora usa
+# Series.reset_index(drop=True).equals(...), NaN-seguro. Estas pruebas fijan
+# el comportamiento exacto de esa comparación y verifican los dos archivos
+# reales involucrados en la promoción YPF.
+# ---------------------------------------------------------------------------
+
+YPF_BACKUP_FILE = REPO_ROOT / "Pendientes" / "OCU26_YPF_INTEGRACION" / "backup" / "OCU26_BASE_DATOS_PRE_YPF_2026-08-18.xlsx"
+YPF_FINAL_FILE = REPO_ROOT / "Pendientes" / "OCU26_YPF_INTEGRACION" / "output" / "OCU26_BASE_DATOS_CON_YPF_FINAL_2026-08-18.xlsx"
+
+
+def test_filaorigen_nan_en_mismas_posiciones_no_bloquea(tmp_path):
+    """1. Passthrough real con NaN en la misma posición: no debe lanzar
+    TransformError (regresión directa del bug list(...) != list(...))."""
+    path = tmp_path / "filaorigen_nan_passthrough.xlsx"
+    _write_workbook(
+        path,
+        maestro_rows=[_base_maestro_row("ELEM-0001")],
+        campanas_rows=[
+            _campana_row("HIST-0001", FilaOrigen=1),
+            _campana_row("HIST-0002", FilaOrigen=None),
+            _campana_row("HIST-0003", FilaOrigen=3),
+        ],
+    )
+    result = td.transform_data(path)  # no debe lanzar TransformError
+    filaorigen = result["campanas"]["FilaOrigen"]
+    assert len(filaorigen) == 3
+    assert filaorigen.isna().sum() == 1
+
+
+def test_filaorigen_equals_semantics_valor_distinto_bloquea():
+    """2. Un valor distinto en la misma posición se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([1, 99, 3])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_nan_en_mismas_posiciones_no_bloquea():
+    """(complemento de 1, a nivel de la primitiva) NaN en la misma posición
+    en ambas series no se considera un cambio."""
+    a = pd.Series([1, None, 3])
+    b = pd.Series([1, None, 3])
+    assert a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_nan_vs_valor_real_bloquea():
+    """3. NaN en una serie frente a un valor real en la otra, misma
+    posición, se detecta como cambio."""
+    a = pd.Series([1, None, 3])
+    b = pd.Series([1, 2, 3])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_cambio_de_orden_bloquea():
+    """4. Mismos valores, orden distinto: se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([3, 2, 1])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_diferencia_de_filas_bloquea():
+    """5. Distinta cantidad de filas: se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([1, 2, 3, 4])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_pre_ypf_backup_sigue_pasando_el_gate():
+    """6. El input previo a la promoción YPF (respaldo, 0 FilaOrigen vacíos)
+    sigue pasando Gate 2 sin cambio de comportamiento tras el fix."""
+    if not YPF_BACKUP_FILE.exists():
+        pytest.skip("Respaldo PRE_YPF no disponible en este entorno")
+    sha_before = vi.calculate_sha256(YPF_BACKUP_FILE)
+    result = td.transform_data(YPF_BACKUP_FILE)
+    assert result["validation"]["result"] in ("VALID", "VALID_WITH_WARNINGS")
+    assert vi.calculate_sha256(YPF_BACKUP_FILE) == sha_before
+
+
+def test_base_final_ypf_pasa_el_gate_sin_alterar_filaorigen():
+    """7. La base FINAL con YPF integrado (13.616 filas nuevas con
+    FilaOrigen vacío) pasa Gate 2, y el passthrough de FilaOrigen es
+    exactamente igual al crudo leído del Excel (ninguna fila perdida,
+    reordenada ni modificada)."""
+    if not YPF_FINAL_FILE.exists():
+        pytest.skip("Base FINAL YPF no disponible en este entorno")
+    sha_before = vi.calculate_sha256(YPF_FINAL_FILE)
+    raw = td.read_excel_table(YPF_FINAL_FILE, "CAMPANAS", "tblCampanas")
+    result = td.transform_data(YPF_FINAL_FILE)
+    assert result["validation"]["result"] in ("VALID", "VALID_WITH_WARNINGS")
+    assert result["campanas"]["FilaOrigen"].reset_index(drop=True).equals(raw["FilaOrigen"].reset_index(drop=True))
+    assert result["campanas"]["FilaOrigen"].isna().sum() >= 13616
+    assert vi.calculate_sha256(YPF_FINAL_FILE) == sha_before

@@ -1,0 +1,338 @@
+....................F..............F.................................... [ 16%]
+......F...................................F.F........................... [ 32%]
+.......F.F....................FF...FFFF.....F........................... [ 48%]
+.......FFFF......F.FF..........F.....................F..F............... [ 64%]
+........................................................................ [ 80%]
+........................................................................ [ 96%]
+..............                                                           [100%]
+================================== FAILURES ===================================
+______________ test_metric_status_preserved_in_production_output ______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:46', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...te surrogate temporal (prefijo ElementoID + localidad normalizada de Ubicacion); no existe columna APIE en la fuente'}}
+
+    def test_metric_status_preserved_in_production_output(production_result):
+        kpi4 = production_result["data"]["kpis"]["estatico"]
+        kpi6 = production_result["data"]["kpis"]["digital_fill"]
+        # Julio 2026 tiene fechas incompletas / maestro parcial reales: el
+        # dashboard debe exponer PARTIAL, nunca forzarlo silenciosamente a OK.
+        assert kpi4["status"] in ("OK", "PARTIAL", "NO_APLICA", "REQUIERE_CONFIRMACION")
+        assert kpi6["status"] in ("OK", "PARTIAL", "NO_APLICA", "REQUIERE_CONFIRMACION")
+>       assert kpi4["status"] == "PARTIAL"
+E       AssertionError: assert 'OK' == 'PARTIAL'
+E         
+E         - PARTIAL
+E         + OK
+
+tests\test_build_tv1_dashboard.py:367: AssertionError
+_________________ test_campanas_unchanged_by_apie_correction __________________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:46', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...te surrogate temporal (prefijo ElementoID + localidad normalizada de Ubicacion); no existe columna APIE en la fuente'}}
+
+    def test_campanas_unchanged_by_apie_correction(production_result):
+>       assert production_result["data"]["kpis"]["campanas_unicas"]["ytd"] == 425
+E       assert 443 == 425
+
+tests\test_build_tv1_dashboard.py:544: AssertionError
+_________________ test_tv1_pipeline_still_builds_successfully _________________
+
+    def test_tv1_pipeline_still_builds_successfully():
+        """No debe haber quedado roto ni acoplado por la introduccion de TV2:
+        build_tv2_dashboard.py no importa build_tv1_dashboard.py (builders
+        independientes sobre el mismo pipeline), asi que TV1 debe poder
+        construirse igual que antes."""
+        import build_tv1_dashboard as t1
+        result = t1.build_tv1_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["core_comercial"]["value"] == 964
+E       assert 1064 == 964
+
+tests\test_build_tv2_dashboard.py:464: AssertionError
+_____________ test_reconciliacion_tv1_matches_tv1_estatico_scope ______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:49', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...rador_dias': 4227, 'denominador_dias': 11842, 'circuitos_elegibles': ['CENCOSUD', 'PILAR_FRONTLIGHT', 'REMEROS'], ...}}
+
+    def test_reconciliacion_tv1_matches_tv1_estatico_scope(production_result):
+        """La ocupacion dia-based del scope reconciliado (Shoppings+Pilar,
+        unico subconjunto con CoberturaCatalogo/CompletitudMaestro completos)
+        debe coincidir con el 29,4% ya validado en TV1 para Julio 2026."""
+        rec = production_result["reconciliacion_tv1"]
+>       assert rec["ocupacion_dia_based_pct"] == 29.4
+E       assert 35.7 == 29.4
+
+tests\test_build_tv3_dashboard.py:440: AssertionError
+_________________ test_tv1_pipeline_still_builds_successfully _________________
+
+    def test_tv1_pipeline_still_builds_successfully():
+        import build_tv1_dashboard as t1
+        result = t1.build_tv1_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["core_comercial"]["value"] == 964
+E       assert 1064 == 964
+
+tests\test_build_tv3_dashboard.py:462: AssertionError
+_________________ test_tv1_pipeline_still_builds_successfully _________________
+
+    def test_tv1_pipeline_still_builds_successfully():
+        import build_tv1_dashboard as t1
+        result = t1.build_tv1_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["core_comercial"]["value"] == 964
+E       assert 1064 == 964
+
+tests\test_build_tv4_dashboard.py:477: AssertionError
+_________________ test_tv3_pipeline_still_builds_successfully _________________
+
+    def test_tv3_pipeline_still_builds_successfully():
+        import build_tv3_dashboard as t3
+        result = t3.build_tv3_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["ocupacion_calendario"]["activos"] == 119
+E       assert 146 == 119
+
+tests\test_build_tv4_dashboard.py:489: AssertionError
+_______________ test_production_formato_lider_julio_is_punteras _______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:54', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...d31d560876a4f8f684d48a69f050', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 551, 'elementos_catalogo': 4048}}
+
+    def test_production_formato_lider_julio_is_punteras(production_result):
+        fl = production_result["data"]["kpis"]["formato_lider"]["actual"]
+        assert fl["label"] == "Punteras"
+>       assert fl["campanas_unicas"] == 9
+E       assert 17 == 9
+
+tests\test_build_tv5_dashboard.py:332: AssertionError
+___ test_production_formato_lider_junio_ties_resolved_by_elementos_activos ____
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:54', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...d31d560876a4f8f684d48a69f050', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 551, 'elementos_catalogo': 4048}}
+
+    def test_production_formato_lider_junio_ties_resolved_by_elementos_activos(production_result):
+        fl = production_result["data"]["kpis"]["formato_lider"]["anterior"]
+>       assert fl["label"] == "Torres"
+E       AssertionError: assert 'Punteras' == 'Torres'
+E         
+E         - Torres
+E         + Punteras
+
+tests\test_build_tv5_dashboard.py:338: AssertionError
+________________ test_mapa_payload_never_contains_lat_lon_keys ________________
+
+production_json = '{"meta": {"generado": "18/08/2026 16:54", "report_year": 2026, "report_month": 7, "report_month_label": "Julio", "pre... el 69,5% del catálogo de estaciones tuvo campaña en julio: queda margen de penetración comercial sobre la red YPF."}}'
+
+    def test_mapa_payload_never_contains_lat_lon_keys(production_json):
+        payload = json.loads(production_json)
+        mapa = payload["mapa"]
+        forbidden_keys = {"lat", "lon", "lat_lon", "latitud", "longitud", "latitude", "longitude", "coordinates", "lng"}
+        assert forbidden_keys.isdisjoint(mapa.keys())
+>       for row in mapa["top_localidades"]:
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'top_localidades'
+
+tests\test_build_tv5_dashboard.py:377: KeyError
+______________ test_mapa_marked_as_a_validar_with_metric_status _______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:54', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...d31d560876a4f8f684d48a69f050', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 551, 'elementos_catalogo': 4048}}
+
+    def test_mapa_marked_as_a_validar_with_metric_status(production_result):
+        mapa = production_result["data"]["mapa"]
+>       assert mapa["estado"] == "A_VALIDAR"
+E       AssertionError: assert 'PARTIAL' == 'A_VALIDAR'
+E         
+E         - A_VALIDAR
+E         + PARTIAL
+
+tests\test_build_tv5_dashboard.py:384: AssertionError
+____________ test_mapa_top_localidades_use_real_ciudad_field_only _____________
+
+    def test_mapa_top_localidades_use_real_ciudad_field_only():
+        ubic_a = "1 - ALFA - X"
+        maestro_rows = [_ypf_digital("1 - TT - 1", ubic_a, Ciudad="ALFA")]
+        campana_rows = [_campana_row("C1", "1 - TT - 1", IDCampaña="C1", FechaInicio=pd.Timestamp("2026-01-05"), FechaFin=pd.Timestamp("2026-01-10"))]
+        semantic_result = _semantic(maestro_rows, campana_rows)
+        engine = MetricsEngine(semantic_result)
+        universe = td.build_tv5_universe(semantic_result)
+>       mapa = td.compute_mapa(engine, universe, 2026, 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: compute_mapa() missing 1 required positional argument: 'geo_map'
+
+tests\test_build_tv5_dashboard.py:396: TypeError
+__________ test_metric_status_present_on_catalogo_elementos_and_mapa __________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:54', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...d31d560876a4f8f684d48a69f050', 'universe': {'circuito': 'YPF', 'estaciones_catalogo': 551, 'elementos_catalogo': 4048}}
+
+    def test_metric_status_present_on_catalogo_elementos_and_mapa(production_result):
+        k = production_result["data"]["kpis"]
+        assert k["catalogo"]["metric_status"] == "NO_APLICA"
+        assert k["elementos_activos"]["metric_status"] in {"OK", "PARTIAL", "NO_APLICA", "REQUIERE_CONFIRMACION"}
+>       assert production_result["data"]["mapa"]["metric_status"] == "REQUIERE_CONFIRMACION"
+E       AssertionError: assert 'PARTIAL' == 'REQUIERE_CONFIRMACION'
+E         
+E         - REQUIERE_CONFIRMACION
+E         + PARTIAL
+
+tests\test_build_tv5_dashboard.py:409: AssertionError
+___________ test_builder_source_has_no_hardcoded_production_values ____________
+
+    def test_builder_source_has_no_hardcoded_production_values():
+        for literal in ("451", "3082", "305", "263", "7681", "4286", "2651", "2371"):
+>           assert literal not in BUILDER_SOURCE
+E           assert '451' not in '"""Capa de ...it(main())\n'
+E             
+E             '451' is contained here:
+E               03 de las 451 estaciones del
+E             ?           +++
+E               # catalogo YPF (45.0%) y 79 de las 305 estaciones activas de julio (25.9%)
+E               # obtienen coordenada valida. Cobertura parcial real, documentada como tal
+E               # (MetricStatus PARTIAL): nunca se inventa una posicion para el resto....
+E             
+E             ...Full output truncated (434 lines hidden), use '-vv' to show
+
+tests\test_build_tv5_dashboard.py:458: AssertionError
+____________________ test_kpi_cards_unchanged_julio_scope _____________________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:55', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...erse': {'circuitos': ['AA2000', 'CENCOSUD', 'PANTALLAS_LED', 'PILAR_FRONTLIGHT', 'REMEROS', 'YPF'], 'elementos': 4561}}
+
+    def test_kpi_cards_unchanged_julio_scope(production_result):
+        """Las 5 KPI cards siguen la foto de julio: mismos valores que antes del
+        ajuste hibrido (no deben moverse por el cambio en los paneles)."""
+        kpis = production_result["data"]["kpis"]
+>       assert kpis["clientes_directos_activos"] == 11
+E       assert 10 == 11
+
+tests\test_build_tv6_dashboard.py:432: AssertionError
+_______________ test_universo_exposes_julio_and_hist_separately _______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:55', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...erse': {'circuitos': ['AA2000', 'CENCOSUD', 'PANTALLAS_LED', 'PILAR_FRONTLIGHT', 'REMEROS', 'YPF'], 'elementos': 4561}}
+
+    def test_universo_exposes_julio_and_hist_separately(production_result):
+        universo = production_result["data"]["universo"]
+        assert set(universo.keys()) >= {"circuitos", "elementos", "julio", "hist"}
+>       assert universo["julio"]["activaciones_totales"] == 8203
+E       assert 11497 == 8203
+
+tests\test_build_tv6_dashboard.py:443: AssertionError
+_____________ test_rankings_use_accumulated_hist_scope_not_julio ______________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:55', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...erse': {'circuitos': ['AA2000', 'CENCOSUD', 'PANTALLAS_LED', 'PILAR_FRONTLIGHT', 'REMEROS', 'YPF'], 'elementos': 4561}}
+
+    def test_rankings_use_accumulated_hist_scope_not_julio(production_result):
+        """El ranking Marcas debe reflejar Ene-Jul (mayor actividad que julio
+        solo), no la foto de la KPI card 'marcas_activas'."""
+        marcas = production_result["data"]["ranking"]["marcas"]
+>       assert marcas[0] == {"nombre": "GCBA", "activaciones": 2356}  # 2356 != 2271 (julio)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'nombre': 'S...ciones': 3065} == {'nombre': 'G...ciones': 2356}
+E         
+E         Differing items:
+E         {'activaciones': 3065} != {'activaciones': 2356}
+E         {'nombre': 'SEGURIDAD VIAL'} != {'nombre': 'GCBA'}
+E         Use -v to get more diff
+
+tests\test_build_tv6_dashboard.py:452: AssertionError
+__________________ test_matriz_row_sums_match_hist_not_julio __________________
+
+production_result = {'data': {'meta': {'generado': '18/08/2026 16:55', 'report_year': 2026, 'report_month': 7, 'report_month_label': 'Juli...erse': {'circuitos': ['AA2000', 'CENCOSUD', 'PANTALLAS_LED', 'PILAR_FRONTLIGHT', 'REMEROS', 'YPF'], 'elementos': 4561}}
+
+    def test_matriz_row_sums_match_hist_not_julio(production_result):
+        marcas_hist = {m["nombre"]: m["activaciones"] for m in production_result["data"]["ranking"]["marcas"]}
+>       gcba_fila = next(f for f in production_result["data"]["matriz"]["filas"] if f["nombre"] == "GCBA")
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tests\test_build_tv6_dashboard.py:462: StopIteration
+_________________ test_tv1_pipeline_still_builds_successfully _________________
+
+    def test_tv1_pipeline_still_builds_successfully():
+        import build_tv1_dashboard as t1
+        result = t1.build_tv1_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["core_comercial"]["value"] == 964
+E       assert 1064 == 964
+
+tests\test_build_tv6_dashboard.py:528: AssertionError
+_________________ test_tv3_pipeline_still_builds_successfully _________________
+
+    def test_tv3_pipeline_still_builds_successfully():
+        import build_tv3_dashboard as t3
+        result = t3.build_tv3_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["ocupacion_calendario"]["activos"] == 119
+E       assert 146 == 119
+
+tests\test_build_tv6_dashboard.py:540: AssertionError
+_________________ test_tv4_pipeline_still_builds_successfully _________________
+
+    def test_tv4_pipeline_still_builds_successfully():
+        import build_tv4_dashboard as t4
+        result = t4.build_tv4_data(PRODUCTION_FILE)
+>       assert result["data"]["kpis"]["actividad_actual"]["campanas_unicas"] == 77
+E       assert 82 == 77
+
+tests\test_build_tv6_dashboard.py:546: AssertionError
+_____________ test_26_idcampana_vacias_se_conservan_en_produccion _____________
+
+production_pipeline = {'transform_result': {'validation': {'result': 'VALID_WITH_WARNINGS', 'file': 'C:\\brand plus\\ocu26-dashboard\\input\...   <NA>   <NA>    <NA>
+5303      Abierto      CABA  Estático  ...   <NA>   <NA>    <NA>
+
+[5304 rows x 53 columns], ...}
+
+    def test_26_idcampana_vacias_se_conservan_en_produccion(production_pipeline):
+        fact_campanas = production_pipeline["fact_campanas"]
+        vacias = fact_campanas[fact_campanas["IDCampaña"].isna()]
+>       assert len(vacias) == 26
+E       assert 25 == 26
+E        +  where 25 = len(            CargaID  ... FilaOrigen\n1479  HIST-00001515  ...     1516.0\n1480  HIST-00001516  ...     1517.0\n1481  HIST...0001649  ...     1650.0\n1615  HIST-00001651  ...     1652.0\n1617  HIST-00001653  ...     1654.0\n\n[25 rows x 30 columns])
+
+tests\test_export_data.py:147: AssertionError
+_______________________ test_bridge_volumen_produccion ________________________
+
+production_pipeline = {'transform_result': {'validation': {'result': 'VALID_WITH_WARNINGS', 'file': 'C:\\brand plus\\ocu26-dashboard\\input\...   <NA>   <NA>    <NA>
+5303      Abierto      CABA  Estático  ...   <NA>   <NA>    <NA>
+
+[5304 rows x 53 columns], ...}
+
+    def test_bridge_volumen_produccion(production_pipeline):
+>       assert len(production_pipeline["bridge"]) == 881_210
+E       assert 1185499 == 881210
+E        +  where 1185499 = len(               CargaID      Fecha\n0        HIST-00000001 2026-05-15\n1        HIST-00000001 2026-05-16\n2        HIST-00...IST-00023126 2027-02-09\n1185497  HIST-00023126 2027-02-10\n1185498  HIST-00023126 2027-02-11\n\n[1185499 rows x 2 columns])
+
+tests\test_export_data.py:384: AssertionError
+________________ test_fact_metricas_diaria_volumen_produccion _________________
+
+production_pipeline = {'transform_result': {'validation': {'result': 'VALID_WITH_WARNINGS', 'file': 'C:\\brand plus\\ocu26-dashboard\\input\...   <NA>   <NA>    <NA>
+5303      Abierto      CABA  Estático  ...   <NA>   <NA>    <NA>
+
+[5304 rows x 53 columns], ...}
+
+    def test_fact_metricas_diaria_volumen_produccion(production_pipeline):
+        fact = production_pipeline["fact_metricas"]
+>       assert len(fact) == 573_675
+E       assert 737475 == 573675
+E        +  where 737475 = len(               ElementoID  ... HasSalidasIndeterminada\n0       103 - PPUNTER - 1  ...                    True\n1       ...DRO-3D-1  ...                   False\n737474   UNI-TRIEDRO-3D-1  ...                   False\n\n[737475 rows x 6 columns])
+
+tests\test_export_data.py:425: AssertionError
+============================== warnings summary ===============================
+tests/test_build_tv5_dashboard.py::test_payload_top_level_keys_are_tv5_only
+  C:\brand plus\ocu26-dashboard\.venv\Lib\site-packages\openpyxl\worksheet\_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+    warn(msg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_build_tv1_dashboard.py::test_metric_status_preserved_in_production_output
+FAILED tests/test_build_tv1_dashboard.py::test_campanas_unchanged_by_apie_correction
+FAILED tests/test_build_tv2_dashboard.py::test_tv1_pipeline_still_builds_successfully
+FAILED tests/test_build_tv3_dashboard.py::test_reconciliacion_tv1_matches_tv1_estatico_scope
+FAILED tests/test_build_tv3_dashboard.py::test_tv1_pipeline_still_builds_successfully
+FAILED tests/test_build_tv4_dashboard.py::test_tv1_pipeline_still_builds_successfully
+FAILED tests/test_build_tv4_dashboard.py::test_tv3_pipeline_still_builds_successfully
+FAILED tests/test_build_tv5_dashboard.py::test_production_formato_lider_julio_is_punteras
+FAILED tests/test_build_tv5_dashboard.py::test_production_formato_lider_junio_ties_resolved_by_elementos_activos
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_payload_never_contains_lat_lon_keys
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_marked_as_a_validar_with_metric_status
+FAILED tests/test_build_tv5_dashboard.py::test_mapa_top_localidades_use_real_ciudad_field_only
+FAILED tests/test_build_tv5_dashboard.py::test_metric_status_present_on_catalogo_elementos_and_mapa
+FAILED tests/test_build_tv5_dashboard.py::test_builder_source_has_no_hardcoded_production_values
+FAILED tests/test_build_tv6_dashboard.py::test_kpi_cards_unchanged_julio_scope
+FAILED tests/test_build_tv6_dashboard.py::test_universo_exposes_julio_and_hist_separately
+FAILED tests/test_build_tv6_dashboard.py::test_rankings_use_accumulated_hist_scope_not_julio
+FAILED tests/test_build_tv6_dashboard.py::test_matriz_row_sums_match_hist_not_julio
+FAILED tests/test_build_tv6_dashboard.py::test_tv1_pipeline_still_builds_successfully
+FAILED tests/test_build_tv6_dashboard.py::test_tv3_pipeline_still_builds_successfully
+FAILED tests/test_build_tv6_dashboard.py::test_tv4_pipeline_still_builds_successfully
+FAILED tests/test_export_data.py::test_26_idcampana_vacias_se_conservan_en_produccion
+FAILED tests/test_export_data.py::test_bridge_volumen_produccion - assert 118...
+FAILED tests/test_export_data.py::test_fact_metricas_diaria_volumen_produccion
+24 failed, 422 passed, 1 warning in 1754.43s (0:29:14)

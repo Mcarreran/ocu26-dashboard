@@ -1,0 +1,182 @@
+{
+  "tv1.html": {
+    "sha256": "0ae513afe3d57431f4bbd5e2002578c55802fa9a0735fc8108538d2b0d15f17a",
+    "size": 41429,
+    "mtime": 1786320118.2697194
+  },
+  "output\\tv1_data.json": {
+    "sha256": "d1265bc922a1175bb9ac3aef1ac0dff8661c734317a0bd4cd8841721f2262114",
+    "size": 5031,
+    "mtime": 1786320118.2707195
+  },
+  "scripts\\templates\\tv1_template.html": {
+    "sha256": "817da92018a6b6224ed83c240338759df7133d8afa7c323b545c388ac65b0f35",
+    "size": 24872,
+    "mtime": 1786320059.0084977
+  },
+  "tv2.html": {
+    "sha256": "e4f98854aa54d77af4754deaabdd87d8330dc9cd2516251e1e375c78791cc2fe",
+    "size": 39518,
+    "mtime": 1786325252.2811341
+  },
+  "output\\tv2_data.json": {
+    "sha256": "d709c848e1f279766cb2fbc98c8b9455e9546cff96867e2ec848d4f99efc43fe",
+    "size": 5029,
+    "mtime": 1786325252.2811341
+  },
+  "scripts\\templates\\tv2_template.html": {
+    "sha256": "7561854fd508991bd3205dbf4ff5637321f5591be650ac69ec6c3938e76862e3",
+    "size": 23091,
+    "mtime": 1786325186.775061
+  },
+  "tv3.html": {
+    "sha256": "2fdfb2397a9ba52e9bec1a21cece1de859adad6a1d5c57890e2dd44b5fe7e9cf",
+    "size": 38200,
+    "mtime": 1786328134.0037637
+  },
+  "output\\tv3_data.json": {
+    "sha256": "a72645e592e4e8ed9bcff641e9e4d08421e51133d5bc7cd09a4af93ce8ad9b50",
+    "size": 3503,
+    "mtime": 1786328134.0037637
+  },
+  "scripts\\templates\\tv3_template.html": {
+    "sha256": "53f956e39b686645a269bfb2c8f970b042533ef02d83d501df6841ceca504705",
+    "size": 22656,
+    "mtime": 1786328005.5076914
+  },
+  "tv4.html": {
+    "sha256": "4c291b90d9d4f8e3e91889b1f398c1e4b7788b03f177ed2167094b25a6e58662",
+    "size": 34448,
+    "mtime": 1786353030.9727175
+  },
+  "output\\tv4_data.json": {
+    "sha256": "c6375b4ddcf1db9cf7c1276df9b2f510ad1e5af5ad38a56a268da812271eb119",
+    "size": 2755,
+    "mtime": 1786353030.9782572
+  },
+  "scripts\\templates\\tv4_template.html": {
+    "sha256": "1a8305a45dfd457029d6afc4115e7f0dd44426e4e63fe9ca682c5ef2a6928f48",
+    "size": 19369,
+    "mtime": 1786332635.7485924
+  },
+  "tv5.html": {
+    "sha256": "34ee52c964f6fd1151d63120b88fc8f4517db787361de4a96d172d5c3b23d577",
+    "size": 361366,
+    "mtime": 1786386500.2248333
+  },
+  "output\\tv5_data.json": {
+    "sha256": "4ef2c1c500a954a6c5349ce006649d53f6ebb32ad52765932ba593dd81085acc",
+    "size": 16665,
+    "mtime": 1786386500.2268417
+  },
+  "scripts\\templates\\tv5_template.html": {
+    "sha256": "1cc7ad8520e5d35562e486734dd121f7adb9b7a9426a4ced5631be5268c6654b",
+    "size": 29139,
+    "mtime": 1786386438.2332666
+  },
+  "tv6.html": {
+    "sha256": "92fd9a4bdbaa5a0d5d35f2fe5768421689cb83d022cbf2cc00cd4789519621d4",
+    "size": 35839,
+    "mtime": 1786360496.2268858
+  },
+  "output\\tv6_data.json": {
+    "sha256": "a6f10544751bb1123c3880115c4df21501d067ebe6babc9537328da809eaf138",
+    "size": 4991,
+    "mtime": 1786360496.2282007
+  },
+  "scripts\\templates\\tv6_template.html": {
+    "sha256": "a70aac82adc8cc6fa6c1305658c701cec2d9227258a474deac0d758450d685af",
+    "size": 19589,
+    "mtime": 1786360011.0259626
+  },
+  "scripts\\templates\\assets\\argentina_pais.geojson": {
+    "sha256": "3c74085b9dd723928761f6841eadccfaa3e9b1cd3bc9257ab8a4c40b98efef98",
+    "size": 92667,
+    "mtime": 1786386187.5533216
+  },
+  "scripts\\templates\\assets\\argentina_provincias.geojson": {
+    "sha256": "1d038a652f5a37e08816ff5c9f51794b6538889cac0a1e8fdd87dd25fa8f178d",
+    "size": 215777,
+    "mtime": 1786386187.05661
+  },
+  "scripts\\build_tv1_dashboard.py": {
+    "sha256": "1bb551da1b58f4680e0d7abf31f3b72d1057d3a00228a61fbc95b1e9f069bb23",
+    "size": 36571,
+    "mtime": 1786320030.012621
+  },
+  "scripts\\build_tv2_dashboard.py": {
+    "sha256": "2ffb8f08b05ae1f976b6dc5df8d6f94796c9b7c6041ddcc2b79e1283f743e629",
+    "size": 28203,
+    "mtime": 1786324516.7621918
+  },
+  "scripts\\build_tv3_dashboard.py": {
+    "sha256": "c5c59923e9990be44f495becf16d0900f0ac8cc72f2cec93049ccbb3e183d7fe",
+    "size": 24146,
+    "mtime": 1786327925.9029982
+  },
+  "scripts\\build_tv4_dashboard.py": {
+    "sha256": "eb280bc4a017ef57e9d7fd2edec4f7540d11c24ea060d8ddc32dc5beca20c8aa",
+    "size": 22117,
+    "mtime": 1786331518.6585424
+  },
+  "scripts\\build_tv5_dashboard.py": {
+    "sha256": "3e564dd60961f67c5d7cbd619ec2f92176637ea8637fae632cdbe49546db8779",
+    "size": 38953,
+    "mtime": 1786386326.6127005
+  },
+  "scripts\\build_tv6_dashboard.py": {
+    "sha256": "9d6fe5bd8006fe482edbd3e790ec2b0681de82b44ef8492df7da009c400cf2ed",
+    "size": 26655,
+    "mtime": 1786359763.1898072
+  },
+  "scripts\\export_data.py": {
+    "sha256": "7d91754c99541d50ecbd61f2a44c109a8cbaa59367a823caecce5b24b5608bc2",
+    "size": 24278,
+    "mtime": 1786233725.063117
+  },
+  "scripts\\metrics_engine.py": {
+    "sha256": "a26f8b4b3df76f40ff40e42df0ee09ed6f00b2ec4a562af951760e2b669a84ae",
+    "size": 44315,
+    "mtime": 1786212560.1159277
+  },
+  "scripts\\semantic_model.py": {
+    "sha256": "68e64388725cf95e00711727b11369ebd3ee1b9e62c5c666de5516bc34d3f933",
+    "size": 37668,
+    "mtime": 1786210629.0963209
+  },
+  "scripts\\transform_data.py": {
+    "sha256": "a3b8929cd72edc6e83f476130a24d9b31701eba40bec85b6445faf7eb4e9cdc8",
+    "size": 19196,
+    "mtime": 1786071487.76755
+  },
+  "output\\_export_manifest.json": {
+    "sha256": "7054faa468922b25aa044f64a2e2da67fd314b5d25d1a829263c6d716024e493",
+    "size": 8214,
+    "mtime": 1786236205.482418
+  },
+  "output\\dim_elementos.parquet": {
+    "sha256": "71e2b5ab3b51315ce160cf20f7910902615407bb0895b334032f11fc50fd96ab",
+    "size": 172240,
+    "mtime": 1786236205.230081
+  },
+  "output\\fact_campanas.parquet": {
+    "sha256": "cc136e3c7b6fa7fb7895ebcb93fe29f890c12bf32225213e037950c235705b98",
+    "size": 272368,
+    "mtime": 1786236205.2524488
+  },
+  "output\\dim_calendario.parquet": {
+    "sha256": "be938022e9fde9b2c9752db24322c4c611b7eb824ce9f3110a0e1e02482e6e1d",
+    "size": 18055,
+    "mtime": 1786236205.2647092
+  },
+  "output\\bridge_campana_dia.parquet": {
+    "sha256": "93d088caf6f9c37096260a9e1bf1dc411451be94fc6e6c25b1813bf0732b7c0d",
+    "size": 406491,
+    "mtime": 1786236205.3599207
+  },
+  "output\\fact_metricas_diaria.parquet": {
+    "sha256": "6349b0549810efd03b55f5b0ee182226d07a3d00a4b6073185030d07c231d669",
+    "size": 171421,
+    "mtime": 1786236205.482418
+  }
+}

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV3 · Core Comercial Estático</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV3 · Core Comercial Estático
+   Identidad institucional obligatoria (manual de marca)
+   Reutiliza el sistema visual productivo de TV1/TV2 (mismo stage,
+   header, tipografia, paleta, insight de 3 columnas).
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(238,236,230,.16), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:190px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:14.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
+  background:rgba(238,236,230,.14);border:1px solid rgba(238,236,230,.30);
+  padding:6px 14px;border-radius:999px;max-width:560px
+}
+
+/* ======================= KPIs (5 en una fila) ======================= */
+.kpis{display:grid;grid-template-columns:0.9fr 0.9fr 0.9fr 0.9fr 1.4fr;gap:16px;margin-top:18px;flex:none}
+.kpi{
+  position:relative;min-height:152px;padding:19px 20px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-cream);opacity:.85}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-cream)}
+.kpi-split .sec .sl{font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-lead .kpi-split .main .sv{font-size:40px}
+.kpi-lead .kpi-split .sec .sv{font-size:24px}
+.kpi-wide{padding:19px 26px}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
+.split{display:grid;grid-template-rows:1fr 1fr;gap:22px;min-height:0}
+.panel{
+  position:relative;padding:22px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;flex:none}
+.panel-title{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:12.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-body{flex:1;min-height:0;position:relative}
+.chart-wrap{position:absolute;inset:0}
+
+/* ======================= RANKINGS ======================= */
+.rank{display:flex;flex-direction:column;gap:10px;height:100%;justify-content:space-around}
+.rank.tight{gap:14px;justify-content:space-evenly}
+.rrow{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:12px}
+.rrow .rk{font-size:14px;font-weight:700;color:var(--bp-cream);text-align:center}
+.rname{font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rname .sub{display:block;font-size:11.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em}
+.rbar{grid-column:1 / -1;height:7px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
+.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
+.dual{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.01em;white-space:nowrap}
+.chip.ocup{background:rgba(238,236,230,.16);color:var(--bp-cream);border:1px solid rgba(238,236,230,.32)}
+.chip.detail{background:rgba(255,255,255,.08);color:var(--bp-muted);border:1px solid var(--panel-border)}
+.rank-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+
+/* ======================= SOPORTES (barras horizontales) ======================= */
+.soportes{display:flex;flex-direction:column;gap:16px;height:100%;justify-content:center}
+.sop-row{display:flex;flex-direction:column;gap:6px}
+.sop-head{display:flex;align-items:baseline;justify-content:space-between}
+.sop-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+.sop-val{font-size:18px;font-weight:800;color:var(--bp-cream)}
+.sop-bar{height:10px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.sop-bar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
+
+/* ======================= INSIGHT (3 columnas, igual TV1/TV2) ======================= */
+.insight{
+  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(238,236,230,.14),rgba(238,236,230,.05));
+  border:1px solid rgba(238,236,230,.30);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(238,236,230,.22)}
+.insight-col .lab{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+}
+.insight-col.lectura .lab{color:var(--bp-cream)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv3">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 3</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Core Comercial Est&aacute;tico</div>
+            <div class="hdr-sub" data-hdr-sub></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;C&Oacute;MO RINDE EL CORE EST&Aacute;TICO Y D&Oacute;NDE QUEDA DISPONIBILIDAD?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv3"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Ocupaci&oacute;n por shopping &middot; julio</div><div class="panel-sub">Shoppings Est&aacute;tico &middot; ocupaci&oacute;n calendario</div></div>
+          <div class="panel-body"><div class="rank" data-rank="shoppings"></div></div>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Soportes m&aacute;s vendidos &middot; julio</div><div class="panel-sub">Elementos con campa&ntilde;a por soporte</div></div>
+            <div class="panel-body"><div class="soportes" data-soportes></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual &middot; Core Est&aacute;tico</div><div class="panel-sub">Ocupaci&oacute;n por calendario</div></div>
+            <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv3-evol"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV3_DATA = {{TV3_DATA_JSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV3 app.js
+   Renderiza el tablero desde window.TV3_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV3_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+var cap = function(s){
+  if(s==null) return '—';
+  s = String(s).toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();});
+  return s.replace(/\bAa2000\b/gi,'AA2000');
+};
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
+  $$('[data-hdr-sub]').forEach(function(e){ e.textContent = 'Rendimiento Shoppings Estático + AA2000 Estático + Pilar Frontlight'; });
+}
+
+/* ---------- KPI helpers (mismo patron que TV1/TV2) ---------- */
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+function setKpis(html){ var el=$('[data-kpis="tv3"]'); if(el) el.innerHTML=html; }
+
+function signedPp(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+Number(v).toFixed(1).replace('.',',')+' pp';
+}
+/* Regla estandar: sube = mejora (verde), baja = atencion (rojo). */
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+/* Disponibilidad es inversa: MENOS disponible = mejor utilizacion (verde),
+   MAS disponible = capacidad ociosa (rojo). */
+function noteClsForAvailability(v){
+  if(v==null) return '';
+  if(v<0) return 'pos';
+  if(v>0) return 'alert';
+  return '';
+}
+
+/* =========================================================
+   TV 3 · render principal
+   ========================================================= */
+function render(){
+  var k = D.kpis || {};
+  var oc = k.ocupacion_calendario || {};
+  var shop = k.shoppings_estatico || {};
+  var aa = k.aa2000_estatico || {};
+  var cob = k.cobertura_shoppings || {};
+  var disp = k.disponibles || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var html = '';
+  html += kpiSplitBigLeft('Ocupaci&oacute;n por calendario', 'Activos', fmt(oc.activos), '% con campa&ntilde;a', pctEs(oc.pct_actual),
+    (prevLbl+' '+pctEs(oc.pct_anterior)+' &middot; '+signedPp(oc.delta_pp)), noteClsForDelta(oc.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Shoppings Est&aacute;tico', 'Activos', fmt(shop.activos), '% con campa&ntilde;a', pctEs(shop.pct_actual),
+    (prevLbl+' '+pctEs(shop.pct_anterior)+' &middot; '+signedPp(shop.delta_pp)), noteClsForDelta(shop.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('AA2000 Est&aacute;tico', 'Activos', fmt(aa.activos), '% con campa&ntilde;a', pctEs(aa.pct_actual),
+    (prevLbl+' '+pctEs(aa.pct_anterior)+' &middot; '+signedPp(aa.delta_pp)), noteClsForDelta(aa.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Shoppings con actividad', 'Activos', fmt(cob.activos), '% de cobertura', pctEs(cob.pct_actual),
+    (prevLbl+' '+pctEs(cob.pct_anterior)+' &middot; '+signedPp(cob.delta_pp)), noteClsForDelta(cob.delta_pp), 'kpi-lead');
+  html += kpiSplitBigLeft('Disponibles', 'Disponibles', fmt(disp.disponibles), '% del inventario', pctEs(disp.pct_actual),
+    (prevLbl+' '+pctEs(disp.pct_anterior)+' &middot; '+signedPp(disp.delta_pp)), noteClsForAvailability(disp.delta_pp), 'kpi-wide k-opp');
+  setKpis(html);
+
+  renderRank('shoppings', D.ranking_shoppings || []);
+  renderSoportes(D.soportes_top || []);
+
+  var ev = D.evolution || {};
+  lineChart('c-tv3-evol', ev.meses||[], [
+    {label:'Core Est&aacute;tico', data:ev.core||[], color:C.cream}
+  ], '', true);
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+function renderRank(key, rows){
+  var el = $('[data-rank="'+key+'"]');
+  if(!el) return;
+  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de ranking</div>'; return; }
+  el.innerHTML = rows.map(function(r,i){
+    var ocupTxt = r.ocup_pct==null ? 'S/D' : pctEs(r.ocup_pct);
+    var w = Math.max(2, Math.min(100, r.ocup_pct||0));
+    return '<div class="rrow">'+
+      '<div class="rk">'+(i+1)+'</div>'+
+      '<div class="rname">'+cap(r.sitio)+'</div>'+
+      '<div class="dual"><span class="chip detail">'+fmt(r.activos)+' ocup. &middot; '+fmt(r.disponibles)+' disp.</span><span class="chip ocup">'+ocupTxt+'</span></div>'+
+      '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderSoportes(rows){
+  var el = $('[data-soportes]');
+  if(!el) return;
+  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de soportes</div>'; return; }
+  var max = Math.max.apply(null, rows.map(function(r){return r.activos||0;}));
+  el.innerHTML = rows.map(function(r){
+    var w = max>0 ? Math.max(4, Math.round((r.activos||0)/max*100)) : 0;
+    return '<div class="sop-row">'+
+      '<div class="sop-head"><span class="sop-name">'+cap(r.soporte)+'</span><span class="sop-val">'+fmt(r.activos)+'</span></div>'+
+      '<div class="sop-bar"><i style="width:'+w+'%"></i></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* =========================================================
+   CHART HELPERS (Chart.js) — solo panel de evolucion
+   ========================================================= */
+var charts={};
+function baseOpts(suffix){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:700},
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12}} },
+      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12},callback:function(v){return v+(suffix||'')}} }
+    }
+  };
+}
+function lineChart(id,labels,series,suffix,showLastVal){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var opts=baseOpts(suffix);
+  var plugins=[];
+  if(showLastVal){
+    /* Etiqueta numerica SOLO en el ultimo punto (mes vigente del tablero,
+       julio): evita ruido visual sobre Ene-Jun. */
+    plugins.push({ id:'lastvals', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        var i=meta.data.length-1;
+        var pt=meta.data[i], v=ds.data[i];
+        if(!pt||v==null) return;
+        cx.save();
+        cx.font='700 13px Poppins, sans-serif';
+        cx.fillStyle=ds.borderColor; cx.textAlign='center';
+        cx.fillText(fmt(v), pt.x, pt.y-14);
+        cx.restore();
+      });
+    }});
+    opts.layout={padding:{top:26,bottom:4}};
+  }
+  charts[id]=new Chart(ctx,{ type:'line',
+    data:{ labels:labels, datasets:series.map(function(s){return {
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+    options:opts, plugins:plugins
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

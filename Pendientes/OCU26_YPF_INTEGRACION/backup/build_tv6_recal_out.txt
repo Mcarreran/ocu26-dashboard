@@ -1,0 +1,37 @@
+TV6_BUILD_OK
+{
+  "generado": "19/08/2026 10:54",
+  "report_year": 2026,
+  "report_month": 7,
+  "report_month_label": "Julio",
+  "periodo_inicio_iso": "2026-07-01",
+  "periodo_fin_iso": "2026-07-31",
+  "hist_inicio_iso": "2026-01-01",
+  "hist_fin_iso": "2026-07-31",
+  "hist_label": "Ene–Jul 2026",
+  "fuente": "OCU26 · Base maestra + base campañas"
+}
+{
+  "clientes_directos_activos": 10,
+  "marcas_activas": 95,
+  "agencias_activas": 15,
+  "cliente_top_identificado": {
+    "nombre": "TAGGIFY",
+    "activaciones": 7
+  },
+  "concentracion_top5": {
+    "pct": 67.4,
+    "numerador": 7753,
+    "denominador": 11497,
+    "unidad": "activaciones",
+    "base": "Top 5 marcas",
+    "marcas": [
+      "SEGURIDAD VIAL",
+      "MEDIFE",
+      "BRIDGESTONE",
+      "MEDIFE MUNDIAL",
+      "TURISMO CORDOBA"
+    ]
+  }
+}
+UNIVERSE: {"circuitos": ["AA2000", "CENCOSUD", "PANTALLAS_LED", "PILAR_FRONTLIGHT", "REMEROS", "YPF"], "elementos": 4561}

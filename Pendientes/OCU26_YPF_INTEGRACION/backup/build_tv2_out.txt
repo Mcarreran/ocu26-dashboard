@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "C:\brand plus\ocu26-dashboard\scripts\build_tv2_dashboard.py", line 595, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "C:\brand plus\ocu26-dashboard\scripts\build_tv2_dashboard.py", line 583, in main
+    result = build_and_write(args.file, args.output_html, args.output_json)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\brand plus\ocu26-dashboard\scripts\build_tv2_dashboard.py", line 558, in build_and_write
+    result = build_tv2_data(path)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "C:\brand plus\ocu26-dashboard\scripts\build_tv2_dashboard.py", line 440, in build_tv2_data
+    _transform_result, semantic_result, engine = load_pipeline(path)
+                                                 ^^^^^^^^^^^^^^^^^^^
+  File "C:\brand plus\ocu26-dashboard\scripts\export_data.py", line 94, in load_pipeline
+    transform_result = transform_data(path)
+                       ^^^^^^^^^^^^^^^^^^^^
+  File "C:\brand plus\ocu26-dashboard\scripts\transform_data.py", line 292, in transform_data
+    raise TransformError("CAMPANAS: el orden/contenido de FilaOrigen cambió")
+transform_data.TransformError: CAMPANAS: el orden/contenido de FilaOrigen cambió

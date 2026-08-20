@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV4 · Pipeline Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV4 · Pipeline Comercial
+   Composicion visual aprobada de audit_sources/TV4_REFERENCE.html.html
+   (header, 5 KPIs, panel "Estado del pipeline", panel "Proximas
+   activaciones"), con el insight inferior reemplazado por el patron de
+   3 columnas (Lectura / Punto positivo / A atender) productivo de TV1-3.
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:40px 48px 36px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:96px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:196px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:18px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:4px}
+.clock{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:14px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:13px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:15px;color:var(--bp-white);font-weight:500;margin-top:6px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 14px;border-radius:999px;max-width:520px
+}
+
+/* KPI card partida (Actividad actual) */
+.kpi-split{display:flex;align-items:flex-end;gap:16px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.kpi-split .main .sl{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:4px}
+.kpi-split .sec .sv{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+/* ======================= KPIs ======================= */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:22px;flex:none}
+.kpi{
+  position:relative;min-height:158px;padding:22px 24px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:13.5px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--bp-muted);line-height:1.3}
+.kpi-value{font-size:48px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:24px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:13.5px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:22px;flex:1;min-height:0}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;flex-direction:column;gap:3px;margin-bottom:14px;flex:none}
+.panel-title{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:13.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
+
+/* ======================= PIPELINE (estado + distribucion) ======================= */
+.pipe{display:flex;flex-direction:column;gap:13px;justify-content:center;height:100%}
+.pipe-row{display:grid;grid-template-columns:180px 1fr 70px;align-items:center;gap:16px}
+.pipe-lbl{font-size:16px;font-weight:600}
+.pipe-track{height:26px;border-radius:9px;background:rgba(255,255,255,.07);overflow:hidden}
+.pipe-track > i{display:block;height:100%;border-radius:9px}
+.pipe-val{font-size:20px;font-weight:800;text-align:right}
+.pipe-hist .pipe-lbl{color:var(--bp-muted);font-weight:500}
+.pipe-hist .pipe-val{color:var(--bp-muted);font-weight:700}
+.pipe-hist .pipe-track{height:14px}
+.hist-tag{font-size:11px;font-weight:600;color:var(--bp-muted);background:rgba(167,176,194,.14);padding:2px 7px;border-radius:6px;margin-left:6px;letter-spacing:.03em}
+.pipe-sub{font-size:13px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 -2px;padding-top:12px;border-top:1px solid var(--panel-border)}
+
+/* ======================= TIMELINE (proximas activaciones) ======================= */
+.timeline{display:flex;flex-direction:column;gap:12px;height:100%;justify-content:center}
+.tl{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:14px;padding:11px 14px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--panel-border)}
+.tl .date{font-size:17px;font-weight:800;color:var(--bp-blue-soft);text-align:center;line-height:1}
+.tl .date small{display:block;font-size:11px;color:var(--bp-muted);font-weight:500;margin-top:3px}
+.tl .cname{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl .ccirc{font-size:12.5px;color:var(--bp-muted)}
+.tl .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(28,96,255,.18);color:var(--bp-blue-soft);border:1px solid rgba(28,96,255,.3)}
+
+/* ======================= INSIGHT (3 columnas, igual TV1-3) ======================= */
+.insight{
+  margin-top:20px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.24)}
+.insight-col .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv4">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 4</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Pipeline Comercial</div>
+            <div class="hdr-sub">Campa&ntilde;as y reservas &middot; movimiento comercial</div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;QU&Eacute; EST&Aacute; CORRIENDO Y QU&Eacute; VIENE?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv4"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Estado del pipeline</div><div class="panel-sub">activaciones cargadas</div></div>
+          <div class="panel-body"><div class="pipe" data-pipe></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Pr&oacute;ximas activaciones &middot; 30 d&iacute;as</div><div class="panel-sub">inician dentro de 30 d&iacute;as</div></div>
+          <div class="panel-body"><div class="timeline" data-timeline></div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script>window.TV4_DATA = {{TV4_DATA_JSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV4 app.js
+   Renderiza el tablero desde window.TV4_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV4_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF' };
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Corte: '+D.meta.cutoff_label) : ''; });
+}
+
+/* ---------- KPI helpers (mismo patron que TV1-3) ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function setKpis(html){ var el=$('[data-kpis="tv4"]'); if(el) el.innerHTML=html; }
+
+/* =========================================================
+   TV 4 · render principal
+   ========================================================= */
+function render(){
+  var k = D.kpis || {};
+  var act = k.actividad_actual || {};
+  var res = k.reservas_futuras || {};
+  var ini = k.inician_30d || {};
+  var fin = k.finalizan_30d || {};
+  var core = k.pipeline_core || {};
+
+  var actividad = '<div class="kpi k-ok">'+
+    '<div class="kpi-label">Actividad actual</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Campa&ntilde;as &uacute;nicas activas</span><span class="sv">'+fmt(act.campanas_unicas)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">Activaciones en curso</span><span class="sv">'+fmt(act.activaciones)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note"><span class="dot"></span>1 campa&ntilde;a puede estar en varios elementos</div></div>';
+
+  setKpis(
+    actividad +
+    kpi('Reservas futuras', fmt(res.campanas_unicas), ' campa&ntilde;as', 'inicio posterior al corte &middot; '+fmt(res.activaciones)+' activaciones cargadas', '', '') +
+    kpi('Inician &middot; 30 d&iacute;as', fmt(ini.campanas_unicas), '', 'inicio dentro de 30 d&iacute;as', 'warn', 'k-opp') +
+    kpi('Finalizan &middot; 30 d&iacute;as', fmt(fin.campanas_unicas), '', 'oportunidad de renovaci&oacute;n', '', 'k-alert') +
+    kpi('Pipeline en core', (core.pct!=null ? pctEs(core.pct) : 'S/D'), '', fmt(core.campanas_core)+' de '+fmt(core.campanas_general)+' campa&ntilde;as del universo general', 'pos', 'k-ok')
+  );
+
+  renderPipe(D.estado_pipeline || {}, D.distribucion_familia || []);
+  renderTimeline((D.timeline && D.timeline.rows) || []);
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+/* Estado del pipeline: activas/reservas prominentes, finalizadas en gris
+   (historico secundario, tratamiento visual diferenciado). */
+function renderPipe(estado, distribucion){
+  var live=[['Activas', estado.activas, C.success],['Reservas <span class="hist-tag">activaciones</span>', estado.reservas, C.blueSoft]];
+  var maxLive=Math.max.apply(null, live.map(function(o){return o[1]||0})) || 1;
+  var html = live.map(function(o){
+    var v=o[1]||0, w=Math.max(4, v/maxLive*100);
+    return '<div class="pipe-row"><div class="pipe-lbl">'+o[0]+'</div>'+
+      '<div class="pipe-track"><i style="width:'+w+'%;background:linear-gradient(90deg,'+o[2]+'88,'+o[2]+')"></i></div>'+
+      '<div class="pipe-val">'+fmt(v)+'</div></div>';
+  }).join('');
+  html += '<div class="pipe-row pipe-hist"><div class="pipe-lbl">Finalizadas <span class="hist-tag">hist&oacute;rico</span></div>'+
+    '<div class="pipe-track"><i style="width:100%;background:rgba(167,176,194,.28)"></i></div>'+
+    '<div class="pipe-val">'+fmt(estado.finalizadas_historico)+'</div></div>';
+
+  var colors = {'Pantallas LED':C.blue,'Shoppings Digital':C.blueSoft,'Shoppings Estático':C.cream,'AA2000 / Pilar Frontlight':C.warning};
+  var tot = distribucion.reduce(function(a,f){return a+(f.activaciones||0)},0) || 1;
+  html += '<div class="pipe-sub">Activaciones activas hoy &middot; por grupo comercial</div>';
+  distribucion.forEach(function(f){
+    var v=f.activaciones||0, w=Math.max(2, v/tot*100);
+    html += '<div class="pipe-row"><div class="pipe-lbl" style="font-size:14px">'+f.familia+'</div>'+
+      '<div class="pipe-track" style="height:18px"><i style="width:'+w+'%;background:'+(colors[f.familia]||C.muted)+'"></i></div>'+
+      '<div class="pipe-val" style="font-size:16px">'+fmt(v)+'</div></div>';
+  });
+  $('[data-pipe]').innerHTML = html;
+}
+
+function renderTimeline(rows){
+  var el = $('[data-timeline]');
+  if(!el) return;
+  if(!rows.length){ el.innerHTML = '<div class="muted">Sin pr&oacute;ximas activaciones cargadas</div>'; return; }
+  el.innerHTML = rows.map(function(r){
+    return '<div class="tl"><div class="date">'+r.dia+'<small>'+r.mes_abbr+'</small></div>'+
+      '<div><div class="cname">'+r.campana+'</div><div class="ccirc">'+r.familia+'</div></div>'+
+      '<div class="badge">'+r.badge+'</div></div>';
+  }).join('');
+}
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

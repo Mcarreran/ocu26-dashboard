@@ -1,0 +1,192 @@
+{
+  "result": "VALID",
+  "checks": [
+    {
+      "check": "fuentes_y_candidata_existen",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "final_existe",
+      "result": "OK",
+      "detail": "C:\\brand plus\\ocu26-dashboard\\Pendientes\\OCU26_YPF_INTEGRACION\\output\\OCU26_BASE_DATOS_CON_YPF_FINAL_2026-08-18.xlsx"
+    },
+    {
+      "check": "zip_integro",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "sin_vba",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "sin_enlaces_externos",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "sin_formulas",
+      "result": "OK",
+      "detail": 0
+    },
+    {
+      "check": "sin_errores_excel",
+      "result": "OK",
+      "detail": 0
+    },
+    {
+      "check": "abre_data_only_false",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "abre_data_only_true",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "hojas_esperadas",
+      "result": "OK",
+      "detail": [
+        "MAESTRO_ELEMENTOS",
+        "CAMPANAS",
+        "PARAMETROS"
+      ]
+    },
+    {
+      "check": "tabla_MAESTRO_ELEMENTOS",
+      "result": "OK",
+      "detail": [
+        "tblElementos"
+      ]
+    },
+    {
+      "check": "tabla_CAMPANAS",
+      "result": "OK",
+      "detail": [
+        "tblCampanas"
+      ]
+    },
+    {
+      "check": "tabla_PARAMETROS",
+      "result": "OK",
+      "detail": [
+        "tblParametros"
+      ]
+    },
+    {
+      "check": "headers_maestro",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "headers_campanas",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "conteo_maestro_5304",
+      "result": "OK",
+      "detail": 5304
+    },
+    {
+      "check": "conteo_campanas_15333",
+      "result": "OK",
+      "detail": 15333
+    },
+    {
+      "check": "conteo_parametros_23",
+      "result": "OK",
+      "detail": 23
+    },
+    {
+      "check": "conteo_maestro_coincide_plan",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "elementoid_sin_vacios",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "elementoid_sin_duplicados",
+      "result": "OK",
+      "detail": []
+    },
+    {
+      "check": "elementos_retirados_ausentes",
+      "result": "OK",
+      "detail": []
+    },
+    {
+      "check": "apie_30943_dos_fb",
+      "result": "OK",
+      "detail": [
+        "30943 - FB - 1",
+        "30943 - FB - 2"
+      ]
+    },
+    {
+      "check": "campanas_sin_elementoid_huerfano",
+      "result": "OK",
+      "detail": 0
+    },
+    {
+      "check": "cero_campanas_apie_30943",
+      "result": "OK",
+      "detail": 0
+    },
+    {
+      "check": "parametros_identico_a_candidata",
+      "result": "OK",
+      "detail": null
+    },
+    {
+      "check": "campanas_identica_a_candidata",
+      "result": "OK",
+      "detail": 0
+    },
+    {
+      "check": "maestro_sin_cambios_no_autorizados",
+      "result": "OK",
+      "detail": []
+    },
+    {
+      "check": "sha_final_v2_intacto",
+      "result": "OK",
+      "detail": "a7f0dcd63daf48fcb13b557a7d7055c188c6c23e5a05e67cb7832325db1d6b0a"
+    },
+    {
+      "check": "sha_ypf_etapa1_intacto",
+      "result": "OK",
+      "detail": "4f05f6c5615f3dcd5eb15ef931c410282c2b2f689f963acf01493265c8f1a60c"
+    },
+    {
+      "check": "sha_ypf_etapa2_intacto",
+      "result": "OK",
+      "detail": "579ca8021ae95d62ffd5d768e171b594575f3bcf83dee47680e7721a1d99b24c"
+    },
+    {
+      "check": "sha_candidata_intacta",
+      "result": "OK",
+      "detail": "136e510a789f955b5360a81d09289c4e8dac374dd1c87c31072434783dc23c8a"
+    }
+  ],
+  "meta": {
+    "sha_final_v2": "a7f0dcd63daf48fcb13b557a7d7055c188c6c23e5a05e67cb7832325db1d6b0a",
+    "sha_ypf1": "4f05f6c5615f3dcd5eb15ef931c410282c2b2f689f963acf01493265c8f1a60c",
+    "sha_ypf2": "579ca8021ae95d62ffd5d768e171b594575f3bcf83dee47680e7721a1d99b24c",
+    "sha_candidate": "136e510a789f955b5360a81d09289c4e8dac374dd1c87c31072434783dc23c8a",
+    "sha_final": "d3b780898af3b7ca36ccd3ca351be478cc9fd31d560876a4f8f684d48a69f050",
+    "expected_counts": {
+      "MAESTRO_ELEMENTOS_antes": 5321,
+      "MAESTRO_ELEMENTOS_retirados": 17,
+      "MAESTRO_ELEMENTOS_despues": 5304,
+      "CAMPANAS": 15333,
+      "PARAMETROS": 23
+    }
+  }
+}
