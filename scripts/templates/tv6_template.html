@@ -9,11 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   BRAND PLUS · OCU26 BI · TV6 · Demanda Comercial
+   BRAND PLUS · OCU26 BI · TV6 · Demanda de marcas y expansion por circuito
    Composicion visual aprobada de audit_sources/TV6_REFERENCE.html.html
-   (header, 5 KPIs, panel ranking dinamico, panel "Demanda por circuito",
-   insight unico "Lectura"). Cambio confirmado: ciclo Marcas -> Agencias ->
-   Programatica (reemplaza Clientes -> Marcas -> Agencias de la referencia).
+   (header, 5 KPIs, panel ranking, panel "Demanda por circuito", insight
+   de 3 columnas). Reescrito 2026-08-23: panel izquierdo y matriz pasan a
+   ser ESTATICOS (Top marcas / Demanda por circuito, ambos Julio 2026), sin
+   ciclo Marcas/Agencias/Programatica ni temporizador de rotacion.
    ============================================================ */
 
 :root{
@@ -77,7 +78,7 @@ body{
 .tv{position:absolute;inset:0;padding:40px 48px 36px;display:flex;flex-direction:column;z-index:2}
 
 /* ======================= HEADER ======================= */
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:96px;flex:none}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;min-height:110px;flex:none}
 .hdr-left{display:flex;align-items:center;gap:28px}
 .logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
 .logo-wrap img{width:196px;height:auto;display:block}
@@ -90,22 +91,22 @@ body{
   color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
   padding:2px 10px;letter-spacing:.08em;font-weight:700
 }
-.hdr-title{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
-.hdr-sub{font-size:18px;font-weight:300;color:var(--bp-muted);margin-top:8px}
-.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:4px}
-.clock{font-size:30px;font-weight:700;letter-spacing:-.02em}
-.updated{font-size:14px;color:var(--bp-muted);letter-spacing:.02em}
-.period-tag{font-size:13px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.08}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:7px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:2px;flex:none}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
 .question{
-  font-size:15px;color:var(--bp-white);font-weight:500;margin-top:6px;
+  font-size:13.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
   background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
-  padding:6px 14px;border-radius:999px;max-width:520px
+  padding:5px 14px;border-radius:999px;max-width:640px;white-space:nowrap
 }
 
 /* ======================= KPIs ======================= */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:22px;flex:none}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:26px;flex:none}
 .kpi{
-  position:relative;min-height:158px;padding:22px 24px;border-radius:var(--r-lg);
+  position:relative;min-height:150px;padding:20px 22px;border-radius:var(--r-lg);
   background:linear-gradient(160deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
   display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
@@ -117,9 +118,8 @@ body{
 .kpi-label{font-size:13.5px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--bp-muted);line-height:1.3}
 .kpi-value{font-size:46px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
 .kpi-value .u{font-size:24px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
-.kpi-note{font-size:13.5px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
-.kpi-note.pos{color:var(--bp-success)}
-.kpi-note.warn{color:var(--bp-warning)}
+.kpi-pct{font-size:16px;font-weight:700;color:var(--bp-blue-soft);letter-spacing:-.01em;margin-top:2px}
+.kpi-note{font-size:12px;color:var(--bp-muted);line-height:1.32;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
 
 /* ======================= BODY ======================= */
@@ -133,6 +133,7 @@ body{
 .panel-head.col{display:flex;flex-direction:column;gap:3px;margin-bottom:14px;flex:none}
 .panel-title{font-size:21px;font-weight:700;letter-spacing:-.01em}
 .panel-sub{font-size:13.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-note{font-size:11.5px;font-style:italic;color:var(--bp-muted);letter-spacing:.01em;margin-top:1px}
 .panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
 
 /* ======================= RANKINGS ======================= */
@@ -140,22 +141,24 @@ body{
 .rrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:14px}
 .rrow .rk{font-size:15px;font-weight:700;color:var(--bp-blue-soft);text-align:center}
 .rname{font-size:16.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rmetric{font-size:19px;font-weight:800;letter-spacing:-.02em;text-align:right;min-width:64px}
-.rmetric small{font-size:12.5px;color:var(--bp-muted);font-weight:500}
+.rmetric{text-align:right;min-width:150px;white-space:nowrap;font-size:15.5px}
+.rmetric .primary{font-weight:800;letter-spacing:-.02em;color:var(--bp-white)}
+.rmetric .secondary{font-weight:500;color:var(--bp-muted)}
 .rbar{grid-column:1 / -1;height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
 .rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bp-blue),var(--bp-blue-soft))}
 
 /* ======================= MATRIZ ======================= */
 .matrix{width:100%;border-collapse:collapse}
-.matrix th,.matrix td{padding:10px 8px;text-align:center;font-size:14.5px}
-.matrix th{font-size:12px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--panel-border)}
+.matrix th,.matrix td{padding:8px 8px;text-align:center;font-size:14.5px}
+.matrix th{font-size:12px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--panel-border);line-height:1.25;padding-bottom:6px}
+.matrix th .th-count{display:block;font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--bp-blue-soft);margin-top:2px}
 .matrix th:first-child,.matrix td:first-child{text-align:left;font-weight:700}
 .matrix td{border-bottom:1px solid rgba(255,255,255,.05)}
 .cell{display:inline-flex;min-width:34px;justify-content:center;padding:4px 8px;border-radius:8px;font-weight:700;font-size:14.5px}
 .cell.z{color:var(--bp-muted);background:transparent;font-weight:400}
+.matrix-note{font-size:11px;color:var(--bp-muted);font-style:italic;line-height:1.28;margin-top:6px}
+.matrix-note + .matrix-note{margin-top:2px}
 
-/* ======================= PROGRAMATICA · estado A VALIDAR ======================= */
-.tag-pending{font-size:12px;font-weight:600;color:var(--bp-warning);background:rgba(255,200,87,.12);padding:3px 9px;border-radius:7px;border:1px solid rgba(255,200,87,.28)}
 .rank-empty{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;height:100%;text-align:center;padding:0 20px}
 .rank-empty p{font-size:15px;line-height:1.5;color:var(--bp-white)}
 
@@ -190,30 +193,31 @@ body{
           <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
           <div class="hdr-titles">
             <div class="eyebrow"><span class="tvno">TV 6</span> OCU26 &middot; Inteligencia Comercial</div>
-            <div class="hdr-title">As&iacute; se comporta la demanda</div>
-            <div class="hdr-sub">Marcas, agencias y program&aacute;tica &middot; d&oacute;nde pautan</div>
+            <div class="hdr-title">Demanda comercial por marca</div>
+            <div class="hdr-sub">Marcas activas, continuidad y presencia por circuito</div>
           </div>
         </div>
         <div class="hdr-right">
           <div class="clock" data-clock></div>
           <div class="updated" data-updated></div>
           <div class="period-tag" data-period></div>
-          <div class="question">&iquest;QUI&Eacute;N PAUTA, EN QU&Eacute; CIRCUITOS Y CON QU&Eacute; CONCENTRACI&Oacute;N?</div>
+          <div class="question">&iquest;QU&Eacute; MARCAS EST&Aacute;N ACTIVAS, CU&Aacute;LES VUELVEN Y D&Oacute;NDE PAUTAN?</div>
         </div>
       </header>
       <div class="kpis" data-kpis="tv6"></div>
       <div class="body">
         <div class="panel">
           <div class="panel-head col">
-            <div class="panel-title" data-rank-title>Top marcas</div>
-            <div class="panel-sub"><span id="tv6-cyc">marcas &middot; agencias &middot; program&aacute;tica</span> &middot; activaciones acumuladas <span data-rank-period></span></div>
+            <div class="panel-title">Marcas con m&aacute;s campa&ntilde;as &middot; Julio 2026</div>
+            <div class="panel-sub">Ordenadas por campa&ntilde;as &uacute;nicas; se muestran circuitos y activaciones como contexto.</div>
+            <div class="panel-note">La barra representa campa&ntilde;as &uacute;nicas. Activaci&oacute;n = asignaci&oacute;n de una campa&ntilde;a a un espacio.</div>
           </div>
           <div class="panel-body"><div class="rank" data-rank></div></div>
         </div>
         <div class="panel">
           <div class="panel-head col">
-            <div class="panel-title">Demanda por circuito</div>
-            <div class="panel-sub" data-matrix-sub>Top marcas &times; grupo comercial &middot; activaciones acumuladas</div>
+            <div class="panel-title">Campa&ntilde;as de las principales marcas por circuito &middot; Julio 2026</div>
+            <div class="panel-sub">Cada celda muestra campa&ntilde;as &uacute;nicas de esa marca dentro de cada grupo comercial.</div>
           </div>
           <div class="panel-body"><div data-matrix></div></div>
         </div>
@@ -270,53 +274,64 @@ function stampUpdated(){
 }
 
 /* ---------- KPI helpers ---------- */
-function kpi(label,value,unit,note,noteCls,cardCls){
-  var u = unit ? '<span class="u">'+unit+'</span>' : '';
-  var n = note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>';
+function kpi(label,value,pctLine,note,cardCls){
+  var p = pctLine ? '<div class="kpi-pct">'+pctLine+'</div>' : '';
+  var n = note ? '<div class="kpi-note">'+note+'</div>' : '<div class="kpi-note"></div>';
   return '<div class="kpi '+(cardCls||'')+'">'+
     '<div class="kpi-label">'+label+'</div>'+
-    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+    '<div class="kpi-value">'+value+'</div>'+ p + n +'</div>';
 }
 function setKpis(html){ var el=$('[data-kpis="tv6"]'); if(el) el.innerHTML=html; }
 
-/* ---------- RANK bar row ---------- */
-function rankRow(rank, name, metricHtml, pct){
+/* ---------- RANK bar row (barra basada en campañas únicas) ---------- */
+function rankRow(rank, name, campanas, circuitos, activaciones, pct){
   var w = Math.max(2, Math.min(100, pct||0));
+  var primary = fmt(campanas)+(campanas===1?' campaña':' campañas');
+  var secondary = fmt(circuitos)+(circuitos===1?' circuito':' circuitos')+' · '+fmt(activaciones)+' activ.';
   return '<div class="rrow">'+
       '<div class="rk">'+rank+'</div>'+
       '<div class="rname">'+name+'</div>'+
-      '<div class="rmetric">'+metricHtml+'</div>'+
+      '<div class="rmetric"><span class="primary">'+primary+'</span> <span class="secondary">· '+secondary+'</span></div>'+
       '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
     '</div>';
 }
 
 /* =========================================================
-   TV 6 · render principal
+   TV 6 · render principal (paneles estaticos, sin ciclo ni timer)
    ========================================================= */
-var CYCLE_LABELS = {marcas:'Marcas', agencias:'Agencias', programatica:'Programática'};
-var CYCLE_TITLES = {marcas:'Top marcas', agencias:'Top agencias', programatica:'Programática'};
-var cycleKeys = (D.ranking && D.ranking.ciclo) || ['marcas','agencias','programatica'];
-var cycleI = 0, cycleTimer = null;
 
-function render(){
-  var k = D.kpis || {};
-  var pend = D.pendientes || {};
-  var top = k.cliente_top_identificado;
-  var conc = k.concentracion_top5 || {};
+function renderKpis(){
+  var m = D.marcas || {};
+  var pa = m.primera_aparicion || {};
+  var rec = m.recurrentes || {};
+  var multi = m.multicircuito || {};
+  var uno = m.un_solo_circuito || {};
+  var totalTxt = 'de las '+fmt(m.activas_julio)+' marcas activas';
+
+  var marcasNote = 'Marcas con al menos una campaña activa en julio. '
+    +fmt(m.campanas_unicas_marca_valida_julio)+' campañas únicas · '
+    +fmt(m.activaciones_sin_marca_valida_julio)+' activaciones sin marca válida.';
 
   setKpis(
-    kpi('Clientes directos activos &middot; Julio', fmt(k.clientes_directos_activos), '',
-      'Excluye '+fmt(pend.clientes_via_agencia)+' v&iacute;a agencia y '+fmt(pend.agencias_a_confirmar)+' A confirmar', '', '') +
-    kpi('Marcas activas &middot; Julio', fmt(k.marcas_activas), '', 'Distintas &middot; Core Comercial + YPF', 'pos', 'k-ok') +
-    kpi('Agencias activas &middot; Julio', fmt(k.agencias_activas), '',
-      fmt(pend.agencias_a_confirmar)+' activ. con agencia A confirmar', '', '') +
-    kpi('Cliente top identificado', top ? cap(top.nombre) : '&mdash;', '',
-      top ? (fmt(top.activaciones)+' activaciones directas') : 'Sin cliente identificado', 'pos', 'k-ok') +
-    kpi('Concentraci&oacute;n Top 5', (conc.pct!=null ? pctEs(conc.pct) : 'S/D'), '',
-      'Top 5 marcas del total de '+fmt(conc.denominador)+' activaciones', 'warn', 'k-opp')
+    kpi('MARCAS ACTIVAS &middot; JULIO', fmt(m.activas_julio), '', marcasNote, '') +
+    kpi('PRIMERA ACTIVIDAD REGISTRADA EN 2026 &middot; JULIO', fmt(pa.count),
+      pctEs(pa.pct)+' '+totalTxt,
+      'Sin actividad entre enero y junio; su primera campaña registrada en 2026 aparece en julio.', '') +
+    kpi('CON ACTIVIDAD PREVIA EN 2026 &middot; JULIO', fmt(rec.count),
+      pctEs(rec.pct)+' '+totalTxt,
+      'Activas en julio y también entre enero y junio.', '') +
+    kpi('PRESENTES EN 2 O M&Aacute;S CIRCUITOS &middot; JULIO', fmt(multi.count),
+      pctEs(multi.pct)+' '+totalTxt,
+      'Con campañas activas en al menos dos grupos comerciales.', 'k-ok') +
+    kpi('PRESENTES EN UN SOLO CIRCUITO &middot; JULIO', fmt(uno.count),
+      pctEs(uno.pct)+' '+totalTxt,
+      'Con campañas activas en un único grupo comercial.', 'k-opp')
   );
+}
 
-  drawRank();
+function render(){
+  renderKpis();
+  renderRankList($('[data-rank]'), (D.ranking && D.ranking.top) || []);
   renderMatrix(D.matriz || {});
 
   var ins = D.insights || {};
@@ -325,61 +340,38 @@ function render(){
   $('[data-insight-atender]').innerHTML = ins.a_atender || '';
 }
 
-function drawRank(){
-  var key = cycleKeys[cycleI % cycleKeys.length];
-  var periodo = (D.ranking && D.ranking.periodo_label) || '';
-  $('[data-rank-title]').textContent = (CYCLE_TITLES[key] || key) + (periodo ? ' · ' + periodo : '');
-  $$('[data-rank-period]').forEach(function(e){ e.textContent = periodo; });
-
-  var cyc = $('#tv6-cyc');
-  if(cyc){
-    cyc.innerHTML = cycleKeys.map(function(k,ix){
-      return '<span style="opacity:'+(ix===(cycleI%cycleKeys.length)?1:.4)+'">'+(CYCLE_LABELS[k]||k)+'</span>';
-    }).join(' &middot; ');
-  }
-
-  var el = $('[data-rank]');
+function renderRankList(el, list){
   if(!el) return;
-
-  if(key === 'programatica'){
-    var prog = (D.ranking && D.ranking.programatica) || {};
-    var pendNota = prog.pendientes_sin_agencia ? ('<p class="note">'+prog.nota+'</p>') : '';
-    if(!prog.ranking_top || !prog.ranking_top.length){
-      el.innerHTML = '<div class="rank-empty">'+
-        '<span class="tag-pending">A validar</span>'+
-        '<p>'+(prog.nota || 'Sin agencias program&aacute;ticas identificadas en el per&iacute;odo.')+'</p>'+
-      '</div>';
-      return;
-    }
-    renderRankList(el, prog.ranking_top);
-    if(pendNota) el.insertAdjacentHTML('beforeend', pendNota);
+  if(!list.length){
+    el.innerHTML = '<div class="rank-empty"><p>Sin marcas clasificables en el período.</p></div>';
     return;
   }
-
-  var list = (D.ranking && D.ranking[key]) || [];
-  renderRankList(el, list);
-}
-
-function renderRankList(el, list){
-  if(!list.length){ el.innerHTML = '<div class="muted">Sin datos</div>'; return; }
-  var max = Math.max.apply(null, list.map(function(r){return r.activaciones||0})) || 1;
+  var max = Math.max.apply(null, list.map(function(r){return r.campanas_unicas||0})) || 1;
   el.innerHTML = list.map(function(r,i){
-    var metric = fmt(r.activaciones)+'<small> activ.</small>';
-    return rankRow(i+1, cap(r.nombre), metric, r.activaciones/max*100);
+    return rankRow(i+1, cap(r.nombre), r.campanas_unicas, r.circuitos, r.activaciones, r.campanas_unicas/max*100);
   }).join('');
 }
 
 function renderMatrix(m){
-  var sub = $('[data-matrix-sub]');
-  if(sub) sub.textContent = 'Top marcas × grupo comercial · activaciones acumuladas ' + (m.periodo_label || '');
   var cols = m.columnas || [];
-  var head = '<tr><th>Marca</th>'+cols.map(function(c){return '<th>'+c.replace('Shoppings ','Sh. ')+'</th>';}).join('')+'</tr>';
-  var rows = (m.filas || []).map(function(r){
+  var totales = m.totales_por_circuito || [];
+  var filas = m.filas || [];
+  if(!filas.length){
+    $('[data-matrix]').innerHTML = '<div class="muted">Sin datos para este período.</div>';
+    return;
+  }
+  var head = '<tr><th>Marca</th>'+cols.map(function(c,i){
+    var n = totales[i]!=null ? totales[i] : 0;
+    return '<th>'+c.replace('Shoppings ','Sh. ')+'<span class="th-count">'+fmt(n)+(n===1?' marca':' marcas')+'</span></th>';
+  }).join('')+'</tr>';
+  var rows = filas.map(function(r){
     return '<tr><td>'+cap(r.nombre)+'</td>'+r.valores.map(function(v){
-      return '<td>'+(v>0 ? '<span class="cell" style="background:rgba(28,96,255,'+Math.min(.32,0.06+v/40)+')">'+v+'</span>' : '<span class="cell z">&mdash;</span>')+'</td>';
+      return '<td>'+(v>0 ? '<span class="cell" style="background:rgba(28,96,255,'+Math.min(.32,0.06+v/8)+')">'+v+'</span>' : '<span class="cell z">&mdash;</span>')+'</td>';
     }).join('')+'</tr>';
   }).join('');
-  $('[data-matrix]').innerHTML = '<table class="matrix">'+head+rows+'</table>';
+  $('[data-matrix]').innerHTML = '<table class="matrix">'+head+rows+'</table>'
+    +'<div class="matrix-note">El dato azul bajo cada circuito indica el total de marcas activas del circuito, no solo las marcas visibles en el ranking.</div>'
+    +'<div class="matrix-note">Una campaña puede estar presente en más de un circuito; por eso las celdas de una fila no deben sumarse para calcular campañas únicas.</div>';
 }
 
 /* ---------- MODO SINGLE TV ---------- */
@@ -387,7 +379,6 @@ function init(){
   scaleStage(); tick(); stampUpdated();
   setInterval(tick,15000);
   render();
-  cycleTimer = setInterval(function(){ cycleI=(cycleI+1)%cycleKeys.length; drawRank(); },5000);
 }
 document.addEventListener('keydown',function(e){
   if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }

@@ -1,26 +1,65 @@
-"""Capa de datos para el dashboard TV5 - OCU26 (YPF).
+"""Capa de datos para el dashboard TV5 - OCU26 (Pipeline Comercial).
+
+Migracion 2026-08-23 (pedido "TV5 Pipeline Comercial - Espacios"): TV5 pasa
+a alojar el Pipeline Comercial que antes vivia en TV4 (ver historial git,
+commit "checkpoint: migracion restaurada 2026-08-20", scripts/
+build_tv4_dashboard.py de ese commit). TV4 paso a reportar exclusivamente
+YPF ("Pulso comercial YPF", decision de negocio explicita del usuario, ver
+docstring de build_tv4_dashboard.py) y este builder ocupa ahora el slot
+TV5, con la MISMA logica de pipeline temporal (que corre / que viene) pero
+con la unidad principal migrada de "activaciones" a "espacios comerciales":
+campanas y activaciones quedan como metricas secundarias/de auditoria
+(pedido Sec.5).
 
 Se ejecuta DESPUES de scripts/semantic_model.py y scripts/metrics_engine.py
-(Gate 3B). Reutiliza export_data.load_pipeline (Gate 4A) y
-MetricsEngine._campanas_overlap / MetricsEngine.query (mismo patron que
-build_tv1_dashboard.py y build_tv6_dashboard.py): no reabre el Excel, no
-reimplementa Gate 1/2/3.
+(Gate 3B). Reutiliza export_data.load_pipeline (Gate 4A), mismo patron que
+build_tv1/tv2/tv3_dashboard.py: no reabre el Excel, no reimplementa reglas
+de negocio de Gate 3. Importa constantes/funciones PUBLICAS (sin guion bajo)
+de build_tv2_dashboard.py (universo/capacidad Digital) y build_tv3_dashboard.py
+(universo Estatico): "reutilizar la logica canonica ya implementada para
+TV2 y TV3" del pedido Sec.2/4, en vez de reimplementarla a mano. No importa
+build_tv4_dashboard.py: ese modulo ya importa de build_tv5_dashboard.py
+(load_geo_aux, para el mapa YPF) y un import en sentido inverso crearia un
+ciclo de imports. Por eso el universo YPF (necesario solo para el
+denominador de la Tarjeta 5, "Pipeline en Core") se resuelve aqui con una
+version minima y autonoma (build_tv5_ypf_snapshot), documentada como
+duplicado intencional -- mismo patron ya usado por TV3 para espejar la
+lista de circuitos excluidos de TV1 (_TV1_ESTATICO_EXCLUDED_CIRCUITOS).
 
-Universo TV5 = exclusivamente CircuitoNegocio YPF (CM1 A13). No incorpora
-Core no YPF, APSA ni London Supply.
+Universo Core Comercial (pedido Sec.3) = union de los universos canonicos
+de TV2 (Digital: Pantallas LED + Shoppings Digital + AA2000 Digital) y TV3
+(Estatico: Shoppings Estatico + AA2000 Estatico + Pilar Frontlight). YPF,
+MAB, Cencomedia, APSA y London Supply quedan fuera del Core (no tienen
+regla de espacio Core); YPF tiene su propia regla (TV4) y se usa solo para
+el universo general comparativo de la Tarjeta 5. Los circuitos restantes
+(APSA, LONDON_SUPPLY, MAB, CENCOMEDIA en el snapshot auditado) no tienen
+regla de espacio confirmada: nunca se cuentan como cero, se listan aparte
+como "pendientes" en calidad.
 
-Estaciones YPF: no existe columna APIE en la fuente. Se reutiliza el
-surrogate ya auditado y vigente en TV1 (CM1 A13 / build_tv1_dashboard.py
-_ypf_station_key): StationKey = prefijo numerico de ElementoID + localidad
-normalizada de Ubicacion. Se llama explicitamente "StationKey (surrogate
-temporal)", nunca "APIE".
+Definicion de espacio comercial (pedido Sec.4-5):
+- Digital: cada campana activa en un ElementoID digital consume un slot de
+  ese elemento -- IDCampaña x ElementoID, pares distintos (duplicados de un
+  mismo par cuentan una sola vez). La capacidad confirmada por elemento
+  (ESPACIOS_POR_FORMATO_DIGITAL, identica a TV2) se usa solo para detectar
+  y declarar sobrecapacidad (mas campanas concurrentes que slots
+  confirmados en un mismo elemento), nunca para capar el conteo real.
+- Estatico: un espacio ocupado es un ElementoID fisico distinto con al
+  menos una campana activa (igual TV3): dos campanas activas en el mismo
+  elemento estatico cuentan 1 espacio ocupado (no 2).
+- Eventos temporales (reservas futuras / inician 30d / finalizan 30d /
+  finalizados historico): "asignaciones distintas de campana a espacio" =
+  pares (IDCampaña, ElementoID) distintos, sea el elemento Digital o
+  Estatico -- cada asignacion futura/pasada es por construccion un evento
+  puntual sobre un elemento fisico especifico, no hay colapso de
+  simultaneidad que aplicar (ese colapso solo corresponde a la foto de
+  ocupacion AL CORTE, pedido Sec.5 "una activacion no equivale
+  automaticamente a un espacio estatico distinto").
 
-Definiciones de negocio obligatorias (prompt Sec.4):
-- Campanas unicas = distinct IDCampana en el periodo.
-- Elementos activos = distinct ElementoID con >=1 campana en el periodo
-  (metrica canonica del motor: elementos_con_actividad).
-- Activaciones = distinct (IDCampana, ElementoID) en el periodo.
-- Estaciones activas = distinct StationKey con >=1 activacion en el periodo.
+Corte operativo (pedido Sec.2): 31/07/2026, mismo "corte" que julio 2026
+como mes de reporte vigente en TV1-3. Toda clasificacion temporal (activa/
+futura/finalizada) se resuelve por FechaInicio/FechaFin contra el corte,
+nunca por el campo Estado (igual razonamiento que el Pipeline historico:
+Estado no es fecha-consistente en la fuente).
 
 Uso:
     python scripts/build_tv5_dashboard.py
@@ -44,6 +83,18 @@ import validate_input as vi  # noqa: E402
 from semantic_model import filter_universe  # noqa: E402
 from metrics_engine import MetricsEngine  # noqa: E402
 from export_data import load_pipeline  # noqa: E402
+from build_tv2_dashboard import (  # noqa: E402
+    PANTALLAS_CIRCUITOS as _TV2_PANTALLAS_CIRCUITOS,
+    SHOPPINGS_CIRCUITOS as _TV2_SHOPPINGS_CIRCUITOS,
+    AA2000_CIRCUITOS as _TV2_AA2000_CIRCUITOS,
+    TV2_CIRCUITOS as CORE_DIGITAL_CIRCUITOS,
+    ESPACIOS_POR_FORMATO_DIGITAL,
+)
+from build_tv3_dashboard import (  # noqa: E402
+    OTROS_CIRCUITOS as _TV3_OTROS_CIRCUITOS,
+    TV3_CIRCUITOS as CORE_ESTATICO_CIRCUITOS,
+    MEDIO_ESTATICO,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "tv5_template.html"
@@ -51,18 +102,17 @@ REFERENCE_PATH = REPO_ROOT / "audit_sources" / "TV5_REFERENCE.html"
 DEFAULT_OUTPUT_HTML = REPO_ROOT / "tv5.html"
 DEFAULT_OUTPUT_JSON = REPO_ROOT / "output" / "tv5_data.json"
 
-# Cartografia real (Natural Earth, admin 1:10m), descargada UNA VEZ con
-# autorizacion explicita del usuario y recortada a Argentina (ver docstring
-# de compute_mapa mas abajo). Se inlinea en tv5.html en build time para que
-# el kiosk quede 100% offline (sin fetch/CORS en runtime).
+# Cartografia real de Argentina (Natural Earth) y fuente geografica auxiliar
+# YPF: ya NO las usa el propio TV5 (el Pipeline Comercial no tiene mapa),
+# pero build_tv4_dashboard.py (Pulso comercial YPF) las importa de este
+# modulo para su mapa de intensidad comercial (`from build_tv5_dashboard
+# import load_geo_aux, ARG_PAIS_GEOJSON_PATH, ARG_PROVINCIAS_GEOJSON_PATH`).
+# Se mantienen aqui SOLO por compatibilidad hacia atras con ese import: TV4
+# debe seguir construyendo sin cambios (protocolo "TV4 YPF byte-identica").
 ARG_PAIS_GEOJSON_PATH = Path(__file__).resolve().parent / "templates" / "assets" / "argentina_pais.geojson"
 ARG_PROVINCIAS_GEOJSON_PATH = Path(__file__).resolve().parent / "templates" / "assets" / "argentina_provincias.geojson"
-
-# Fuente geografica auxiliar (ajuste post-entrega): NO forma parte de
-# input/OCU26_BASE_DATOS.xlsx ni de Gate 1/2/3 (validate_input/transform_
-# data/semantic_model/metrics_engine). Se lee de forma aislada, solo dentro
-# de este builder, exclusivamente para el join geografico del mapa de TV5.
 GEO_AUX_PATH = REPO_ROOT / "input_aux" / "YPF_GEO_COORDENADAS.xlsx.xlsx"
+_GEO_PREFIX_RE = re.compile(r"^\s*(\d+)\s*-")
 
 MESES_ES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -70,35 +120,42 @@ MESES_ES = [
 ]
 MESES_ES_ABR = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
-# Periodo de referencia TV5 (mismo mes de reporte vigente en TV1-6).
+# Corte operativo TV5 (pedido Sec.2): cierre del mismo periodo de reporte
+# vigente en TV1-3 (Julio 2026), no la fecha real del sistema.
 REPORT_YEAR = 2026
 REPORT_MONTH = 7
+WINDOW_DAYS = 30
 
-# Formatos principales de negocio YPF (config/business_semantics.json
-# formato_negocio.ypf_elemento_id_token_map): unicos 3 pedidos por spec.
-# YPF_MUPI_FOTOBOX existe en catalogo pero no es uno de los 3 pedidos; se
-# reporta aparte (Sec.6 "otros formatos ... reportar como A VALIDAR").
-FORMATOS_PRINCIPALES = ["YPF_MENU_BOARD", "YPF_TORRE", "YPF_PUNTERA"]
-FORMATO_LABELS = {
-    "YPF_MENU_BOARD": "Menu Board",
-    "YPF_TORRE": "Torres",
-    "YPF_PUNTERA": "Punteras",
-    "YPF_MUPI_FOTOBOX": "Mupi Fotobox",
-}
+MEDIO_DIGITAL = "Digital"
+
+TIMELINE_TOP_N = 6
+
+# Grupos comerciales de apertura (pedido Sec.7): 4 grupos que particionan
+# exactamente el Core Digital (TV2) + Core Estatico (TV3).
+GRUPOS_CORE = ["Shoppings Digital", "Shoppings Estático", "Pantallas LED", "AA2000 / Pilar Frontlight"]
+
+# Universo YPF minimo (solo para el denominador de la Tarjeta 5): mismo
+# criterio de vigencia y misma tokenizacion de ElementoID que
+# build_tv4_dashboard.py (duplicado intencional, ver docstring del modulo).
+_YPF_DIGITAL_TOKENS = {"MB", "TT", "PPUNTER"}
+_YPF_STATIC_TOKENS = {"FB"}
+_YPF_ELEMENTO_TOKEN_RE = re.compile(r"^(.+) - ([A-Za-z]+) - (\d+)$")
+
 
 class BuildError(Exception):
     """Error bloqueante al construir el dashboard TV5."""
 
 
-def _period_bounds(year: int, month: int) -> tuple[str, str]:
+def _period_bounds(year: int, month: int) -> tuple[pd.Timestamp, pd.Timestamp]:
     start = pd.Timestamp(year=year, month=month, day=1)
     end = start + pd.offsets.MonthEnd(0)
-    return str(start.date()), str(end.date())
+    return start, end
 
 
-def _previous_month(year: int, month: int) -> tuple[int, int]:
-    ts = pd.Timestamp(year=year, month=month, day=1) - pd.DateOffset(months=1)
-    return ts.year, ts.month
+def _round1(value: Any) -> float | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)) or value is pd.NA:
+        return None
+    return round(float(value), 1)
 
 
 def _fmt_es_int(n: int) -> str:
@@ -111,41 +168,48 @@ def _fmt_es_pct(v: float | None) -> str:
     return f"{v:.1f}".replace(".", ",")
 
 
-def _round1(value: Any) -> float | None:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
-        return None
-    return round(float(value), 1)
-
-
-def _normalize_token(s: Any) -> str | None:
-    if s is None or (isinstance(s, float) and pd.isna(s)):
-        return None
-    s = str(s).strip().upper()
-    return re.sub(r"\s+", " ", s)
-
-
-def _ypf_station_key(elemento_id: Any, ubicacion: Any) -> str | None:
-    """Grano comercial de venta YPF (CM1 A13): 1 estacion = 1 unidad
-    comercial. No existe columna APIE en la fuente -- surrogate ya auditado
-    y vigente en TV1: (prefijo numerico de ElementoID, localidad normalizada
-    de Ubicacion). Nunca cae a ElementoID en silencio: si no se puede
-    derivar, devuelve None y el llamador debe bloquear el build (mismo
-    contrato que build_tv1_dashboard.py)."""
-    if elemento_id is None or (isinstance(elemento_id, float) and pd.isna(elemento_id)):
-        return None
-    prefix = str(elemento_id).split(" - ")[0].strip()
-    if not prefix:
-        return None
-    parts = str(ubicacion).split(" - ") if ubicacion is not None and not (isinstance(ubicacion, float) and pd.isna(ubicacion)) else []
-    town = _normalize_token(parts[1]) if len(parts) >= 2 else None
-    if town is None:
-        return None
-    return f"{prefix}|{town}"
+def _signed_int(v: int) -> str:
+    return f"+{v}" if v > 0 else str(v)
 
 
 # ---------------------------------------------------------------------------
-# Universo TV5 (exclusivamente YPF)
+# Universo Core (union TV2 Digital + TV3 Estatico) y grupos comerciales
 # ---------------------------------------------------------------------------
+
+
+def _grupo_comercial(circuito: str, medio: str) -> str:
+    """Grupo comercial de apertura (pedido Sec.7): 4 grupos que particionan
+    exacto el Core (Digital via TV2_CIRCUITOS, Estatico via TV3_CIRCUITOS)."""
+    if circuito == "PANTALLAS_LED":
+        return "Pantallas LED"
+    if circuito in ("CENCOSUD", "REMEROS"):
+        return "Shoppings Digital" if medio == MEDIO_DIGITAL else "Shoppings Estático"
+    return "AA2000 / Pilar Frontlight"
+
+
+def _espacio_capacidad_digital_tv5(fmt: Any, circuito: Any, capacidad_slots_reel: Any) -> float | None:
+    """Capacidad confirmada de UN elemento digital Core, solo para detectar
+    sobrecapacidad (pedido Sec.4: "aplicar las reglas de capacidad
+    confirmadas... y advertencias de sobrecapacidad ya definidas en TV2").
+    Usa la MISMA tabla publica ESPACIOS_POR_FORMATO_DIGITAL de TV2
+    (importada, no reimplementada); solo la envoltura de clasificacion se
+    duplica localmente para no depender de la funcion privada
+    (con guion bajo) de build_tv2_dashboard.py."""
+    if fmt == "PANTALLA_LED":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"])
+    if fmt == "PUENTE_LED":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"])
+    if fmt == "TOTEM" and circuito == "CENCOSUD":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"])
+    if fmt == "OTRO" and circuito == "REMEROS":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"])
+    if fmt in ("TOTEM", "TRIEDRO") and circuito == "AA2000":
+        legacy = capacidad_slots_reel
+        return float(legacy) if pd.notna(legacy) and legacy > 0 else None
+    if fmt == "TRIEDRO":
+        legacy = capacidad_slots_reel
+        return float(legacy) if pd.notna(legacy) and legacy > 0 else None
+    return None
 
 
 def build_tv5_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
@@ -153,315 +217,381 @@ def build_tv5_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
     config = semantic_result["config"]
 
     op = filter_universe(maestro, "OPERATIVO_GENERAL", config)
-    ypf_maestro = op[op["CircuitoNegocio"] == "YPF"].copy()
-    if ypf_maestro.empty:
-        raise BuildError("Universo TV5 vacio: no hay elementos YPF en OPERATIVO_GENERAL")
+    digital_maestro = op[op["CircuitoNegocio"].isin(CORE_DIGITAL_CIRCUITOS) & (op["Medio"] == MEDIO_DIGITAL)].copy()
+    static_maestro = op[op["CircuitoNegocio"].isin(CORE_ESTATICO_CIRCUITOS) & (op["Medio"] == MEDIO_ESTATICO)].copy()
+    if digital_maestro.empty and static_maestro.empty:
+        raise BuildError("Universo Core TV5 vacio: revisar business_semantics.json / TV2_CIRCUITOS / TV3_CIRCUITOS")
 
-    ypf_maestro["StationKey"] = [
-        _ypf_station_key(eid, ubic) for eid, ubic in zip(ypf_maestro["ElementoID"], ypf_maestro["Ubicacion"])
+    digital_maestro["_grupo"] = [
+        _grupo_comercial(c, MEDIO_DIGITAL) for c in digital_maestro["CircuitoNegocio"]
     ]
-    null_station = ypf_maestro[ypf_maestro["StationKey"].isna()]
-    if len(null_station):
-        raise BuildError(
-            f"{len(null_station)} elemento(s) YPF sin estacion (StationKey surrogate) derivable a partir de "
-            f"ElementoID/Ubicacion: {sorted(null_station['ElementoID'].unique().tolist())[:10]}. "
-            f"No se aplica fallback silencioso a ElementoID."
+    static_maestro["_grupo"] = [
+        _grupo_comercial(c, MEDIO_ESTATICO) for c in static_maestro["CircuitoNegocio"]
+    ]
+
+    digital_ids = digital_maestro["ElementoID"].tolist()
+    static_ids = static_maestro["ElementoID"].tolist()
+    grupo_map: dict[Any, str] = dict(zip(digital_maestro["ElementoID"], digital_maestro["_grupo"]))
+    grupo_map.update(dict(zip(static_maestro["ElementoID"], static_maestro["_grupo"])))
+
+    capacidad_map: dict[Any, float | None] = {
+        row["ElementoID"]: _espacio_capacidad_digital_tv5(row["FormatoNegocio"], row["CircuitoNegocio"], row.get("CapacidadSlotsReel"))
+        for _, row in digital_maestro.iterrows()
+    }
+
+    campanas = semantic_result["campanas"]
+    op_campanas = filter_universe(campanas, "OPERATIVO_GENERAL", config)
+    op_campanas = op_campanas[op_campanas["Estado"] != "Cancelado"]
+
+    scope = op_campanas[op_campanas["ElementoID"].isin(set(digital_ids) | set(static_ids))].copy()
+
+    return {
+        "op": op,
+        "op_campanas": op_campanas,
+        "digital_ids": set(digital_ids),
+        "static_ids": set(static_ids),
+        "grupo_map": grupo_map,
+        "capacidad_map": capacidad_map,
+        "scope_campanas": scope,
+        "circuitos_digital": sorted(digital_maestro["CircuitoNegocio"].unique().tolist()),
+        "circuitos_estatico": sorted(static_maestro["CircuitoNegocio"].unique().tolist()),
+        "elementos_digital": int(digital_maestro["ElementoID"].nunique()),
+        "elementos_estatico": int(static_maestro["ElementoID"].nunique()),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Universo YPF minimo (solo denominador Tarjeta 5) -- duplicado intencional
+# de build_tv4_dashboard.build_tv4_universe, ver docstring del modulo.
+# ---------------------------------------------------------------------------
+
+
+def _ypf_token(elemento_id: Any) -> str | None:
+    m = _YPF_ELEMENTO_TOKEN_RE.match(str(elemento_id))
+    return m.group(2).upper() if m else None
+
+
+def build_tv5_ypf_snapshot(semantic_result: dict[str, Any], cutoff: pd.Timestamp) -> dict[str, Any]:
+    maestro = semantic_result["maestro"]
+    config = semantic_result["config"]
+
+    op = filter_universe(maestro, "OPERATIVO_GENERAL", config)
+    ypf = op[(op["CircuitoNegocio"] == "YPF") & op["RevisionMaestro"].notna()].copy()
+    if ypf.empty:
+        return {"digital_ids": set(), "static_ids": set(), "apie_map": {}, "espacios": 0, "campanas_ids": set()}
+
+    ypf["_apie"] = ypf["Subcircuito"].astype(str).str.strip()
+    ypf["_token"] = ypf["ElementoID"].apply(_ypf_token)
+    digital_ids = set(ypf.loc[ypf["_token"].isin(_YPF_DIGITAL_TOKENS), "ElementoID"])
+    static_ids = set(ypf.loc[ypf["_token"].isin(_YPF_STATIC_TOKENS), "ElementoID"])
+    apie_map = dict(zip(ypf["ElementoID"], ypf["_apie"]))
+
+    campanas = semantic_result["campanas"]
+    op_campanas = filter_universe(campanas, "OPERATIVO_GENERAL", config)
+    op_campanas = op_campanas[op_campanas["Estado"] != "Cancelado"]
+    scope = op_campanas[op_campanas["ElementoID"].isin(digital_ids | static_ids)].copy()
+
+    en_curso = scope[_en_curso_mask(scope, cutoff)]
+    en_curso = en_curso[en_curso["IDCampaña"].notna() & (en_curso["IDCampaña"].astype(str).str.strip() != "")]
+
+    dig = en_curso[en_curso["ElementoID"].isin(digital_ids)].copy()
+    if not dig.empty:
+        dig["_apie"] = dig["ElementoID"].map(apie_map)
+        dig_espacios = dig.drop_duplicates(subset=["_apie", "IDCampaña"])
+    else:
+        dig_espacios = dig
+    n_dig = int(len(dig_espacios))
+
+    stat = en_curso[en_curso["ElementoID"].isin(static_ids)]
+    n_stat = int(stat["ElementoID"].nunique())
+
+    return {
+        "digital_ids": digital_ids,
+        "static_ids": static_ids,
+        "espacios": n_dig + n_stat,
+        "campanas_ids": set(en_curso["IDCampaña"].dropna().unique()),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Clasificacion temporal (activa/futura/finalizada) resuelta por fecha
+# contra el corte, nunca por Estado (pedido Sec.2).
+# ---------------------------------------------------------------------------
+
+
+def _en_curso_mask(df: pd.DataFrame, cutoff: pd.Timestamp) -> pd.Series:
+    indefinida_ok = (df["FechaIndefinida"] == "Si") & df["FechaFin"].isna()
+    eff_fin = df["FechaFin"].where(~indefinida_ok, pd.Timestamp("2100-01-01"))
+    return df["FechaInicio"].notna() & (df["FechaInicio"] <= cutoff) & (eff_fin >= cutoff)
+
+
+def compute_pipeline_windows(scope: pd.DataFrame, cutoff: pd.Timestamp) -> dict[str, Any]:
+    window_end = cutoff + pd.Timedelta(days=WINDOW_DAYS)
+
+    scope_validas = scope[scope["IDCampaña"].notna() & (scope["IDCampaña"].astype(str).str.strip() != "")]
+    indefinida_ok_validas = (scope_validas["FechaIndefinida"] == "Si") & scope_validas["FechaFin"].isna()
+
+    en_curso = scope_validas[_en_curso_mask(scope_validas, cutoff)]
+    futuras = scope_validas[scope_validas["FechaInicio"].notna() & (scope_validas["FechaInicio"] > cutoff)]
+    inician_30d = futuras[futuras["FechaInicio"] <= window_end]
+    finalizan_30d = en_curso[
+        en_curso["FechaFin"].notna() & (en_curso["FechaFin"] > cutoff)
+        & (en_curso["FechaFin"] <= window_end) & (~indefinida_ok_validas.loc[en_curso.index])
+    ]
+    historico = scope_validas[
+        scope_validas["FechaFin"].notna() & (scope_validas["FechaFin"] < cutoff) & (~indefinida_ok_validas)
+    ]
+
+    return {
+        "window_end": window_end,
+        "en_curso": en_curso,
+        "futuras": futuras,
+        "inician_30d": inician_30d,
+        "finalizan_30d": finalizan_30d,
+        "historico": historico,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Espacios ocupados (foto al corte, regla Digital/Estatico) y eventos
+# temporales (pares campana-espacio, pedido Sec.5)
+# ---------------------------------------------------------------------------
+
+
+def _espacios_snapshot(en_curso: pd.DataFrame, digital_ids: set[Any], static_ids: set[Any]) -> dict[str, Any]:
+    """Espacios ocupados AL CORTE (pedido Sec.4-5): Digital = pares
+    (IDCampaña, ElementoID) distintos; Estatico = ElementoID distintos con
+    >=1 campana activa (colapsa simultaneidad: 2 campanas en el mismo
+    elemento estatico = 1 espacio ocupado)."""
+    dig = en_curso[en_curso["ElementoID"].isin(digital_ids)]
+    dig_espacios = dig.drop_duplicates(subset=["IDCampaña", "ElementoID"])
+    n_dig = int(len(dig_espacios))
+
+    stat = en_curso[en_curso["ElementoID"].isin(static_ids)]
+    n_stat = int(stat["ElementoID"].nunique())
+
+    campanas_unicas = int(en_curso["IDCampaña"].dropna().nunique())
+    activaciones = int(en_curso.drop_duplicates(subset=["IDCampaña", "ElementoID"]).shape[0])
+
+    return {
+        "espacios": n_dig + n_stat,
+        "espacios_digitales": n_dig,
+        "espacios_estaticos": n_stat,
+        "campanas_unicas": campanas_unicas,
+        "activaciones": activaciones,
+    }
+
+
+def _espacios_evento(df: pd.DataFrame) -> dict[str, Any]:
+    """Asignaciones distintas de campana a espacio (pedido Sec.5/6): pares
+    (IDCampaña, ElementoID) distintos, sin distinguir Digital/Estatico (cada
+    asignacion futura/pasada es un evento puntual sobre un elemento fisico
+    especifico, no hay simultaneidad que colapsar)."""
+    espacios_df = df.drop_duplicates(subset=["IDCampaña", "ElementoID"])
+    return {
+        "espacios": int(len(espacios_df)),
+        "campanas_unicas": int(df["IDCampaña"].dropna().nunique()),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Tarjeta 5 - Pipeline en Core (espacios, no campanas)
+# ---------------------------------------------------------------------------
+
+
+def compute_pipeline_core(
+    core_snapshot: dict[str, Any], en_curso_core: pd.DataFrame, ypf_snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    espacios_core = core_snapshot["espacios"]
+    espacios_general = espacios_core + ypf_snapshot["espacios"]
+    pct = _round1(espacios_core / espacios_general * 100.0) if espacios_general else None
+
+    campanas_core = set(en_curso_core["IDCampaña"].dropna().unique())
+    campanas_general = campanas_core | ypf_snapshot["campanas_ids"]
+
+    return {
+        "pct": pct,
+        "espacios_core": espacios_core,
+        "espacios_general": espacios_general,
+        "campanas_core": len(campanas_core),
+        "campanas_general": len(campanas_general),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Apertura por grupo comercial (Sec.7): debe reconciliar exacto con el Core
+# ---------------------------------------------------------------------------
+
+
+def compute_distribucion_grupo(en_curso_core: pd.DataFrame, digital_ids: set[Any], static_ids: set[Any], grupo_map: dict[Any, str]) -> list[dict[str, Any]]:
+    rows = []
+    for grupo in GRUPOS_CORE:
+        ids_grupo = {eid for eid, g in grupo_map.items() if g == grupo}
+        sub = en_curso_core[en_curso_core["ElementoID"].isin(ids_grupo)]
+        snap = _espacios_snapshot(sub, digital_ids, static_ids)
+        rows.append({"grupo": grupo, "espacios": snap["espacios"]})
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Panel izquierdo - Estado del pipeline (Sec.7)
+# ---------------------------------------------------------------------------
+
+
+def compute_estado_pipeline(core_snapshot: dict[str, Any], reservas: dict[str, Any], historico: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "ocupados": core_snapshot["espacios"],
+        "reservados": reservas["espacios"],
+        "finalizados_historico": historico["espacios"],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Panel derecho - Proximos inicios (Sec.8)
+# ---------------------------------------------------------------------------
+
+
+def compute_proximos_inicios(inician_30d: pd.DataFrame, grupo_map: dict[Any, str]) -> tuple[list[dict[str, Any]], int]:
+    if inician_30d.empty:
+        return [], 0
+
+    espacios_df = inician_30d.drop_duplicates(subset=["IDCampaña", "ElementoID"]).copy()
+    espacios_df["_grupo"] = espacios_df["ElementoID"].map(grupo_map)
+
+    grouped = (
+        espacios_df.groupby(["IDCampaña", "FechaInicio"])
+        .agg(campana=("Campaña", "first"), grupos=("_grupo", lambda s: sorted(set(s))), espacios=("ElementoID", "size"))
+        .reset_index()
+        .sort_values(["FechaInicio", "campana"])
+    )
+    total = int(len(grouped))
+    rows = []
+    for _, r in grouped.head(TIMELINE_TOP_N).iterrows():
+        fecha: pd.Timestamp = r["FechaInicio"]
+        campana = r["campana"]
+        campana = campana if isinstance(campana, str) and campana.strip() else "Campaña sin nombre"
+        rows.append({
+            "fecha_iso": str(fecha.date()),
+            "dia": fecha.strftime("%d"),
+            "mes_abbr": MESES_ES_ABR[fecha.month - 1],
+            "campana": campana,
+            "grupo": " + ".join(r["grupos"]),
+            "espacios": int(r["espacios"]),
+            "badge": "Inicio",
+        })
+    return rows, total
+
+
+# ---------------------------------------------------------------------------
+# Calidad - sobrecapacidad digital y circuitos sin identidad de espacio
+# ---------------------------------------------------------------------------
+
+
+def compute_sobrecapacidad(en_curso_core: pd.DataFrame, digital_ids: set[Any], capacidad_map: dict[Any, float | None]) -> dict[str, Any]:
+    dig = en_curso_core[en_curso_core["ElementoID"].isin(digital_ids)]
+    if dig.empty:
+        return {"elementos_sobrecapacidad": 0, "exceso_total": 0}
+    concurrentes = dig.drop_duplicates(subset=["IDCampaña", "ElementoID"]).groupby("ElementoID").size()
+    sobre = 0
+    exceso = 0
+    for elemento_id, n in concurrentes.items():
+        cap = capacidad_map.get(elemento_id)
+        if cap is not None and n > cap:
+            sobre += 1
+            exceso += int(n - cap)
+    return {"elementos_sobrecapacidad": sobre, "exceso_total": exceso}
+
+
+def compute_circuitos_pendientes(op: pd.DataFrame, core_circuitos: set[str]) -> list[dict[str, Any]]:
+    """Circuitos del universo general sin regla de espacio confirmada
+    (pedido Sec.3/6): ni Core (TV2+TV3) ni YPF. Nunca se cuentan como cero
+    ni se les inventa capacidad: se listan con su cantidad de elementos de
+    catalogo, calculada dinamicamente (nunca hardcodeada)."""
+    todos = set(op["CircuitoNegocio"].dropna().unique())
+    pendientes = sorted(todos - core_circuitos - {"YPF"})
+    rows = []
+    for c in pendientes:
+        n = int(op.loc[op["CircuitoNegocio"] == c, "ElementoID"].nunique())
+        rows.append({"circuito": c, "elementos_catalogo": n})
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Insights (Lectura / Punto positivo / A atender) - pedido Sec.9
+# ---------------------------------------------------------------------------
+
+
+def compute_insights(
+    core_snapshot: dict[str, Any], reservas: dict[str, Any], inician: dict[str, Any],
+    finalizan: dict[str, Any], pipeline_core: dict[str, Any], distribucion: list[dict[str, Any]],
+    circuitos_pendientes: list[dict[str, Any]],
+) -> dict[str, str]:
+    lectura = (
+        f"Al 31/07 hay <b>{_fmt_es_int(core_snapshot['espacios'])} espacios comerciales ocupados</b> dentro del "
+        f"Core, con <b>{_fmt_es_int(pipeline_core['campanas_core'])} campañas activas dentro del Core</b>, sobre "
+        f"<b>{_fmt_es_int(pipeline_core['campanas_general'])} campañas activas del universo general</b> al corte. "
+        f"El pipeline registra {_fmt_es_int(reservas['espacios'])} espacios reservados a futuro, con "
+        f"{_fmt_es_int(inician['espacios'])} espacios que inician y {_fmt_es_int(finalizan['espacios'])} que "
+        f"se liberan en los próximos 30 días."
+    )
+
+    # PUNTO POSITIVO (prioridad pedido Sec.9): 1) reservas futuras;
+    # 2) crecimiento de espacios que ingresan; 3) concentracion favorable
+    # en el Core; 4) fallback factual.
+    if reservas["espacios"] > 0:
+        punto_positivo = (
+            f"Hay <b>{_fmt_es_int(reservas['espacios'])} espacios reservados</b> a futuro "
+            f"({_fmt_es_int(reservas['campanas_unicas'])} campañas), que sumarán ocupación al pipeline."
+        )
+    elif inician["espacios"] > 0:
+        punto_positivo = (
+            f"Ingresan <b>{_fmt_es_int(inician['espacios'])} espacios nuevos</b> al Pipeline en los próximos "
+            f"30 días ({_fmt_es_int(inician['campanas_unicas'])} campañas)."
+        )
+    elif pipeline_core["pct"] is not None and pipeline_core["pct"] >= 60:
+        punto_positivo = (
+            f"El Core concentra <b>{_fmt_es_pct(pipeline_core['pct'])}%</b> de los espacios del universo general "
+            f"del Pipeline ({_fmt_es_int(pipeline_core['espacios_core'])} de {_fmt_es_int(pipeline_core['espacios_general'])})."
+        )
+    else:
+        punto_positivo = f"El Core Comercial mantiene {_fmt_es_int(core_snapshot['espacios'])} espacios ocupados al corte."
+
+    # A ATENDER (prioridad pedido Sec.9): 1) finalizan > inician;
+    # 2) sobrecapacidad/circuitos sin identidad; 3) sin reservas; 4) fallback.
+    if finalizan["espacios"] > 0 and finalizan["espacios"] > inician["espacios"]:
+        a_atender = (
+            f"Se liberan <b>{_fmt_es_int(finalizan['espacios'])} espacios</b> en los próximos 30 días frente a "
+            f"{_fmt_es_int(inician['espacios'])} que inician: oportunidad de renovación."
+        )
+    elif circuitos_pendientes:
+        nombres = ", ".join(c["circuito"] for c in circuitos_pendientes)
+        a_atender = (
+            f"{len(circuitos_pendientes)} circuito(s) del universo general ({nombres}) no tienen regla de "
+            f"identidad de espacio confirmada: quedan fuera del denominador de la Tarjeta 5."
+        )
+    elif reservas["espacios"] == 0:
+        a_atender = "No hay espacios reservados a futuro cargados: el pipeline depende únicamente de la ocupación ya en curso."
+    else:
+        a_atender = (
+            f"El Core Comercial libera {_fmt_es_int(finalizan['espacios'])} espacios por finalización en los "
+            f"próximos 30 días; conviene anticipar renovación."
         )
 
-    station_map = dict(zip(ypf_maestro["ElementoID"], ypf_maestro["StationKey"]))
-    city_map = dict(zip(ypf_maestro["ElementoID"], ypf_maestro["Ciudad"]))
-    station_city_map = dict(zip(ypf_maestro["StationKey"], ypf_maestro["Ciudad"]))
-    fmt_map = dict(zip(ypf_maestro["ElementoID"], ypf_maestro["FormatoNegocio"]))
-    element_ids = ypf_maestro["ElementoID"].tolist()
-
-    # Prefijo numerico de estacion (= Subcircuito = primer token de
-    # ElementoID; identico por construccion para todos los ElementoID de
-    # una misma StationKey): clave de join contra la fuente geografica
-    # auxiliar (ver compute_mapa / load_geo_aux).
-    station_prefix_map = dict(zip(ypf_maestro["StationKey"], ypf_maestro["Subcircuito"].astype(str)))
-
-    fmt_counts = ypf_maestro["FormatoNegocio"].value_counts().to_dict()
-    formatos_no_principales = {k: int(v) for k, v in fmt_counts.items() if k not in FORMATOS_PRINCIPALES}
-
-    return {
-        "maestro": ypf_maestro,
-        "element_ids": element_ids,
-        "station_map": station_map,
-        "city_map": city_map,
-        "station_city_map": station_city_map,
-        "station_prefix_map": station_prefix_map,
-        "fmt_map": fmt_map,
-        "estaciones_catalogo": int(ypf_maestro["StationKey"].nunique()),
-        "elementos_catalogo": int(ypf_maestro["ElementoID"].nunique()),
-        "formatos_no_principales": formatos_no_principales,
-    }
-
-
-def _campanas_overlap_validas(engine: MetricsEngine, element_ids: list[Any], start: str, end: str) -> pd.DataFrame:
-    """CAMPANAS con solapamiento valido contra [start,end] y IDCampana
-    informado (no vacio): base comun para campanas unicas y activaciones
-    (prompt Sec.4)."""
-    overlap = engine._campanas_overlap(element_ids, start, end)
-    if overlap.empty:
-        return overlap
-    return overlap[overlap["IDCampaña"].notna() & (overlap["IDCampaña"].astype(str).str.strip() != "")]
-
-
-def _active_stations(overlap: pd.DataFrame, station_map: dict[Any, str]) -> set[str]:
-    active_ids = overlap["ElementoID"].dropna().unique().tolist()
-    return {station_map[eid] for eid in active_ids if eid in station_map}
+    return {"lectura": lectura, "punto_positivo": punto_positivo, "a_atender": a_atender}
 
 
 # ---------------------------------------------------------------------------
-# Card 1 - Catalogo YPF (estructural, no depende de periodo)
+# load_geo_aux -- SOLO compatibilidad hacia atras con build_tv4_dashboard.py
+# (ver nota junto a GEO_AUX_PATH mas arriba). Logica sin cambios respecto a
+# la version previa de este modulo cuando TV5 todavia era el mapa YPF.
 # ---------------------------------------------------------------------------
-
-
-def compute_catalogo(universe: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "estaciones_registradas": universe["estaciones_catalogo"],
-        "elementos_totales": universe["elementos_catalogo"],
-        "status": "catalogo_actual",
-        "metric_status": "NO_APLICA",
-        "nota": (
-            "Catálogo actual. Sin histórico de catálogo disponible: la fuente es un snapshot vigente, "
-            "no permite reconstruir cuántas estaciones/elementos existían en junio."
-        ),
-    }
-
-
-# ---------------------------------------------------------------------------
-# Card 2 - Estaciones activas
-# ---------------------------------------------------------------------------
-
-
-def compute_estaciones_activas(
-    engine: MetricsEngine, universe: dict[str, Any], period: tuple[str, str], previous: tuple[str, str],
-) -> dict[str, Any]:
-    element_ids = universe["element_ids"]
-    station_map = universe["station_map"]
-    catalogo = universe["estaciones_catalogo"]
-
-    overlap_actual = _campanas_overlap_validas(engine, element_ids, period[0], period[1])
-    overlap_anterior = _campanas_overlap_validas(engine, element_ids, previous[0], previous[1])
-
-    actual = len(_active_stations(overlap_actual, station_map))
-    anterior = len(_active_stations(overlap_anterior, station_map))
-
-    pct_actual = _round1(actual / catalogo * 100.0) if catalogo else None
-    pct_anterior = _round1(anterior / catalogo * 100.0) if catalogo else None
-    delta_pp = _round1(pct_actual - pct_anterior) if pct_actual is not None and pct_anterior is not None else None
-
-    return {
-        "actual": actual,
-        "anterior": anterior,
-        "catalogo": catalogo,
-        "pct_actual": pct_actual,
-        "pct_anterior": pct_anterior,
-        "delta_abs": actual - anterior,
-        "delta_pp": delta_pp,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Card 3 - Campanas (campanas unicas + activaciones)
-# ---------------------------------------------------------------------------
-
-
-def compute_campanas(
-    engine: MetricsEngine, universe: dict[str, Any], period: tuple[str, str], previous: tuple[str, str],
-) -> dict[str, Any]:
-    element_ids = universe["element_ids"]
-
-    overlap_actual = _campanas_overlap_validas(engine, element_ids, period[0], period[1])
-    overlap_anterior = _campanas_overlap_validas(engine, element_ids, previous[0], previous[1])
-
-    campanas_actual = int(overlap_actual["IDCampaña"].nunique())
-    campanas_anterior = int(overlap_anterior["IDCampaña"].nunique())
-    activaciones_actual = int(overlap_actual.drop_duplicates(subset=["IDCampaña", "ElementoID"]).shape[0])
-    activaciones_anterior = int(overlap_anterior.drop_duplicates(subset=["IDCampaña", "ElementoID"]).shape[0])
-
-    promedio_actual = _round1(activaciones_actual / campanas_actual) if campanas_actual else None
-    promedio_anterior = _round1(activaciones_anterior / campanas_anterior) if campanas_anterior else None
-
-    return {
-        "campanas_unicas_actual": campanas_actual,
-        "campanas_unicas_anterior": campanas_anterior,
-        "delta_campanas": campanas_actual - campanas_anterior,
-        "activaciones_actual": activaciones_actual,
-        "activaciones_anterior": activaciones_anterior,
-        "delta_activaciones": activaciones_actual - activaciones_anterior,
-        "promedio_actual": promedio_actual,
-        "promedio_anterior": promedio_anterior,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Card 4 - Elementos activos (metrica canonica del motor)
-# ---------------------------------------------------------------------------
-
-
-def compute_elementos_activos(
-    engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str],
-) -> dict[str, Any]:
-    actual = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": "YPF"}, start_date=period[0], end_date=period[1])
-    anterior = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": "YPF"}, start_date=previous[0], end_date=previous[1])
-    val_actual = int(actual["Value"].iloc[0])
-    val_anterior = int(anterior["Value"].iloc[0])
-    return {
-        "actual": val_actual,
-        "anterior": val_anterior,
-        "delta": val_actual - val_anterior,
-        "metric_status": actual["MetricStatus"].iloc[0],
-    }
-
-
-# ---------------------------------------------------------------------------
-# Card 5 - Formato lider (por campanas unicas, NUNCA por activaciones)
-# ---------------------------------------------------------------------------
-
-
-def _formato_campanas_unicas(overlap: pd.DataFrame, fmt_map: dict[Any, str]) -> dict[str, int]:
-    if overlap.empty:
-        return {f: 0 for f in FORMATOS_PRINCIPALES}
-    tagged = overlap.copy()
-    tagged["_fmt"] = tagged["ElementoID"].map(fmt_map)
-    tagged = tagged[tagged["_fmt"].isin(FORMATOS_PRINCIPALES)]
-    counts = tagged.groupby("_fmt")["IDCampaña"].nunique().to_dict()
-    return {f: int(counts.get(f, 0)) for f in FORMATOS_PRINCIPALES}
-
-
-def _formato_elementos_activos(overlap: pd.DataFrame, fmt_map: dict[Any, str]) -> dict[str, int]:
-    if overlap.empty:
-        return {f: 0 for f in FORMATOS_PRINCIPALES}
-    tagged = overlap.copy()
-    tagged["_fmt"] = tagged["ElementoID"].map(fmt_map)
-    tagged = tagged[tagged["_fmt"].isin(FORMATOS_PRINCIPALES)]
-    counts = tagged.groupby("_fmt")["ElementoID"].nunique().to_dict()
-    return {f: int(counts.get(f, 0)) for f in FORMATOS_PRINCIPALES}
-
-
-def _pick_formato_lider(campanas_unicas: dict[str, int], elementos_activos: dict[str, int]) -> dict[str, Any]:
-    max_val = max(campanas_unicas.values()) if campanas_unicas else 0
-    empatados = [f for f, v in campanas_unicas.items() if v == max_val and max_val > 0]
-    empate = len(empatados) > 1
-    if not empatados:
-        ganador = None
-    elif empate:
-        ganador = max(empatados, key=lambda f: elementos_activos.get(f, 0))
-    else:
-        ganador = empatados[0]
-    return {
-        "formato": ganador,
-        "label": FORMATO_LABELS.get(ganador, "Sin dato") if ganador else "Sin dato",
-        "campanas_unicas": campanas_unicas.get(ganador, 0) if ganador else 0,
-        "elementos_activos": elementos_activos.get(ganador, 0) if ganador else 0,
-        "empate_resuelto_por_elementos_activos": empate,
-        "detalle_campanas_unicas": campanas_unicas,
-    }
-
-
-def compute_formato_lider(
-    engine: MetricsEngine, universe: dict[str, Any], period: tuple[str, str], previous: tuple[str, str],
-) -> dict[str, Any]:
-    element_ids = universe["element_ids"]
-    fmt_map = universe["fmt_map"]
-
-    overlap_actual = _campanas_overlap_validas(engine, element_ids, period[0], period[1])
-    overlap_anterior = _campanas_overlap_validas(engine, element_ids, previous[0], previous[1])
-
-    camp_actual = _formato_campanas_unicas(overlap_actual, fmt_map)
-    camp_anterior = _formato_campanas_unicas(overlap_anterior, fmt_map)
-    elem_actual = _formato_elementos_activos(overlap_actual, fmt_map)
-    elem_anterior = _formato_elementos_activos(overlap_anterior, fmt_map)
-
-    return {
-        "actual": _pick_formato_lider(camp_actual, elem_actual),
-        "anterior": _pick_formato_lider(camp_anterior, elem_anterior),
-    }
-
-
-# ---------------------------------------------------------------------------
-# Historico Ene-Jul: activaciones por formato principal
-# ---------------------------------------------------------------------------
-
-
-def compute_historico(engine: MetricsEngine, universe: dict[str, Any], report_year: int, report_month: int) -> dict[str, Any]:
-    element_ids = universe["element_ids"]
-    fmt_map = universe["fmt_map"]
-    meses = MESES_ES_ABR[:report_month]
-    series: dict[str, list[int]] = {f: [] for f in FORMATOS_PRINCIPALES}
-    otros_mensual: list[int] = []
-
-    for m in range(1, report_month + 1):
-        start, end = _period_bounds(report_year, m)
-        overlap = _campanas_overlap_validas(engine, element_ids, start, end)
-        activ = overlap.drop_duplicates(subset=["IDCampaña", "ElementoID"]).copy()
-        if activ.empty:
-            for f in FORMATOS_PRINCIPALES:
-                series[f].append(0)
-            otros_mensual.append(0)
-            continue
-        activ["_fmt"] = activ["ElementoID"].map(fmt_map)
-        counts = activ.groupby("_fmt").size().to_dict()
-        for f in FORMATOS_PRINCIPALES:
-            series[f].append(int(counts.get(f, 0)))
-        otros = sum(v for k, v in counts.items() if k not in FORMATOS_PRINCIPALES)
-        otros_mensual.append(int(otros))
-
-    return {
-        "meses": meses,
-        "series": {FORMATO_LABELS[f]: series[f] for f in FORMATOS_PRINCIPALES},
-        "otros_formatos_activaciones_mensual": otros_mensual,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Mapa de intensidad comercial (mapa geografico real, ajuste post-entrega).
-#
-# input/OCU26_BASE_DATOS.xlsx NO tiene latitud/longitud (auditado: headers
-# crudos de las 3 hojas + columnas resueltas del maestro semantico). El
-# usuario incorporo una fuente geografica auxiliar REAL fuera del pipeline
-# central: input_aux/YPF_GEO_COORDENADAS.xlsx.xlsx (hoja "Hoja1", columnas
-# CODIGO/LATITUD/LONGITUD/CIUDAD*/DIRECCION*). Se lee de forma aislada, solo
-# en este builder (load_geo_aux): NO se modifica input/OCU26_BASE_DATOS.xlsx
-# ni ningun Gate, y NO se incorpora todavia al pipeline central.
-#
-# Join: prefijo numerico de CODIGO (ej. "107-FB 1" -> "107") contra
-# Subcircuito/prefijo de ElementoID de OCU26 (identicos por construccion,
-# ver build_tv5_universe.station_prefix_map). Auditoria de cobertura sobre
-# el archivo productivo (10/8/2026): de 1.508 filas de CODIGO con prefijo
-# numerico, 429 tienen lat/lon numericamente validos (rango -90..90/
-# -180..180, no 0,0); las 1.079 restantes tienen valores claramente mal
-# formateados (ej. "-346158286" en vez de "-34.6158286") -- se EXCLUYEN,
-# nunca se corrigen por suposicion. Con eso: 203 de las 451 estaciones del
-# catalogo YPF (45.0%) y 79 de las 305 estaciones activas de julio (25.9%)
-# obtienen coordenada valida. Cobertura parcial real, documentada como tal
-# (MetricStatus PARTIAL): nunca se inventa una posicion para el resto.
-#
-# Base cartografica (ajuste post-entrega, autorizado explicitamente por el
-# usuario): la silueta dibujada a mano fue rechazada por no ser reconocible
-# como Argentina/AMBA/CABA. Se descargo UNA VEZ (con permiso) la fuente
-# publica Natural Earth "Admin 1: States, Provinces" 1:10m (dominio publico)
-# desde https://github.com/nvkelso/natural-earth-vector (mismo dataset
-# oficial de Natural Earth, geojson pre-convertido), junto con "Admin 0:
-# Countries" 1:10m para el contorno pais. Se filtro exclusivamente
-# Argentina (24 features admin1 = 23 provincias + CABA; 1 feature admin0) y
-# se guardo localmente en scripts/templates/assets/argentina_pais.geojson y
-# argentina_provincias.geojson (coordenadas redondeadas a 4 decimales, sin
-# alterar la forma real). render_html() los inlinea en tv5.html: el kiosk
-# no depende de internet, tiles ni librerias de mapas en runtime.
-# ---------------------------------------------------------------------------
-
-_GEO_PREFIX_RE = re.compile(r"^\s*(\d+)\s*-")
 
 
 def load_geo_aux(path: Path = GEO_AUX_PATH) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """Lee la fuente geografica auxiliar YPF (aislada de Gate 1/2/3) y arma
     prefijo_numerico -> {lat, lon, ciudad, direccion}, quedandose con la
-    primera fila valida por prefijo (auditado: 0 prefijos con coordenadas
-    validas en conflicto entre si). Devuelve tambien el detalle de calidad
-    del join para reportarlo en el payload (Sec.3F)."""
+    primera fila valida por prefijo. Devuelve tambien el detalle de calidad
+    del join. Usada exclusivamente por build_tv4_dashboard.py."""
     if not path.exists():
         raise BuildError(f"Fuente geografica auxiliar no encontrada: {path}")
 
@@ -522,200 +652,6 @@ def load_geo_aux(path: Path = GEO_AUX_PATH) -> tuple[dict[str, dict[str, Any]], 
     return geo_map, calidad
 
 
-def compute_mapa(
-    engine: MetricsEngine, universe: dict[str, Any], report_year: int, report_month: int, geo_map: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    element_ids = universe["element_ids"]
-    station_map = universe["station_map"]
-    station_city_map = universe["station_city_map"]
-    station_prefix_map = universe["station_prefix_map"]
-
-    activ_frames = []
-    for m in range(1, report_month + 1):
-        start, end = _period_bounds(report_year, m)
-        overlap = _campanas_overlap_validas(engine, element_ids, start, end)
-        activ = overlap.drop_duplicates(subset=["IDCampaña", "ElementoID"]).copy()
-        if activ.empty:
-            continue
-        activ["_station"] = activ["ElementoID"].map(station_map)
-        activ_frames.append(activ[["IDCampaña", "ElementoID", "_station"]])
-
-    if not activ_frames:
-        acumulado = pd.DataFrame(columns=["IDCampaña", "ElementoID", "_station"])
-    else:
-        acumulado = pd.concat(activ_frames, ignore_index=True)
-    acumulado = acumulado[acumulado["_station"].notna()].copy()
-
-    by_station = acumulado.groupby("_station").size()
-    n_estaciones_con_actividad = int(by_station.shape[0])
-
-    puntos = []
-    for station, activaciones in by_station.items():
-        prefix = station_prefix_map.get(station)
-        geo = geo_map.get(prefix) if prefix is not None else None
-        if geo is None:
-            continue
-        puntos.append({
-            "lat": geo["lat"],
-            "lon": geo["lon"],
-            "activaciones": int(activaciones),
-            "ciudad": geo.get("ciudad") or station_city_map.get(station),
-        })
-
-    n_con_geo = len(puntos)
-    pct_cobertura = _round1(n_con_geo / n_estaciones_con_actividad * 100.0) if n_estaciones_con_actividad else None
-
-    bounds = None
-    if puntos:
-        lats = [p["lat"] for p in puntos]
-        lons = [p["lon"] for p in puntos]
-        bounds = {"lat_min": min(lats), "lat_max": max(lats), "lon_min": min(lons), "lon_max": max(lons)}
-
-    return {
-        "titulo": "Mapa de intensidad comercial",
-        "subtitulo": "Activaciones acumuladas por estación / territorio",
-        "periodo_label": f"Ene–{MESES_ES_ABR[report_month-1]} {report_year}",
-        "estado": "PARTIAL",
-        "metric_status": "PARTIAL",
-        "nota": (
-            f"{_fmt_es_int(n_con_geo)} de {_fmt_es_int(n_estaciones_con_actividad)} estaciones con actividad "
-            f"Ene–{MESES_ES_ABR[report_month-1]} cuentan con ubicación geográfica disponible (fuente auxiliar "
-            f"YPF_GEO_COORDENADAS, aún fuera del pipeline central; join por prefijo numérico de estación). "
-            f"El resto no tiene coordenada válida en esa fuente: no se inventan posiciones ni se geocodifica "
-            f"externamente."
-        ),
-        "leyenda_min": "Menor actividad",
-        "leyenda_max": "Mayor actividad",
-        "puntos": puntos,
-        "bounds": bounds,
-        "n_estaciones_con_actividad": n_estaciones_con_actividad,
-        "n_estaciones_con_geo": n_con_geo,
-        "pct_cobertura_geo": pct_cobertura,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Calidad de datos
-# ---------------------------------------------------------------------------
-
-
-def compute_calidad(
-    universe: dict[str, Any], semantic_result: dict[str, Any], geo_calidad: dict[str, Any], mapa: dict[str, Any],
-) -> dict[str, Any]:
-    warnings = semantic_result.get("warnings", [])
-    ypf_warnings = [str(w) for w in warnings if "YPF" in str(w)]
-    return {
-        "estaciones_sin_clave_derivable": 0,
-        "formatos_no_principales_en_catalogo": {
-            FORMATO_LABELS.get(k, k): v for k, v in universe["formatos_no_principales"].items()
-        },
-        "warnings_semanticos_ypf": ypf_warnings,
-        "nota": (
-            "Sin nulos en ElementoID/Ubicacion/Ciudad para el universo YPF ni advertencias de formato "
-            "no reconocido en el snapshot auditado."
-            if not ypf_warnings
-            else f"{len(ypf_warnings)} advertencia(s) semántica(s) YPF detectada(s) en el snapshot."
-        ),
-        "geo_aux": {
-            **geo_calidad,
-            "estaciones_con_actividad_ene_jul": mapa["n_estaciones_con_actividad"],
-            "estaciones_con_actividad_con_geo_valida": mapa["n_estaciones_con_geo"],
-            "pct_cobertura_geo_sobre_activas": mapa["pct_cobertura_geo"],
-            "nota": (
-                f"{_fmt_es_int(geo_calidad['filas_lat_lon_invalidas_excluidas'])} filas de la fuente auxiliar "
-                f"tienen lat/lon claramente mal formateados (ej. sin punto decimal) y se excluyeron del join; "
-                f"nunca se corrigieron por suposición."
-            ),
-        },
-    }
-
-
-# ---------------------------------------------------------------------------
-# Insights (Lectura / Punto positivo / A atender)
-# ---------------------------------------------------------------------------
-
-
-def compute_insights(
-    catalogo: dict[str, Any], estaciones: dict[str, Any], campanas: dict[str, Any],
-    elementos: dict[str, Any], formato_lider: dict[str, Any], mapa: dict[str, Any],
-    report_month_label: str, previous_month_label: str,
-) -> dict[str, str]:
-    fl_actual = formato_lider["actual"]
-    fl_anterior = formato_lider["anterior"]
-
-    lectura = (
-        f"{report_month_label} registra <b>{_fmt_es_int(estaciones['actual'])} estaciones activas</b> "
-        f"({_fmt_es_pct(estaciones['pct_actual'])}% del catálogo de {_fmt_es_int(catalogo['estaciones_registradas'])}), "
-        f"con <b>{_fmt_es_int(campanas['campanas_unicas_actual'])} campañas únicas</b> que generaron "
-        f"<b>{_fmt_es_int(campanas['activaciones_actual'])} activaciones</b> sobre "
-        f"{_fmt_es_int(elementos['actual'])} elementos activos. El formato líder es "
-        f"<b>{fl_actual['label']}</b> ({_fmt_es_int(fl_actual['campanas_unicas'])} campañas únicas), "
-        f"frente a {previous_month_label.lower()} ({_fmt_es_int(estaciones['anterior'])} estaciones, "
-        f"{_fmt_es_int(campanas['campanas_unicas_anterior'])} campañas, "
-        f"{_fmt_es_int(campanas['activaciones_anterior'])} activaciones, formato líder {fl_anterior['label']})."
-    )
-
-    # PUNTO POSITIVO: prioridad 1) crecimiento estaciones activas.
-    if estaciones["delta_abs"] > 0:
-        punto_positivo = (
-            f"Las estaciones activas crecieron de <b>{_fmt_es_int(estaciones['anterior'])} a "
-            f"{_fmt_es_int(estaciones['actual'])}</b> ({_signed_int(estaciones['delta_abs'])} estaciones), "
-            f"con una penetración sobre catálogo que subió de {_fmt_es_pct(estaciones['pct_anterior'])}% a "
-            f"{_fmt_es_pct(estaciones['pct_actual'])}% ({_signed_pp(estaciones['delta_pp'])})."
-        )
-    elif campanas["delta_campanas"] > 0:
-        punto_positivo = (
-            f"Las campañas únicas crecieron de {_fmt_es_int(campanas['campanas_unicas_anterior'])} a "
-            f"<b>{_fmt_es_int(campanas['campanas_unicas_actual'])}</b> respecto a {previous_month_label.lower()}."
-        )
-    elif elementos["delta"] > 0:
-        punto_positivo = (
-            f"Los elementos activos crecieron de {_fmt_es_int(elementos['anterior'])} a "
-            f"<b>{_fmt_es_int(elementos['actual'])}</b> respecto a {previous_month_label.lower()}."
-        )
-    else:
-        punto_positivo = (
-            f"La red YPF mantiene <b>{_fmt_es_int(estaciones['actual'])} estaciones activas</b> "
-            f"sobre un catálogo de {_fmt_es_int(catalogo['estaciones_registradas'])}."
-        )
-
-    # A ATENDER: prioridad 1) concentracion excesiva en un formato.
-    total_camp = fl_actual["detalle_campanas_unicas"]
-    total_camp_sum = sum(total_camp.values()) or 1
-    lider_share = round(fl_actual["campanas_unicas"] / total_camp_sum * 100.0, 1)
-    if lider_share >= 55:
-        a_atender = (
-            f"El formato <b>{fl_actual['label']}</b> concentra {_fmt_es_pct(lider_share)}% de las campañas "
-            f"únicas de {report_month_label.lower()} ({_fmt_es_int(fl_actual['campanas_unicas'])} de "
-            f"{_fmt_es_int(total_camp_sum)}): la actividad queda poco diversificada entre formatos."
-        )
-    elif estaciones["pct_actual"] is not None and estaciones["pct_actual"] < 70:
-        a_atender = (
-            f"Solo el {_fmt_es_pct(estaciones['pct_actual'])}% del catálogo de estaciones tuvo campaña en "
-            f"{report_month_label.lower()}: queda margen de penetración comercial sobre la red YPF."
-        )
-    else:
-        a_atender = (
-            f"El mapa de intensidad comercial solo geolocaliza <b>{_fmt_es_pct(mapa['pct_cobertura_geo'])}%</b> "
-            f"de las estaciones con actividad ({_fmt_es_int(mapa['n_estaciones_con_geo'])} de "
-            f"{_fmt_es_int(mapa['n_estaciones_con_actividad'])}): falta ampliar la cobertura de la fuente "
-            f"geográfica auxiliar sobre el resto de la red."
-        )
-
-    return {"lectura": lectura, "punto_positivo": punto_positivo, "a_atender": a_atender}
-
-
-def _signed_int(v: int) -> str:
-    return (f"+{v}" if v > 0 else str(v))
-
-
-def _signed_pp(v: float | None) -> str:
-    if v is None:
-        return "S/D"
-    s = "+" if v > 0 else ""
-    return f"{s}{_fmt_es_pct(v)} pp"
-
-
 # ---------------------------------------------------------------------------
 # Logo (reutilizado byte-a-byte, igual patron que TV1-4/6)
 # ---------------------------------------------------------------------------
@@ -742,26 +678,41 @@ def build_tv5_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
     path = Path(path)
     sha_before = vi.calculate_sha256(path)
 
-    _transform_result, semantic_result, engine = load_pipeline(path)
+    _transform_result, semantic_result, _engine = load_pipeline(path)
     universe = build_tv5_universe(semantic_result)
+    scope = universe["scope_campanas"]
 
-    period = _period_bounds(REPORT_YEAR, REPORT_MONTH)
-    prev_year, prev_month = _previous_month(REPORT_YEAR, REPORT_MONTH)
-    previous = _period_bounds(prev_year, prev_month)
+    _, cutoff = _period_bounds(REPORT_YEAR, REPORT_MONTH)  # cierre del mes de reporte vigente (31/07/2026)
 
-    catalogo = compute_catalogo(universe)
-    estaciones = compute_estaciones_activas(engine, universe, period, previous)
-    campanas = compute_campanas(engine, universe, period, previous)
-    elementos = compute_elementos_activos(engine, period, previous)
-    formato_lider = compute_formato_lider(engine, universe, period, previous)
-    historico = compute_historico(engine, universe, REPORT_YEAR, REPORT_MONTH)
-    geo_map, geo_calidad = load_geo_aux()
-    mapa = compute_mapa(engine, universe, REPORT_YEAR, REPORT_MONTH, geo_map)
-    calidad = compute_calidad(universe, semantic_result, geo_calidad, mapa)
+    windows = compute_pipeline_windows(scope, cutoff)
+    en_curso_core = windows["en_curso"]
 
-    report_month_label = MESES_ES[REPORT_MONTH - 1]
-    previous_month_label = MESES_ES[prev_month - 1]
-    insights = compute_insights(catalogo, estaciones, campanas, elementos, formato_lider, mapa, report_month_label, previous_month_label)
+    core_snapshot = _espacios_snapshot(en_curso_core, universe["digital_ids"], universe["static_ids"])
+    reservas = _espacios_evento(windows["futuras"])
+    inician = _espacios_evento(windows["inician_30d"])
+    finalizan = _espacios_evento(windows["finalizan_30d"])
+    historico = _espacios_evento(windows["historico"])
+
+    incomplete_rows = int(
+        (scope["FechaInicio"].isna() | (scope["FechaFin"].isna() & ~((scope["FechaIndefinida"] == "Si") & scope["FechaFin"].isna()))).sum()
+    )
+
+    ypf_snapshot = build_tv5_ypf_snapshot(semantic_result, cutoff)
+    pipeline_core = compute_pipeline_core(core_snapshot, en_curso_core, ypf_snapshot)
+
+    distribucion = compute_distribucion_grupo(en_curso_core, universe["digital_ids"], universe["static_ids"], universe["grupo_map"])
+    suma_grupos = sum(g["espacios"] for g in distribucion)
+    if suma_grupos != core_snapshot["espacios"]:
+        raise BuildError(f"Apertura por grupo comercial no reconcilia con el Core: {suma_grupos} vs {core_snapshot['espacios']}")
+
+    estado_pipeline = compute_estado_pipeline(core_snapshot, reservas, historico)
+    timeline_rows, timeline_total = compute_proximos_inicios(windows["inician_30d"], universe["grupo_map"])
+
+    sobrecapacidad = compute_sobrecapacidad(en_curso_core, universe["digital_ids"], universe["capacidad_map"])
+    core_circuitos = set(universe["circuitos_digital"]) | set(universe["circuitos_estatico"])
+    circuitos_pendientes = compute_circuitos_pendientes(universe["op"], core_circuitos)
+
+    insights = compute_insights(core_snapshot, reservas, inician, finalizan, pipeline_core, distribucion, circuitos_pendientes)
 
     sha_after = vi.calculate_sha256(path)
     if sha_after != sha_before:
@@ -773,58 +724,52 @@ def build_tv5_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
     data = {
         "meta": {
             "generado": dt.datetime.now().strftime("%d/%m/%Y %H:%M"),
-            "report_year": REPORT_YEAR,
-            "report_month": REPORT_MONTH,
-            "report_month_label": report_month_label,
-            "previous_month": prev_month,
-            "previous_month_label": previous_month_label,
-            "periodo_inicio_iso": period[0],
-            "periodo_fin_iso": period[1],
-            "previous_inicio_iso": previous[0],
-            "previous_fin_iso": previous[1],
-            "hist_label": f"Ene–{MESES_ES_ABR[REPORT_MONTH-1]} {REPORT_YEAR}",
+            "cutoff_iso": str(cutoff.date()),
+            "cutoff_label": cutoff.strftime("%d/%m/%Y"),
+            "window_end_iso": str(windows["window_end"].date()),
+            "window_end_label": windows["window_end"].strftime("%d/%m/%Y"),
+            "window_days": WINDOW_DAYS,
             "fuente": "OCU26 · Base maestra + base campañas",
-            "station_key_method": (
-                "StationKey (surrogate temporal): prefijo numérico de ElementoID + localidad normalizada "
-                "de Ubicación. No existe columna APIE en la fuente."
+            "advertencia_fechas_incompletas": (
+                f"{_fmt_es_int(incomplete_rows)} activaciones del Core Comercial quedan excluidas de la "
+                f"clasificación temporal por fecha incompleta." if incomplete_rows else ""
             ),
         },
-        "universo": {
-            "circuito": "YPF",
-            "estaciones_catalogo": universe["estaciones_catalogo"],
-            "elementos_catalogo": universe["elementos_catalogo"],
-        },
         "kpis": {
-            "catalogo": catalogo,
-            "estaciones_activas": estaciones,
-            "campanas": campanas,
-            "elementos_activos": elementos,
-            "formato_lider": formato_lider,
+            "actividad_actual": core_snapshot,
+            "reservas_futuras": reservas,
+            "inician_30d": inician,
+            "finalizan_30d": finalizan,
+            "pipeline_core": pipeline_core,
         },
-        "historico": historico,
-        "mapa": mapa,
-        "calidad": calidad,
+        "estado_pipeline": estado_pipeline,
+        "distribucion_grupo": distribucion,
+        "timeline": {"rows": timeline_rows, "total": timeline_total},
+        "calidad": {
+            "sobrecapacidad_digital": sobrecapacidad,
+            "circuitos_pendientes": circuitos_pendientes,
+        },
         "insights": insights,
     }
 
-    return {"data": data, "sha256": sha_after, "universe": {"circuito": "YPF", "estaciones_catalogo": universe["estaciones_catalogo"], "elementos_catalogo": universe["elementos_catalogo"]}}
+    return {
+        "data": data,
+        "sha256": sha_after,
+        "universe": {
+            "circuitos_digital": universe["circuitos_digital"],
+            "circuitos_estatico": universe["circuitos_estatico"],
+            "elementos_digital": universe["elementos_digital"],
+            "elementos_estatico": universe["elementos_estatico"],
+        },
+    }
 
 
 def render_html(data: dict[str, Any]) -> str:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     logo_tag = extract_logo_img_tag(REFERENCE_PATH)
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    if not ARG_PAIS_GEOJSON_PATH.exists() or not ARG_PROVINCIAS_GEOJSON_PATH.exists():
-        raise BuildError(
-            f"Cartografia real de Argentina no encontrada en {ARG_PAIS_GEOJSON_PATH} / "
-            f"{ARG_PROVINCIAS_GEOJSON_PATH}."
-        )
-    arg_pais_geojson = ARG_PAIS_GEOJSON_PATH.read_text(encoding="utf-8")
-    arg_provincias_geojson = ARG_PROVINCIAS_GEOJSON_PATH.read_text(encoding="utf-8")
     html = template.replace("{{LOGO_IMG_TAG}}", logo_tag)
     html = html.replace("{{TV5_DATA_JSON}}", payload)
-    html = html.replace("{{ARG_PAIS_GEOJSON}}", arg_pais_geojson)
-    html = html.replace("{{ARG_PROVINCIAS_GEOJSON}}", arg_provincias_geojson)
     return html
 
 
@@ -848,7 +793,7 @@ def build_and_write(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Construye tv5.html (dashboard TV5 OCU26, YPF) con datos reales.")
+    parser = argparse.ArgumentParser(description="Construye tv5.html (dashboard TV5 OCU26, Pipeline Comercial) con datos reales.")
     parser.add_argument("--file", default=str(vi.DEFAULT_INPUT_PATH), help="Ruta al archivo .xlsx a leer")
     parser.add_argument("--output-html", default=str(DEFAULT_OUTPUT_HTML), help="Ruta del HTML productivo generado")
     parser.add_argument("--output-json", default=str(DEFAULT_OUTPUT_JSON), help="Ruta del snapshot JSON generado")

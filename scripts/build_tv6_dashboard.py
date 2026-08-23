@@ -1,13 +1,30 @@
-"""Capa de datos para el dashboard TV6 - OCU26 (Demanda Comercial).
+"""Capa de datos para el dashboard TV6 - OCU26 (Demanda de marcas y
+expansion por circuito).
 
 Se ejecuta DESPUES de scripts/semantic_model.py y scripts/metrics_engine.py
 (Gate 3B). Reutiliza export_data.load_pipeline (Gate 4A) y
 MetricsEngine._campanas_overlap (mismo patron que build_tv1_dashboard.py):
 no reabre el Excel, no reimplementa Gate 1/2/3.
 
+Reescrito 2026-08-23 (decision de negocio): Agencias/Programatica/Clientes
+directos/Exclusividades/Canal de ingreso salen del alcance de TV6 -- la
+fuente actual no tiene cobertura suficiente para mostrarlos de forma
+confiable (ver historial de auditoria en git). Quedan pospuestos para una
+futura mejora de la base; esos campos de CAMPANAS no se tocan ni se
+eliminan, simplemente TV6 ya no los audita, calcula ni muestra. El unico
+resabio que se conserva es la lista de plataformas/intermediarios conocidos
+(PROGRAMATICA_PLATAFORMAS_EXCLUIR): sigue haciendo falta para que "TAGGIFY"/
+"BEEYOND"/"LATIN AD"/"GLOBAL" no se cuenten como marca cuando aparecen en el
+campo Marca por un problema de carga de origen (regla de negocio de Marca,
+no un calculo de canal).
+
+Nuevo objetivo: "Demanda de marcas y expansion por circuito". Responde
+quien pauta, cuales marcas regresan (recurrencia 2026) y en cuantos
+circuitos estan presentes -- informacion que no aparece en TV1-TV5.
+
 Universo TV6 = "Core Comercial" (CENCOSUD + REMEROS + PANTALLAS_LED +
 PILAR_FRONTLIGHT + AA2000) + YPF (CM1 Sec.B4): a diferencia de TV4 (pipeline,
-excluye YPF por decision explicita), TV6 mide demanda/marcas/clientes, no
+excluye YPF por decision explicita), TV6 mide demanda de marcas, no
 capacidad fisica, y por eso reincorpora YPF. APSA/London Supply nunca entran
 (no tienen PortfolioTier CORE ni filas en CAMPANAS para este universo).
 
@@ -16,25 +33,28 @@ en julio 2026": por eso el scope usa solapamiento contra el mes calendario
 completo (mismo patron que TV1 clientes_activos/marcas_activas), no un
 snapshot puntual al corte.
 
-Programatica (CM1 Sec.B5): el campo canonico CAMPANAS.PROGRAMATICA (Si/No/
-vacio) es la unica fuente valida. Auditoria (ver docstring de
-compute_programatica) confirmo que, en el acumulado Ene-Jul, PROGRAMATICA=
-"Si" nunca aparece sobre una fila con alguna de las 5 agencias identificadas
-del periodo (CARAT/OMD/OSA/GROUPM/NEXT MEDIA): aparece solo con Agencia="No"
-o "A confirmar". Como el campo no permite mapear con certeza la marca
-"programatica" sobre el nombre de una agencia real, esas activaciones NO se
-eliminan del analisis ni se reasignan artificialmente: quedan reportadas
-como pendientes de imputacion de agencia. Nunca se infiere una agencia
-programatica por nombre ni se reclasifica Cliente como Agencia para forzar
-el subconjunto.
+Grano (auditoria 2026-08-23): una "activacion" es un par distinto
+ElementoID x IDCampaña. CAMPANAS puede tener mas de una fila (CargaID) para
+el mismo par cuando el mismo placement se recargo con una fecha de fin
+corregida -- nunca representan dos activaciones comerciales distintas.
+build_tv6_scope deduplica por (ElementoID,IDCampaña) antes de calcular
+cualquier metrica: "no contar filas crudas como activaciones". "Campaña
+unica" es IDCampaña distinto dentro del scope.
 
-Enfoque hibrido de dos niveles temporales (ajuste post-entrega): las 5 KPI
-cards superiores siguen siendo una foto de JULIO 2026 (sin cambios respecto
-de la version anterior). Los paneles inferiores (ranking Marcas/Agencias/
-Programatica y matriz "Demanda por circuito") pasan a calcularse sobre el
-ACUMULADO 01/01/2026-31/07/2026: un unico mes puede ocultar actores
-relevantes que si aparecen en la foto YTD (ej. las agencias OMD/OSA/NEXT
-MEDIA no tienen actividad en julio pero si en el acumulado).
+Primera aparicion / recurrencia (Sec.4 Tarjetas 2-3): se resuelve mirando,
+mes a mes, el conjunto de marcas validas activas de enero a julio 2026 (7
+scopes mensuales independientes, mismo universo y misma regla de
+solapamiento que el scope de julio). El primer mes con actividad de cada
+marca es el minimo de esos meses. Una marca activa en julio es "primera
+aparicion" si ese minimo es julio, o "recurrente" si es cualquier mes
+anterior (no exige actividad en junio especificamente: una marca activa en
+marzo, ausente en abril-junio y de vuelta en julio sigue siendo recurrente).
+"Primera aparicion" nunca se presenta como "cliente nuevo" absoluto: solo se
+observa la ventana Ene-Jul 2026, la marca puede haber pauteado antes.
+
+Multicircuito / un solo circuito (Sec.4 Tarjetas 4-5): cuenta grupos
+comerciales canonicos (_familia) distintos con >=1 activacion valida de la
+marca en julio.
 
 Uso:
     python scripts/build_tv6_dashboard.py
@@ -45,7 +65,9 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -63,18 +85,17 @@ REFERENCE_PATH = REPO_ROOT / "audit_sources" / "TV6_REFERENCE.html.html"
 DEFAULT_OUTPUT_HTML = REPO_ROOT / "tv6.html"
 DEFAULT_OUTPUT_JSON = REPO_ROOT / "output" / "tv6_data.json"
 
+IDCAMPANA_COL = "IDCampaña"
+
 MESES_ES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ]
 
-# Corte operativo TV6 para las KPI cards: mismo mes de reporte vigente en
-# TV1-5 (Julio 2026). No cambia con el enfoque hibrido.
+# Corte operativo TV6: periodo principal Julio 2026, ventana historica
+# Ene-Jul 2026 para determinar primera aparicion/recurrencia.
 REPORT_YEAR = 2026
 REPORT_MONTH = 7
-
-# Acumulado historico para los paneles inferiores (ranking + matriz): mismo
-# universo TV6, ventana Ene-Jul 2026 en vez de solo julio.
 HIST_START_ISO = "2026-01-01"
 HIST_END_ISO = "2026-07-31"
 HIST_LABEL = "Ene–Jul 2026"
@@ -86,23 +107,20 @@ HIST_LABEL = "Ene–Jul 2026"
 TV6_CIRCUITOS = ["CENCOSUD", "REMEROS", "PANTALLAS_LED", "PILAR_FRONTLIGHT", "AA2000", "YPF"]
 MEDIO_DIGITAL = "Digital"
 
-# Ciclo visual del ranking principal (CM1 Sec.B5): reemplaza Clientes por
-# Marcas -> Agencias -> Programatica.
-CICLO = ["marcas", "agencias", "programatica"]
 RANK_TOP_N = 6
-CONCENTRACION_TOP_N = 5
 MATRIZ_COLUMNAS = [
     "Pantallas LED", "Shoppings Digital", "Shoppings Estático",
     "AA2000 / Pilar Frontlight", "YPF",
 ]
 
-# Valores del campo Agencia que NO representan un nombre de agencia real
-# (CM1 Sec.B5/B11: no convertir vacio/"A confirmar" en agencia identificada).
-AGENCIA_VALORES_NO_IDENTIFICADOS = {"No", "A confirmar"}
-# Valores del campo Cliente que son placeholders, no un cliente real
-# (auditoria: "A CONFIRMAR" = pendiente, "AGENCIA" = vendido via agencia sin
-# cliente directo identificado).
-CLIENTE_PLACEHOLDERS = {"A CONFIRMAR", "AGENCIA"}
+# Placeholders del campo Marca (CM1 Sec.3): nunca cuentan como marca.
+MARCA_PLACEHOLDERS = {"A CONFIRMAR", "S/D", "SIN DATO", "N/A", ""}
+
+# Plataformas/intermediarios conocidos (auditoria 2026-08-23): si aparecen
+# en el campo Marca por un problema de carga de origen, esa activacion
+# queda "sin marca valida", nunca se cuenta como marca. TV6 ya no clasifica
+# canal/programatica -- este set solo protege la regla de negocio de Marca.
+PROGRAMATICA_PLATAFORMAS_EXCLUIR = {"TAGGIFY", "BEEYOND", "LATIN AD", "LATINAD", "GLOBAL"}
 
 
 class BuildError(Exception):
@@ -123,17 +141,27 @@ def _fmt_es_pct(v: float) -> str:
     return f"{v:.1f}".replace(".", ",")
 
 
-def _join_es(names) -> str:
-    names = list(names)
-    if not names:
-        return "sin agencia identificada"
-    if len(names) == 1:
-        return names[0]
-    return ", ".join(names[:-1]) + " y " + names[-1]
+def _norm_key(value: Any) -> str | None:
+    """Clave de comparacion normalizada (CM1 Sec.3): trim, colapso de
+    espacios repetidos, sin acentos, mayusculas. Nunca decide que mostrar
+    (eso conserva el valor original de la fuente), solo si dos valores son
+    la misma entidad o coinciden con un termino canonico/placeholder."""
+    if value is None:
+        return None
+    if isinstance(value, float) and pd.isna(value):
+        return None
+    if value is pd.NA:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    s = re.sub(r"\s+", " ", s)
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    return s.upper()
 
 
 # ---------------------------------------------------------------------------
-# Universo TV6 y scope de campanas (Core Comercial + YPF, julio 2026)
+# Universo TV6 y scope de campanas (Core Comercial + YPF)
 # ---------------------------------------------------------------------------
 
 
@@ -154,9 +182,9 @@ def build_tv6_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
 
 
 def _familia(row: pd.Series) -> str:
-    """Grupo comercial ejecutivo (CM1 Sec.B8): YPF conserva columna propia
-    (opcion explicitamente habilitada) en vez de mezclarse con Shoppings,
-    para no diluir su semantica de circuito propio dentro de la matriz."""
+    """Grupo comercial ejecutivo (CM1 Sec.2): YPF conserva columna propia en
+    vez de mezclarse con Shoppings, para no diluir su semantica de circuito
+    propio dentro de la matriz."""
     circuito = row["CircuitoNegocio"]
     if circuito == "YPF":
         return "YPF"
@@ -167,270 +195,272 @@ def _familia(row: pd.Series) -> str:
     return "AA2000 / Pilar Frontlight"
 
 
-def build_tv6_scope(engine: MetricsEngine, element_ids: list[Any], start: str, end: str) -> pd.DataFrame:
-    """Activaciones de julio 2026 en el universo TV6: solapamiento de mes
-    calendario completo (no snapshot puntual, a diferencia de TV4 pipeline),
-    mismo patron que TV1 clientes_activos/marcas_activas."""
+def build_tv6_scope(
+    engine: MetricsEngine, element_ids: list[Any], start: str, end: str, allow_empty: bool = False,
+) -> pd.DataFrame:
+    """Activaciones del periodo en el universo TV6: solapamiento de mes
+    calendario completo, deduplicado a grano (ElementoID, IDCampaña) --
+    ver docstring de modulo. "keep=first" es determinista porque CAMPANAS
+    ya viene ordenado por CargaID (orden de carga).
+
+    allow_empty=False (default, periodo principal Julio) falla explicito si
+    el universo no tiene ninguna activacion: es una señal de corte/universo
+    mal configurado. allow_empty=True se usa solo para los 7 scopes
+    mensuales de compute_monthly_brand_presence: un mes puntual sin
+    actividad es un dato valido (no un error de configuracion)."""
     scope = engine._campanas_overlap(element_ids, start, end)
     if scope.empty:
+        if allow_empty:
+            return scope.assign(_familia=pd.Series(dtype="object"))
         raise BuildError("Scope TV6 vacio para el periodo de reporte: revisar corte/universo")
-    scope = scope.copy()
+    scope = scope.drop_duplicates(subset=["ElementoID", IDCAMPANA_COL], keep="first").copy()
     scope["_familia"] = scope.apply(_familia, axis=1)
     return scope
 
 
+def _trim_ws(value: Any) -> str | None:
+    """Trim + colapso de espacios repetidos, preservando mayusculas/
+    minusculas y acentos originales (para mostrar). Ej.: 'PARQUE DE LA
+    COSTA ' (espacio final) y 'PARQUE DE LA COSTA' ya quedan identicos."""
+    if value is None or (isinstance(value, float) and pd.isna(value)) or value is pd.NA:
+        return None
+    s = re.sub(r"\s+", " ", str(value).strip())
+    return s or None
+
+
+def classify_marca(scope: pd.DataFrame) -> pd.DataFrame:
+    """Agrega _marca_k (clave normalizada para detectar placeholders/
+    plataformas), _marca_valida (CM1 Sec.3: excluye vacios, placeholders y
+    nombres de plataformas/intermediarios conocidos -- nunca usa Agencia/
+    Cliente como fallback) y _marca_canon (identidad canonica de marca:
+    misma clave normalizada = misma marca, ej. 'PARQUE DE LA COSTA' y
+    'PARQUE DE LA COSTA ' con espacio final cuentan como una sola marca).
+    El nombre de display de cada _marca_k es la variante mas frecuente ya
+    trimeada (_trim_ws), nunca la clave normalizada en mayusculas: preserva
+    el nombre real de la fuente."""
+    scope = scope.copy()
+    scope["_marca_k"] = scope["Marca"].apply(_norm_key)
+    placeholder = scope["_marca_k"].isna() | scope["_marca_k"].isin(MARCA_PLACEHOLDERS)
+    es_plataforma = scope["_marca_k"].isin(PROGRAMATICA_PLATAFORMAS_EXCLUIR)
+    scope["_marca_valida"] = ~placeholder & ~es_plataforma
+
+    scope["_marca_trim"] = scope["Marca"].apply(_trim_ws)
+    validas = scope[scope["_marca_valida"]]
+    if not validas.empty:
+        display_por_clave = (
+            validas.groupby("_marca_k")["_marca_trim"]
+            .agg(lambda s: s.value_counts().index[0])
+        )
+        scope["_marca_canon"] = scope["_marca_k"].map(display_por_clave)
+    else:
+        scope["_marca_canon"] = None
+    return scope
+
+
 # ---------------------------------------------------------------------------
-# Clientes directos (CM1 Sec.B7/B11): identificado = Agencia=="No" (explicito,
-# sin agencia) y Cliente real (no vacio, no placeholder). Vía agencia y A
-# confirmar quedan en buckets separados, nunca mezclados con "identificados".
+# Marcas activas de julio (Tarjeta 1) + control de calidad de contradiccion
 # ---------------------------------------------------------------------------
 
 
-def compute_clientes_directos(scope: pd.DataFrame) -> dict[str, Any]:
-    directo = scope[scope["Agencia"] == "No"]
-    identificado = directo[directo["Cliente"].notna() & ~directo["Cliente"].isin(CLIENTE_PLACEHOLDERS)]
+def compute_marcas_julio(scope: pd.DataFrame) -> dict[str, Any]:
+    validas = scope[scope["_marca_valida"]]
 
-    ranking = (
-        identificado.groupby("Cliente").size().reset_index(name="activaciones")
-        if not identificado.empty else pd.DataFrame(columns=["Cliente", "activaciones"])
+    contradiccion = (
+        validas.groupby(IDCAMPANA_COL)["_marca_canon"].nunique() if not validas.empty else pd.Series(dtype="int64")
     )
-    ranking = ranking.sort_values(["activaciones", "Cliente"], ascending=[False, True])
-
-    top = None
-    if not ranking.empty:
-        row = ranking.iloc[0]
-        top = {"nombre": row["Cliente"], "activaciones": int(row["activaciones"])}
+    campanas_marca_contradictoria = int((contradiccion > 1).sum())
 
     return {
-        "activos": int(identificado["Cliente"].nunique()),
-        "activaciones_totales": int(len(identificado)),
-        "top_identificado": top,
-        "ranking": [
-            {"nombre": r["Cliente"], "activaciones": int(r["activaciones"])}
-            for _, r in ranking.iterrows()
-        ],
+        "activas": int(validas["_marca_canon"].nunique()),
+        "campanas_unicas_total": int(scope[IDCAMPANA_COL].dropna().nunique()),
+        "campanas_unicas_marca_valida": int(validas[IDCAMPANA_COL].dropna().nunique()),
+        "activaciones_totales": int(len(scope)),
+        "activaciones_sin_marca_valida": int((~scope["_marca_valida"]).sum()),
+        "campanas_marca_contradictoria": campanas_marca_contradictoria,
     }
 
 
 # ---------------------------------------------------------------------------
-# Marcas (CM1 Sec.B4/B11): Core + YPF ya combinados en `scope`; distinct()
-# sobre Marca aplica la deduplicacion pedida en un solo paso.
+# Primera aparicion / recurrencia (Tarjetas 2-3): 7 scopes mensuales
+# independientes Ene-Jul, mismo universo, mismo grano.
 # ---------------------------------------------------------------------------
 
 
-def compute_marcas(scope: pd.DataFrame) -> dict[str, Any]:
-    marcas = scope[scope["Marca"].notna()]
-    counts = marcas.groupby("Marca").size().reset_index(name="activaciones")
-    counts = counts.sort_values(["activaciones", "Marca"], ascending=[False, True])
+def compute_monthly_brand_presence(engine: MetricsEngine, element_ids: list[Any]) -> dict[int, set[str]]:
+    presencia: dict[int, set[str]] = {}
+    for month in range(1, REPORT_MONTH + 1):
+        start, end = _period_bounds(REPORT_YEAR, month)
+        scope_mes = classify_marca(build_tv6_scope(engine, element_ids, start, end, allow_empty=True))
+        presencia[month] = set(scope_mes.loc[scope_mes["_marca_valida"], "_marca_canon"].unique())
+    return presencia
+
+
+def compute_recurrencia(marcas_julio: set[str], presencia_mensual: dict[int, set[str]]) -> dict[str, Any]:
+    todas_las_marcas = set().union(*presencia_mensual.values()) if presencia_mensual else set()
+    primer_mes: dict[str, int] = {
+        marca: min(m for m in presencia_mensual if marca in presencia_mensual[m])
+        for marca in todas_las_marcas
+    }
+
+    primera_aparicion = sorted(m for m in marcas_julio if primer_mes.get(m) == REPORT_MONTH)
+    recurrentes = sorted(m for m in marcas_julio if primer_mes.get(m) is not None and primer_mes[m] < REPORT_MONTH)
+    sin_historial = sorted(marcas_julio - set(primera_aparicion) - set(recurrentes))
+
+    total = len(marcas_julio)
+
+    def _pct(n: int) -> float | None:
+        return round(n / total * 100.0, 1) if total else None
 
     return {
-        "activas": int(marcas["Marca"].nunique()),
-        "ranking_top": [
-            {"nombre": r["Marca"], "activaciones": int(r["activaciones"])}
-            for _, r in counts.head(RANK_TOP_N).iterrows()
-        ],
-        "ranking_full": [
-            {"nombre": r["Marca"], "activaciones": int(r["activaciones"])}
-            for _, r in counts.iterrows()
-        ],
+        "primer_mes_por_marca": {m: primer_mes[m] for m in marcas_julio if m in primer_mes},
+        "primera_aparicion": {
+            "count": len(primera_aparicion), "pct": _pct(len(primera_aparicion)), "marcas": primera_aparicion,
+        },
+        "recurrentes": {
+            "count": len(recurrentes), "pct": _pct(len(recurrentes)), "marcas": recurrentes,
+        },
+        "sin_historial_comparable": {
+            "count": len(sin_historial), "pct": _pct(len(sin_historial)), "marcas": sin_historial,
+        },
+        "reconciliacion": {
+            "primera_mas_recurrentes_mas_sin_historial": (
+                len(primera_aparicion) + len(recurrentes) + len(sin_historial)
+            ),
+            "marcas_activas": total,
+            "ok": len(primera_aparicion) + len(recurrentes) + len(sin_historial) == total,
+        },
     }
 
 
 # ---------------------------------------------------------------------------
-# Agencias (CM1 Sec.B7/B11): identificada = nombre real, excluye "No" (sin
-# agencia) y "A confirmar" (pendiente). Ambos buckets se reportan aparte.
+# Multicircuito / un solo circuito (Tarjetas 4-5)
 # ---------------------------------------------------------------------------
 
 
-def compute_agencias(scope: pd.DataFrame) -> dict[str, Any]:
-    identificada_mask = scope["Agencia"].notna() & ~scope["Agencia"].isin(AGENCIA_VALORES_NO_IDENTIFICADOS)
-    identificadas = scope[identificada_mask]
+def compute_circuitos_por_marca(scope_julio: pd.DataFrame, marcas_julio: set[str]) -> dict[str, Any]:
+    validas = scope_julio[scope_julio["_marca_valida"]]
+    circuitos_count = validas.groupby("_marca_canon")["_familia"].nunique()
 
-    counts = identificadas.groupby("Agencia").size().reset_index(name="activaciones")
-    counts = counts.sort_values(["activaciones", "Agencia"], ascending=[False, True])
+    multicircuito = sorted(circuitos_count[circuitos_count >= 2].index.tolist())
+    un_solo_circuito = sorted(circuitos_count[circuitos_count == 1].index.tolist())
+    sin_circuito_valido = sorted(marcas_julio - set(multicircuito) - set(un_solo_circuito))
+
+    total = len(marcas_julio)
+
+    def _pct(n: int) -> float | None:
+        return round(n / total * 100.0, 1) if total else None
 
     return {
-        "activas": int(identificadas["Agencia"].nunique()),
-        "activaciones_totales": int(len(identificadas)),
-        "pendientes_a_confirmar": int((scope["Agencia"] == "A confirmar").sum()),
-        "ranking_top": [
-            {"nombre": r["Agencia"], "activaciones": int(r["activaciones"])}
-            for _, r in counts.head(RANK_TOP_N).iterrows()
-        ],
-        "nombres_identificados": set(identificadas["Agencia"].unique()),
+        "circuitos_por_marca": {m: int(circuitos_count.get(m, 0)) for m in marcas_julio},
+        "multicircuito": {"count": len(multicircuito), "pct": _pct(len(multicircuito)), "marcas": multicircuito},
+        "un_solo_circuito": {
+            "count": len(un_solo_circuito), "pct": _pct(len(un_solo_circuito)), "marcas": un_solo_circuito,
+        },
+        "sin_circuito_valido": {
+            "count": len(sin_circuito_valido), "pct": _pct(len(sin_circuito_valido)), "marcas": sin_circuito_valido,
+        },
+        "reconciliacion": {
+            "multicircuito_mas_uno_mas_sin_circuito": (
+                len(multicircuito) + len(un_solo_circuito) + len(sin_circuito_valido)
+            ),
+            "marcas_activas": total,
+            "ok": len(multicircuito) + len(un_solo_circuito) + len(sin_circuito_valido) == total,
+        },
     }
 
 
 # ---------------------------------------------------------------------------
-# Programatica (CM1 Sec.B5): subconjunto de Agencias con PROGRAMATICA=="Si".
-# Nunca infiere por nombre ni convierte vacio/"A confirmar" en clasificacion
-# positiva. Auditoria Ene-Jul confirmo que PROGRAMATICA="Si" nunca coincide
-# con ninguna de las 5 agencias identificadas del periodo (CARAT/OMD/OSA/
-# GROUPM/NEXT MEDIA) -- aparece unicamente sobre filas con Agencia="No" o
-# "A confirmar" (ej. Cliente=TAGGIFY/LATIN AD/BEEYOND). Esas activaciones NO
-# se eliminan del analisis general ni se reasignan artificialmente a una
-# agencia: quedan expuestas como "pendientes_sin_agencia" para que el panel
-# las muestre debajo del ranking (vacio en este caso) sin inventar clasificacion.
+# Ranking "Top marcas · Julio 2026" (panel izquierdo, estatico): orden
+# campañas unicas desc -> circuitos desc -> activaciones desc -> nombre asc.
+# Las activaciones NUNCA definen el orden (el volumen de elementos YPF
+# distorsiona la lectura de demanda real).
 # ---------------------------------------------------------------------------
 
 
-def compute_programatica(scope: pd.DataFrame, agencias_identificadas: set[Any]) -> dict[str, Any]:
-    flag_si = scope[scope["PROGRAMATICA"] == "Si"]
-    prog_identificadas = flag_si[flag_si["Agencia"].isin(agencias_identificadas)]
+def compute_ranking(scope_julio: pd.DataFrame, circuitos_por_marca: dict[str, int]) -> list[dict[str, Any]]:
+    validas = scope_julio[scope_julio["_marca_valida"]]
+    campanas = validas.groupby("_marca_canon")[IDCAMPANA_COL].nunique()
+    activaciones = validas.groupby("_marca_canon").size()
 
-    counts = prog_identificadas.groupby("Agencia").size().reset_index(name="activaciones")
-    counts = counts.sort_values(["activaciones", "Agencia"], ascending=[False, True])
-    ranking = [
-        {"nombre": r["Agencia"], "activaciones": int(r["activaciones"])}
-        for _, r in counts.iterrows()
+    filas = pd.DataFrame({
+        "campanas_unicas": campanas,
+        "circuitos": pd.Series(circuitos_por_marca),
+        "activaciones": activaciones,
+    }).fillna(0).rename_axis("Marca").reset_index()
+    filas = filas.sort_values(
+        ["campanas_unicas", "circuitos", "activaciones", "Marca"],
+        ascending=[False, False, False, True],
+    )
+
+    return [
+        {
+            "nombre": r["Marca"],
+            "campanas_unicas": int(r["campanas_unicas"]),
+            "circuitos": int(r["circuitos"]),
+            "activaciones": int(r["activaciones"]),
+        }
+        for _, r in filas.head(RANK_TOP_N).iterrows()
     ]
-    pendientes_sin_agencia = int(len(flag_si) - len(prog_identificadas))
-
-    return {
-        "estado": "OK" if ranking else "A_VALIDAR",
-        "ranking_top": ranking[:RANK_TOP_N],
-        "activaciones_flag_si_total": int(len(flag_si)),
-        "pendientes_sin_agencia": pendientes_sin_agencia,
-        "nota": (
-            f"{_fmt_es_int(pendientes_sin_agencia)} activaciones programáticas pendientes de "
-            f"imputación de agencia."
-            if pendientes_sin_agencia else ""
-        ),
-    }
 
 
 # ---------------------------------------------------------------------------
-# Concentracion Top 5 (CM1 Sec.B11.F): definicion explicita requerida por
-# spec -- Top 5 MARCAS (unidad del ranking principal del ciclo) sobre el
-# total de activaciones del universo TV6/julio.
+# Matriz "Demanda por circuito" (panel derecho): celdas = campañas unicas
+# por Marca x Circuito (no activaciones). Totales por circuito = todas las
+# marcas validas (no solo el Top 6).
 # ---------------------------------------------------------------------------
 
 
-def compute_concentracion_top5(scope: pd.DataFrame, marcas_ranking_full: list[dict[str, Any]]) -> dict[str, Any]:
-    total = len(scope)
-    top5 = marcas_ranking_full[:CONCENTRACION_TOP_N]
-    numerador = sum(m["activaciones"] for m in top5)
-    pct = round(numerador / total * 100.0, 1) if total else None
-    return {
-        "pct": pct,
-        "numerador": numerador,
-        "denominador": total,
-        "unidad": "activaciones",
-        "base": "Top 5 marcas",
-        "marcas": [m["nombre"] for m in top5],
-    }
+def compute_matriz(scope_julio: pd.DataFrame, top_nombres: list[str]) -> dict[str, Any]:
+    validas = scope_julio[scope_julio["_marca_valida"]]
 
-
-# ---------------------------------------------------------------------------
-# Matriz "Demanda por circuito" (CM1 Sec.B8): Top marcas (misma unidad que
-# el ranking principal) x grupo comercial, activaciones del mes. YPF con
-# columna propia.
-# ---------------------------------------------------------------------------
-
-
-def compute_matriz(scope: pd.DataFrame, top_marcas: list[str]) -> dict[str, Any]:
-    sub = scope[scope["Marca"].isin(top_marcas)]
-    pivot = sub.pivot_table(index="Marca", columns="_familia", values="ElementoID", aggfunc="count", fill_value=0)
+    sub = validas[validas["_marca_canon"].isin(top_nombres)]
+    pivot = sub.pivot_table(
+        index="_marca_canon", columns="_familia", values=IDCAMPANA_COL,
+        aggfunc=lambda s: s.dropna().nunique(), fill_value=0,
+    )
     for col in MATRIZ_COLUMNAS:
         if col not in pivot.columns:
             pivot[col] = 0
-    pivot = pivot.reindex(top_marcas)[MATRIZ_COLUMNAS].fillna(0)
+    pivot = pivot.reindex(top_nombres)[MATRIZ_COLUMNAS].fillna(0)
 
     filas = [
         {"nombre": nombre, "valores": [int(pivot.loc[nombre, c]) for c in MATRIZ_COLUMNAS]}
-        for nombre in top_marcas
+        for nombre in top_nombres
     ]
-    return {"columnas": MATRIZ_COLUMNAS, "filas": filas}
 
+    totales_por_circuito = {
+        col: int(validas.loc[validas["_familia"] == col, "_marca_canon"].nunique()) for col in MATRIZ_COLUMNAS
+    }
 
-# ---------------------------------------------------------------------------
-# Pendientes de imputacion (CM1 Sec.B7): buckets separados, nunca mezclados
-# con identificados/directos.
-# ---------------------------------------------------------------------------
-
-
-def compute_pendientes(scope: pd.DataFrame, agencias: dict[str, Any]) -> dict[str, Any]:
     return {
-        "clientes_via_agencia": agencias["activaciones_totales"],
-        "agencias_a_confirmar": agencias["pendientes_a_confirmar"],
-        "clientes_pendientes_imputacion": int(
-            (scope["Agencia"].isna() & scope["Cliente"].notna()).sum()
-        ),
+        "columnas": MATRIZ_COLUMNAS,
+        "totales_por_circuito": [totales_por_circuito[c] for c in MATRIZ_COLUMNAS],
+        "filas": filas,
     }
 
 
 # ---------------------------------------------------------------------------
-# Insights (Lectura / Punto positivo / A atender): combinan la foto de julio
-# (KPI cards) con el acumulado Ene-Jul (paneles), mismo patron de 3 columnas
-# que TV1-4. No inventa causas: cada frase cita un hecho ya calculado.
+# Insights (Lectura / Punto positivo / A atender): CM1 Sec.9, una oracion
+# breve por columna, siempre con datos ya calculados.
 # ---------------------------------------------------------------------------
 
 
 def compute_insights(
-    kpis_julio: dict[str, Any], agencias_julio: dict[str, Any],
-    marcas_hist: dict[str, Any], agencias_hist: dict[str, Any], programatica_hist: dict[str, Any],
-    concentracion_hist: dict[str, Any], familia_hist: dict[str, int], pendientes_julio: dict[str, Any],
+    marcas_julio: dict[str, Any], recurrencia: dict[str, Any], circuitos: dict[str, Any],
 ) -> dict[str, str]:
-    top_marcas_txt = ", ".join(m["nombre"] for m in marcas_hist["ranking_top"][:3])
-    top_agencias_txt = _join_es(a["nombre"] for a in agencias_hist["ranking_top"][:3])
-    familia_top = max(familia_hist.items(), key=lambda kv: kv[1]) if familia_hist else None
-    total_hist = sum(familia_hist.values()) or 1
-    familia_txt = ""
-    if familia_top and familia_top[1] > 0:
-        share = round(familia_top[1] / total_hist * 100.0, 1)
-        familia_txt = f", concentrada principalmente en <b>{familia_top[0]}</b> ({_fmt_es_pct(share)}%)"
-
     lectura = (
-        f"Julio registra <b>{_fmt_es_int(kpis_julio['marcas_activas'])} marcas</b> y "
-        f"<b>{_fmt_es_int(kpis_julio['agencias_activas'])} agencias</b> activas. En el acumulado "
-        f"{HIST_LABEL}, las principales marcas son <b>{top_marcas_txt}</b> y las agencias "
-        f"identificadas son <b>{top_agencias_txt}</b>{familia_txt}."
+        f"Julio reúne <b>{_fmt_es_int(marcas_julio['activas'])} marcas activas</b>: "
+        f"<b>{_fmt_es_int(recurrencia['primera_aparicion']['count'])}</b> registran su primera actividad de "
+        f"2026 y <b>{_fmt_es_int(recurrencia['recurrentes']['count'])}</b> ya habían pautado entre enero y junio."
     )
-
-    # PUNTO POSITIVO: prioridad -- mayor profundidad de agencias identificadas
-    # en el acumulado vs. julio; si no aplica, diversidad de marcas del acumulado.
-    if agencias_hist["activas"] > agencias_julio["activas"]:
-        agencias_nombres = ", ".join(a["nombre"] for a in agencias_hist["ranking_top"])
-        punto_positivo = (
-            f"El acumulado {HIST_LABEL} identifica <b>{_fmt_es_int(agencias_hist['activas'])} agencias</b> "
-            f"({agencias_nombres}) frente a las {_fmt_es_int(agencias_julio['activas'])} vistas en julio: "
-            f"mayor profundidad de imputación de canal en el año."
-        )
-    else:
-        punto_positivo = (
-            f"El acumulado {HIST_LABEL} registra <b>{_fmt_es_int(marcas_hist['activas'])} marcas distintas</b> "
-            f"activas, mostrando una base de demanda diversificada."
-        )
-
-    # A ATENDER: prioridad 1) activaciones programáticas sin agencia imputada;
-    # 2) A confirmar/pendientes; 3) concentración elevada; 4) dependencia YPF.
-    if programatica_hist["pendientes_sin_agencia"] > 0:
-        a_atender = (
-            f"<b>{_fmt_es_int(programatica_hist['pendientes_sin_agencia'])} activaciones programáticas</b> "
-            f"del acumulado {HIST_LABEL} quedan sin agencia imputada; el campo PROGRAMATICA no permite "
-            f"asociarlas a una agencia identificada."
-        )
-    elif pendientes_julio["agencias_a_confirmar"] > 0:
-        a_atender = (
-            f"Quedan <b>{_fmt_es_int(pendientes_julio['agencias_a_confirmar'])} activaciones</b> de julio "
-            f"con agencia A confirmar, pendientes de imputación."
-        )
-    elif concentracion_hist["pct"] is not None and concentracion_hist["pct"] >= 70:
-        a_atender = (
-            f"El Top 5 de marcas concentra <b>{_fmt_es_pct(concentracion_hist['pct'])}%</b> de las "
-            f"activaciones del acumulado {HIST_LABEL}: la demanda queda poco diversificada."
-        )
-    elif familia_top and familia_top[0] == "YPF" and familia_top[1] / total_hist >= 0.7:
-        a_atender = (
-            f"El acumulado {HIST_LABEL} depende fuertemente de <b>YPF</b> "
-            f"({_fmt_es_pct(round(familia_top[1] / total_hist * 100.0, 1))}% de las activaciones)."
-        )
-    else:
-        a_atender = (
-            f"El acumulado {HIST_LABEL} suma {_fmt_es_int(sum(familia_hist.values()))} activaciones "
-            f"sobre el universo Core Comercial + YPF."
-        )
-
+    punto_positivo = (
+        f"<b>{_fmt_es_int(circuitos['multicircuito']['count'])} marcas</b> están presentes en dos o más "
+        f"circuitos."
+    )
+    a_atender = (
+        f"<b>{_fmt_es_int(circuitos['un_solo_circuito']['count'])} marcas</b> pautan en un solo circuito: "
+        f"oportunidad de expansión comercial."
+    )
     return {"lectura": lectura, "punto_positivo": punto_positivo, "a_atender": a_atender}
 
 
@@ -463,36 +493,22 @@ def build_tv6_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
     _transform_result, semantic_result, engine = load_pipeline(path)
     universe = build_tv6_universe(semantic_result)
 
-    # Nivel 1: foto JULIO 2026 -- unica base de las 5 KPI cards (sin cambios
-    # respecto de la version anterior).
     start_jul, end_jul = _period_bounds(REPORT_YEAR, REPORT_MONTH)
-    scope_julio = build_tv6_scope(engine, universe["element_ids"], start_jul, end_jul)
+    scope_julio = classify_marca(build_tv6_scope(engine, universe["element_ids"], start_jul, end_jul))
 
-    clientes = compute_clientes_directos(scope_julio)
-    marcas_julio = compute_marcas(scope_julio)
-    agencias_julio = compute_agencias(scope_julio)
-    concentracion_julio = compute_concentracion_top5(scope_julio, marcas_julio["ranking_full"])
-    pendientes_julio = compute_pendientes(scope_julio, agencias_julio)
-    familia_julio = {k: int(v) for k, v in scope_julio["_familia"].value_counts().to_dict().items()}
+    marcas_julio_kpi = compute_marcas_julio(scope_julio)
+    marcas_julio_set = set(scope_julio.loc[scope_julio["_marca_valida"], "_marca_canon"].unique())
 
-    # Nivel 2: ACUMULADO Ene-Jul -- base de los paneles inferiores (ranking
-    # ciclado + matriz "Demanda por circuito"), para no ocultar actores que
-    # un unico mes no muestra (CM1 ajuste hibrido).
-    scope_hist = build_tv6_scope(engine, universe["element_ids"], HIST_START_ISO, HIST_END_ISO)
+    presencia_mensual = compute_monthly_brand_presence(engine, universe["element_ids"])
+    recurrencia = compute_recurrencia(marcas_julio_set, presencia_mensual)
 
-    marcas_hist = compute_marcas(scope_hist)
-    agencias_hist = compute_agencias(scope_hist)
-    programatica_hist = compute_programatica(scope_hist, agencias_hist["nombres_identificados"])
-    concentracion_hist = compute_concentracion_top5(scope_hist, marcas_hist["ranking_full"])
-    top_marcas_hist_nombres = [m["nombre"] for m in marcas_hist["ranking_top"]]
-    matriz = compute_matriz(scope_hist, top_marcas_hist_nombres)
-    familia_hist = {k: int(v) for k, v in scope_hist["_familia"].value_counts().to_dict().items()}
+    circuitos = compute_circuitos_por_marca(scope_julio, marcas_julio_set)
 
-    insights = compute_insights(
-        {"marcas_activas": marcas_julio["activas"], "agencias_activas": agencias_julio["activas"]},
-        agencias_julio, marcas_hist, agencias_hist, programatica_hist,
-        concentracion_hist, familia_hist, pendientes_julio,
-    )
+    ranking_top = compute_ranking(scope_julio, circuitos["circuitos_por_marca"])
+    top_nombres = [r["nombre"] for r in ranking_top]
+    matriz = compute_matriz(scope_julio, top_nombres)
+
+    insights = compute_insights(marcas_julio_kpi, recurrencia, circuitos)
 
     sha_after = vi.calculate_sha256(path)
     if sha_after != sha_before:
@@ -518,33 +534,39 @@ def build_tv6_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
             "circuitos": universe["circuitos"],
             "elementos": universe["elementos"],
             "julio": {
-                "campanas_unicas": int(scope_julio["IDCampaña"].dropna().nunique()),
-                "activaciones_totales": int(len(scope_julio)),
-                "activaciones_por_familia": familia_julio,
-            },
-            "hist": {
-                "periodo_label": HIST_LABEL,
-                "campanas_unicas": int(scope_hist["IDCampaña"].dropna().nunique()),
-                "activaciones_totales": int(len(scope_hist)),
-                "activaciones_por_familia": familia_hist,
+                "campanas_unicas": marcas_julio_kpi["campanas_unicas_total"],
+                "activaciones_totales": marcas_julio_kpi["activaciones_totales"],
+                "activaciones_sin_marca_valida": marcas_julio_kpi["activaciones_sin_marca_valida"],
             },
         },
-        "kpis": {
-            "clientes_directos_activos": clientes["activos"],
-            "marcas_activas": marcas_julio["activas"],
-            "agencias_activas": agencias_julio["activas"],
-            "cliente_top_identificado": clientes["top_identificado"],
-            "concentracion_top5": concentracion_julio,
+        "marcas": {
+            "activas_julio": marcas_julio_kpi["activas"],
+            "campanas_unicas_marca_valida_julio": marcas_julio_kpi["campanas_unicas_marca_valida"],
+            "activaciones_sin_marca_valida_julio": marcas_julio_kpi["activaciones_sin_marca_valida"],
+            "primera_aparicion": recurrencia["primera_aparicion"],
+            "recurrentes": recurrencia["recurrentes"],
+            "sin_historial_comparable": recurrencia["sin_historial_comparable"],
+            "primer_mes_por_marca": recurrencia["primer_mes_por_marca"],
+            "multicircuito": circuitos["multicircuito"],
+            "un_solo_circuito": circuitos["un_solo_circuito"],
+            "sin_circuito_valido": circuitos["sin_circuito_valido"],
+            "circuitos_por_marca": circuitos["circuitos_por_marca"],
+        },
+        "calidad": {
+            "campanas_marca_contradictoria": marcas_julio_kpi["campanas_marca_contradictoria"],
+        },
+        "reconciliacion": {
+            "recurrencia": recurrencia["reconciliacion"],
+            "circuitos": circuitos["reconciliacion"],
         },
         "ranking": {
-            "ciclo": CICLO,
-            "periodo_label": HIST_LABEL,
-            "marcas": marcas_hist["ranking_top"],
-            "agencias": agencias_hist["ranking_top"],
-            "programatica": programatica_hist,
+            "periodo_label": f"{MESES_ES[REPORT_MONTH - 1]} {REPORT_YEAR}",
+            "top": ranking_top,
         },
-        "matriz": {**matriz, "periodo_label": HIST_LABEL},
-        "pendientes": pendientes_julio,
+        "matriz": {
+            "periodo_label": f"{MESES_ES[REPORT_MONTH - 1]} {REPORT_YEAR}",
+            **matriz,
+        },
         "insights": insights,
     }
 
@@ -597,7 +619,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("TV6_BUILD_OK")
     print(json.dumps(result["data"]["meta"], ensure_ascii=False, indent=2))
-    print(json.dumps(result["data"]["kpis"], ensure_ascii=False, indent=2))
+    print(json.dumps(result["data"]["marcas"], ensure_ascii=False, indent=2, default=str))
     print("UNIVERSE:", json.dumps(result["universe"], ensure_ascii=False))
     return 0
 

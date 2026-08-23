@@ -13,6 +13,9 @@
    Identidad institucional obligatoria (manual de marca)
    Reutiliza el sistema visual productivo de TV1 (mismo stage,
    header, tipografia, paleta, insight de 3 columnas).
+   Rediseno 2026-08-22: unidad de negocio = ESPACIO/SLOT digital
+   (capacidad / ocupacion / disponibilidad), reemplaza el diseno
+   anterior de "elementos activos" y rankings.
    ============================================================ */
 
 :root{
@@ -75,10 +78,10 @@ body{
   background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
 }
 
-.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+.tv{position:absolute;inset:0;padding:34px 46px 26px;display:flex;flex-direction:column;z-index:2}
 
 /* ======================= HEADER ======================= */
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;min-height:92px;flex:none}
 .hdr-left{display:flex;align-items:center;gap:28px}
 .logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
 .logo-wrap img{width:190px;height:auto;display:block}
@@ -91,30 +94,35 @@ body{
   color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
   padding:2px 10px;letter-spacing:.08em;font-weight:700
 }
-.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
-.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
-.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
-.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
-.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
-.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.hdr-title{font-size:36px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:15.5px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:0}
+.clock{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:12px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:11.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:11.5px;color:var(--bp-white);font-weight:500;margin-top:2px;line-height:1.28;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:5px 14px;border-radius:14px;max-width:600px
+}
 
-/* ======================= KPIs (5 en una fila) ======================= */
-/* Tarjetas 1-4 mas compactas, "Slots disponibles" (5ta) mas ancha para su
-   desglose por familia; ancho total del dashboard sin cambios. */
-.kpis{display:grid;grid-template-columns:0.9fr 0.9fr 0.9fr 0.9fr 1.4fr;gap:16px;margin-top:18px;flex:none}
+/* ======================= KPIs (5 en una fila, 1a mas ancha) ======================= */
+.kpis{display:grid;grid-template-columns:1.55fr 0.85fr 0.85fr 0.95fr 0.95fr;gap:14px;margin-top:10px;flex:none;
+  isolation:isolate}
 .kpi{
-  position:relative;min-height:152px;padding:19px 20px;border-radius:var(--r-lg);
+  position:relative;min-height:150px;padding:16px 18px;border-radius:var(--r-lg);
   background:linear-gradient(160deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
-  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+  isolation:isolate
 }
 .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
 .kpi.k-fijo::after{background:var(--bp-cream)}
 .kpi.k-opp::after{background:var(--bp-warning)}
 .kpi.k-alert::after{background:var(--bp-coral)}
 .kpi.k-ok::after{background:var(--bp-success)}
-.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
-.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-label{font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.25}
+.kpi-note{font-size:12px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
 .kpi-note.pos{color:var(--bp-success)}
 .kpi-note.warn{color:var(--bp-warning)}
 .kpi-note.alert{color:var(--bp-coral)}
@@ -125,67 +133,88 @@ body{
 .kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
 .kpi-split .main{display:flex;flex-direction:column}
 .kpi-split .main .sv{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1}
-.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .main .sl{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
 .kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
 .kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
-.kpi-split .sec .sv{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
-.kpi-split .sec .sl{font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
-/* Tarjetas 1-4: mas compactas horizontalmente (ver .kpis grid-template-columns)
-   pero con numeros/porcentajes algo mas grandes para aprovechar el espacio. */
-.kpi-lead .kpi-split .main .sv{font-size:40px}
-.kpi-lead .kpi-split .sec .sv{font-size:24px}
-/* Tarjeta 5 "Slots disponibles": mas ancha, desglose por familia mas prolijo. */
-.kpi-wide{padding:19px 26px}
-.kpi-wide .kpi-note-sub{font-size:11.5px}
+.kpi-split .sec .sv{font-size:20px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:9.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+/* Tarjeta 1 (Catalogo): mas ancha, con desglose por familia + composicion.
+   Altura acotada al mismo min-height que el resto de las tarjetas: todo el
+   contenido entra en un layout compacto de una sola linea por bloque
+   (spec Sec.23 "sin overflow, sin textos cortados"). */
+.kpi-catalogo{padding:15px 22px}
+.kpi-catalogo .cat-value{font-size:33px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.cat-breakdown{display:flex;gap:16px;margin-top:6px}
+.cat-breakdown .cb{display:flex;flex-direction:column;gap:1px}
+.cat-breakdown .cb .v{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.cat-breakdown .cb .l{font-size:9px;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.04em}
+.cat-elementos{font-size:11px;color:var(--bp-blue-soft);font-weight:600;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-formatos{font-size:9.5px;color:var(--bp-muted);margin-top:2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ======================= BODY ======================= */
-.body{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
-.split{display:grid;grid-template-rows:1fr 1fr;gap:22px;min-height:0}
+.body{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;margin-top:16px;flex:1;min-height:0}
+.split{display:grid;grid-template-rows:1fr 1fr;gap:20px;min-height:0}
 .panel{
-  position:relative;padding:22px 26px;border-radius:var(--r-lg);min-height:0;
+  position:relative;padding:20px 24px;border-radius:var(--r-lg);min-height:0;
   background:linear-gradient(165deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
   display:flex;flex-direction:column
 }
-.panel-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;flex:none}
-.panel-title{font-size:19px;font-weight:700;letter-spacing:-.01em}
-.panel-sub{font-size:12.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;flex:none}
+.panel-head-txt{display:flex;flex-direction:column;gap:2px}
+.panel-title{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:12px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
 .panel-body{flex:1;min-height:0;position:relative}
 .chart-wrap{position:absolute;inset:0}
 
-/* ======================= RANKINGS ======================= */
-.rank{display:flex;flex-direction:column;gap:10px;height:100%;justify-content:space-around}
-.rank.tight{gap:14px;justify-content:space-evenly}
-.rrow{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:12px}
-.rrow .rk{font-size:14px;font-weight:700;color:var(--bp-blue-soft);text-align:center}
-.rname{font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rname .sub{display:block;font-size:11.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em}
-.rbar{grid-column:1 / -1;height:7px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
-.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bp-blue),var(--bp-blue-soft))}
-.dual{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.01em;white-space:nowrap}
-.chip.fill{background:rgba(28,96,255,.22);color:var(--bp-blue-soft);border:1px solid rgba(28,96,255,.36)}
-.chip.ocup{background:rgba(47,224,132,.16);color:var(--bp-success);border:1px solid rgba(47,224,132,.30)}
-.rank-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+/* ======================= LEYENDA DE ESCALA (matrices) ======================= */
+.heat-legend{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--bp-muted);flex:none}
+.heat-legend .bar{width:90px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(28,96,255,.06),rgba(28,96,255,.95))}
+
+/* ======================= MATRICES (heatmap HTML) ======================= */
+.heat-wrap{position:absolute;inset:0;overflow:hidden}
+.heat-table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}
+.heat-table th, .heat-table td{border:1px solid rgba(255,255,255,.06);text-align:center;padding:0;overflow:hidden}
+.heat-table thead th{
+  font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.02em;
+  background:rgba(255,255,255,.03)
+}
+.heat-table thead th.sitio-h{text-align:left;padding-left:6px}
+.heat-table td.sitio{
+  text-align:left;padding:0 6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:rgba(255,255,255,.03);max-width:0
+}
+.heat-table td.cell{font-weight:600;color:var(--bp-white);letter-spacing:-.01em}
+.heat-table td.cell.empty{color:var(--bp-muted);font-weight:400}
+/* Fila "pendiente" (spec correccion Remeros 2026-08-22, Caso C): sitio con
+   elementos digitales reales pero sin regla de conversion a espacios
+   confirmada. Patron rayado + texto mas chico para no leerse como un 0%
+   real (que se pinta con el mismo azul de la escala, nunca gris rayado). */
+.heat-table tr.pendiente td.sitio{color:var(--bp-warning)}
+.heat-table tr.pendiente td.sitio .ast{color:var(--bp-warning);font-weight:800}
+.heat-table td.cell.pendiente{
+  color:var(--bp-muted);font-weight:400;font-size:.82em;letter-spacing:0;
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 4px,rgba(255,255,255,.01) 4px 8px)
+}
+.heat-footnote{font-size:9.5px;color:var(--bp-warning);margin-top:3px;flex:none;line-height:1.3}
 
 /* ======================= INSIGHT (3 columnas, igual TV1) ======================= */
 .insight{
-  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  margin-top:16px;flex:none;padding:16px 26px;border-radius:var(--r-md);
   background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
   border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
 }
-.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:5px;padding:2px 24px;min-width:0}
 .insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.25)}
 .insight-col .lab{
-  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+  font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
 }
 .insight-col.lectura .lab{color:var(--bp-blue-soft)}
 .insight-col.positivo .lab{color:var(--bp-success)}
 .insight-col.atender .lab{color:var(--bp-warning)}
-.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p{font-size:15px;line-height:1.34;font-weight:400}
 .insight-col p b{font-weight:700;color:var(--bp-white)}
-
-.note-aa2000{font-size:11px;color:rgba(167,176,194,.7);margin-top:8px;flex:none;font-style:italic}
 
 .wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
 .muted{color:var(--bp-muted)}
@@ -203,30 +232,39 @@ body{
           <div class="hdr-titles">
             <div class="eyebrow"><span class="tvno">TV 2</span> OCU26 &middot; Inteligencia Comercial</div>
             <div class="hdr-title">Core Comercial Digital</div>
-            <div class="hdr-sub">Rendimiento Pantallas LED + Shoppings Digital + AA2000</div>
+            <div class="hdr-sub">Capacidad, ocupaci&oacute;n y disponibilidad de slots &middot; Pantallas LED + Shoppings Digital + AA2000</div>
           </div>
         </div>
         <div class="hdr-right">
           <div class="clock" data-clock></div>
           <div class="updated" data-updated></div>
           <div class="period-tag" data-period></div>
+          <div class="question">&iquest;CU&Aacute;NTA CAPACIDAD DIGITAL TENEMOS, CU&Aacute;NTA EST&Aacute; OCUPADA Y D&Oacute;NDE HAY DISPONIBILIDAD?</div>
         </div>
       </header>
       <div class="kpis" data-kpis="tv2"></div>
       <div class="body">
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Pantallas LED &middot; ranking de julio</div><div class="panel-sub">Fill rate + ocupaci&oacute;n calendario</div></div>
-          <div class="panel-body"><div class="rank tight" data-rank="pantallas"></div></div>
+          <div class="panel-head">
+            <div class="panel-head-txt"><div class="panel-title">Evoluci&oacute;n mensual del fill rate digital</div><div class="panel-sub">Pantallas LED &middot; Shoppings Digital &middot; AA2000</div></div>
+          </div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv2-evol"></canvas></div></div>
         </div>
         <div class="split">
           <div class="panel">
-            <div class="panel-head"><div class="panel-title">Shoppings Digital &middot; ranking de julio</div><div class="panel-sub">Fill rate + ocupaci&oacute;n calendario</div></div>
-            <div class="panel-body"><div class="rank" data-rank="shoppings"></div></div>
+            <div class="panel-head">
+              <div class="panel-head-txt"><div class="panel-title">Ocupaci&oacute;n mensual por Shopping</div><div class="panel-sub">Slots ocupados / capacidad confirmada</div></div>
+              <div class="heat-legend"><span>0%</span><span class="bar"></span><span>100%</span></div>
+            </div>
+            <div class="panel-body"><div class="heat-wrap" data-matrix="shoppings"></div></div>
+            <div class="heat-footnote" data-footnote="shoppings"></div>
           </div>
           <div class="panel">
-            <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual &middot; Core Digital</div><div class="panel-sub">Fill rate &middot; Pantallas LED vs Shoppings Digital</div></div>
-            <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv2-evol"></canvas></div></div>
-            <div class="note-aa2000">AA2000 incluido en KPIs generales del Core</div>
+            <div class="panel-head">
+              <div class="panel-head-txt"><div class="panel-title">Ocupaci&oacute;n mensual por Pantalla LED</div><div class="panel-sub">Slots ocupados / capacidad confirmada</div></div>
+              <div class="heat-legend"><span>0%</span><span class="bar"></span><span>100%</span></div>
+            </div>
+            <div class="panel-body"><div class="heat-wrap" data-matrix="pantallas"></div></div>
           </div>
         </div>
       </div>
@@ -257,11 +295,6 @@ var $ = function(s,el){return (el||document).querySelector(s)};
 var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
 var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
 var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
-var cap = function(s){
-  if(s==null) return '—';
-  s = String(s).toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();});
-  return s.replace(/\bAa2000\b/gi,'AA2000');
-};
 
 /* ---------- ESCALADO 1920x1080 ---------- */
 function scaleStage(){
@@ -271,105 +304,142 @@ function scaleStage(){
 }
 window.addEventListener('resize', scaleStage);
 
-/* ---------- RELOJ / FECHA ---------- */
+/* ---------- RELOJ / FECHA (America/Argentina/Buenos_Aires, siempre) ----------
+   El reloj vivo NUNCA usa la zona horaria del dispositivo/TV: se fuerza
+   explicitamente a Buenos Aires via Intl.DateTimeFormat. "Actualizado" NUNCA
+   usa la hora de apertura del HTML: se lee unicamente de D.meta.generado
+   (momento real de generacion del builder, ya timezone-aware ART). */
+var ART_TZ = 'America/Argentina/Buenos_Aires';
+var clockFmt = new Intl.DateTimeFormat('es-AR', { timeZone: ART_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 function tick(){
-  var now = new Date();
-  var hh = String(now.getHours()).padStart(2,'0');
-  var mm = String(now.getMinutes()).padStart(2,'0');
-  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+  var parts = clockFmt.formatToParts(new Date());
+  var hh = '00', mm = '00';
+  parts.forEach(function(p){ if(p.type==='hour') hh=p.value; if(p.type==='minute') mm=p.value; });
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm+' ART'; });
 }
 function stampUpdated(){
-  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  var now=new Date();
-  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  var txt = D.meta && D.meta.generado ? ('Actualizado '+D.meta.generado+' ART') : 'Actualizado —';
   $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
   $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
 }
 
-/* ---------- KPI helpers (mismo patron que TV1) ---------- */
-function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
-  return '<div class="kpi '+(cardCls||'')+'">'+
-    '<div class="kpi-label">'+label+'</div>'+
-    '<div class="kpi-split">'+
-      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
-      '<div class="sep"></div>'+
-      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
-    '</div>'+
-    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
-  '</div>';
+/* ---------- KPI helpers ---------- */
+function signedInt(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+fmt(v);
 }
-function kpiSplitBigLeftDual(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,note2,cardCls){
-  return '<div class="kpi '+(cardCls||'')+'">'+
-    '<div class="kpi-label">'+label+'</div>'+
-    '<div class="kpi-split">'+
-      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
-      '<div class="sep"></div>'+
-      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
-    '</div>'+
-    '<div class="kpi-notes">'+
-      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
-      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
-    '</div>'+
-  '</div>';
-}
-function setKpis(html){ var el=$('[data-kpis="tv2"]'); if(el) el.innerHTML=html; }
-
 function signedPp(v){
   if(v==null) return 'S/D';
   var s = v>0 ? '+' : '';
   return s+Number(v).toFixed(1).replace('.',',')+' pp';
 }
-/* Regla estandar: sube = mejora (verde), baja = atencion (rojo). */
 function noteClsForDelta(v){
   if(v==null) return '';
   if(v>0) return 'pos';
   if(v<0) return 'alert';
   return '';
 }
-/* Disponibilidad es inversa: MENOS disponible = mejor utilizacion (verde),
-   MAS disponible = capacidad ociosa (rojo). Spec TV2 Sec.16. */
-function noteClsForAvailability(v){
-  if(v==null) return '';
-  if(v<0) return 'pos';
-  if(v>0) return 'alert';
-  return '';
+function setKpis(html){ var el=$('[data-kpis="tv2"]'); if(el) el.innerHTML=html; }
+
+function kpiCatalogo(cat, prevLbl){
+  var variacion = cat.total===cat.total_anterior ? 'Sin variaci&oacute;n vs '+prevLbl.toLowerCase() : (signedInt(cat.total-cat.total_anterior)+' vs '+prevLbl.toLowerCase());
+  var formatos = (cat.formatos||[]).map(function(f){ return f.nombre+' '+pctEs(f.pct); }).join(' &middot; ');
+  return '<div class="kpi kpi-catalogo">'+
+    '<div class="kpi-label">Espacios del cat&aacute;logo digital</div>'+
+    '<div class="cat-value">'+fmt(cat.total)+'</div>'+
+    '<div class="cat-breakdown">'+
+      '<div class="cb"><span class="v">'+fmt(cat.shoppings)+'</span><span class="l">Shoppings</span></div>'+
+      '<div class="cb"><span class="v">'+fmt(cat.pantallas)+'</span><span class="l">Pantallas LED</span></div>'+
+      '<div class="cb"><span class="v">'+fmt(cat.aa2000)+'</span><span class="l">AA2000</span></div>'+
+    '</div>'+
+    '<div class="cat-elementos">Capacidad confirmada en '+fmt(cat.elementos_confirmados)+' elementos publicitarios</div>'+
+    '<div class="cat-formatos">'+formatos+'</div>'+
+    '<div class="kpi-note">'+variacion+'</div>'+
+  '</div>';
+}
+
+function kpiOcupacion(core, prevLbl){
+  return '<div class="kpi">'+
+    '<div class="kpi-label">Ocupaci&oacute;n de espacios</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Slots ocupados</span><span class="sv">'+fmt(core.ocupados)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">Fill rate</span><span class="sv">'+pctEs(core.fill_pct)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+noteClsForDelta(core.delta_pp)+'"><span class="dot"></span>'+prevLbl+' '+fmt(core.ocupados_anterior)+' &middot; '+signedPp(core.delta_pp)+'</div>'+
+      '<div class="kpi-note kpi-note-sub">YTD prom. '+fmt(Math.round(core.ocupados_ytd_promedio))+' &middot; fill YTD '+pctEs(core.fill_pct_ytd)+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function kpiDisponibles(core, prevLbl){
+  return '<div class="kpi k-opp">'+
+    '<div class="kpi-label">Slots disponibles</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Disponibles</span><span class="sv">'+fmt(core.disponibles)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">% disponibilidad</span><span class="sv">'+pctEs(core.disp_pct)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note"><span class="dot"></span>'+prevLbl+' '+fmt(core.disponibles_anterior)+' &middot; '+signedInt(core.delta_disponibles)+'</div>'+
+      '<div class="kpi-note kpi-note-sub">YTD prom. '+fmt(Math.round(core.disponibles_ytd_promedio))+' &middot; disp. YTD '+pctEs(core.disp_pct_ytd)+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function kpiFamilia(label, fam, prevLbl, cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Ocupados</span><span class="sv">'+fmt(fam.ocupados)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">Fill rate</span><span class="sv">'+pctEs(fam.fill_pct)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+noteClsForDelta(fam.delta_pp)+'"><span class="dot"></span>'+prevLbl+' '+pctEs(fam.fill_pct_anterior)+' &middot; '+signedPp(fam.delta_pp)+'</div>'+
+      '<div class="kpi-note kpi-note-sub">Disp. '+fmt(fam.disponibles)+' ('+pctEs(fam.disp_pct)+') &middot; cap. '+fmt(fam.capacidad)+' &middot; YTD fill '+pctEs(fam.fill_pct_ytd)+'</div>'+
+    '</div>'+
+  '</div>';
 }
 
 /* =========================================================
    TV 2 · render principal
    ========================================================= */
 function render(){
-  var k = D.kpis || {};
-  var oc = k.ocupacion_calendario || {};
-  var fd = k.fill_digital || {};
-  var pant = k.pantallas || {};
-  var shop = k.shoppings || {};
-  var sd = k.slots_disponibles || {};
+  var cat = D.catalogo || {};
+  var cards = D.cards || {};
   var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
 
   var html = '';
-  html += kpiSplitBigLeft('Ocupaci&oacute;n por calendario', 'Activos', fmt(oc.activos), '% con campa&ntilde;a', pctEs(oc.pct_actual),
-    (prevLbl+' '+pctEs(oc.pct_anterior)+' &middot; '+signedPp(oc.delta_pp)), noteClsForDelta(oc.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Fill rate digital', 'Slots ocupados', fmt(fd.numerador), '% capacidad vendida', pctEs(fd.pct_actual),
-    (prevLbl+' '+pctEs(fd.pct_anterior)+' &middot; '+signedPp(fd.delta_pp)), noteClsForDelta(fd.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Pantallas LED', 'Activos', fmt(pant.activos), '% con campa&ntilde;a', pctEs(pant.pct_actual),
-    (prevLbl+' '+pctEs(pant.pct_anterior)+' &middot; '+signedPp(pant.delta_pp)), noteClsForDelta(pant.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Shoppings Digital', 'Activos', fmt(shop.activos), '% con campa&ntilde;a', pctEs(shop.pct_actual),
-    (prevLbl+' '+pctEs(shop.pct_anterior)+' &middot; '+signedPp(shop.delta_pp)), noteClsForDelta(shop.delta_pp), 'kpi-lead k-fijo');
-  var ap = sd.apertura || {};
-  var apLine = 'Disponibles: Pantallas '+pctEs(ap.pantallas?ap.pantallas.pct:null)+' &middot; Shoppings '+pctEs(ap.shoppings?ap.shoppings.pct:null)+' &middot; AA2000 '+pctEs(ap.aa2000?ap.aa2000.pct:null);
-  html += kpiSplitBigLeftDual('Slots disponibles', 'Disponibles', fmt(sd.disponibles), '% de capacidad', pctEs(sd.pct_actual),
-    (prevLbl+' '+pctEs(sd.pct_anterior)+' &middot; '+signedPp(sd.delta_pp)), noteClsForAvailability(sd.delta_pp), apLine, 'kpi-wide k-opp');
+  html += kpiCatalogo(cat, prevLbl);
+  html += kpiOcupacion(cards.core||{}, prevLbl);
+  html += kpiDisponibles(cards.core||{}, prevLbl);
+  html += kpiFamilia('Pantallas LED', cards.pantallas||{}, prevLbl, 'k-fijo');
+  html += kpiFamilia('Shoppings Digital', cards.shoppings||{}, prevLbl, 'k-fijo');
   setKpis(html);
-
-  renderRank('pantallas', D.ranking_pantallas || []);
-  renderRank('shoppings', D.ranking_shoppings || []);
 
   var ev = D.evolution || {};
   lineChart('c-tv2-evol', ev.meses||[], [
-    {label:'Pantallas LED', data:ev.pantallas||[], color:C.blue},
-    {label:'Shoppings Digital', data:ev.shoppings||[], color:C.cream}
+    {label:'Pantallas LED', data:(ev.pantallas||{}).fill||[], color:C.blue, dash:[], point:'circle'},
+    {label:'Shoppings Digital', data:(ev.shoppings||{}).fill||[], color:C.cream, dash:[], point:'rect'},
+    {label:'AA2000', data:(ev.aa2000||{}).fill||[], color:C.teal, dash:[6,4], point:'triangle'}
   ], '%', true);
+
+  renderMatrix('shoppings', D.matrix_shoppings || {meses:[],filas:[]});
+  renderMatrix('pantallas', D.matrix_pantallas || {meses:[],filas:[]});
+  /* La tipografia (Google Fonts) puede terminar de cargar DESPUES del primer
+     render (FOUT/FOIT): si eso desplaza el layout, el alto de fila calculado
+     en fitMatrixRows quedaria obsoleto. document.fonts.ready garantiza una
+     segunda pasada con las metricas finales, sin la cual las matrices podrian
+     desbordar por unos pixeles (spec Sec.16 "sin scroll"). */
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){
+      renderMatrix('shoppings', D.matrix_shoppings || {meses:[],filas:[]});
+      renderMatrix('pantallas', D.matrix_pantallas || {meses:[],filas:[]});
+    });
+  }
 
   var ins = D.insights || {};
   $('[data-insight-lectura]').innerHTML = ins.lectura || '';
@@ -377,21 +447,66 @@ function render(){
   $('[data-insight-atender]').innerHTML = ins.a_atender || '';
 }
 
-function renderRank(key, rows){
-  var el = $('[data-rank="'+key+'"]');
+/* =========================================================
+   MATRICES (heatmap HTML, misma escala 0-100% en ambas)
+   ========================================================= */
+function heatColor(pct){
+  if(pct==null) return 'rgba(255,255,255,.02)';
+  var p = Math.max(0, Math.min(100, pct)) / 100;
+  var alpha = 0.05 + p*0.80;
+  return 'rgba(28,96,255,'+alpha.toFixed(3)+')';
+}
+function renderMatrix(key, m){
+  var el = $('[data-matrix="'+key+'"]');
   if(!el) return;
-  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de ranking</div>'; return; }
-  el.innerHTML = rows.map(function(r,i){
-    var fillTxt = r.fill_pct==null ? 'S/D' : pctEs(r.fill_pct);
-    var ocupTxt = r.ocup_pct==null ? 'S/D' : pctEs(r.ocup_pct);
-    var w = Math.max(2, Math.min(100, r.fill_pct||0));
-    return '<div class="rrow">'+
-      '<div class="rk">'+(i+1)+'</div>'+
-      '<div class="rname">'+cap(r.sitio)+'</div>'+
-      '<div class="dual"><span class="chip fill">'+fillTxt+' fill</span><span class="chip ocup">'+ocupTxt+' ocup</span></div>'+
-      '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
-    '</div>';
+  var meses = m.meses||[], filas = m.filas||[];
+  if(!filas.length){ el.innerHTML = '<div class="muted" style="padding:10px">Sin datos de matriz</div>'; return; }
+  var thead = '<thead><tr><th class="sitio-h">Sitio</th>'+meses.map(function(mo){return '<th>'+mo+'</th>';}).join('')+'</tr></thead>';
+  var pendientes = [];
+  var rows = filas.map(function(f){
+    if(f.pendiente) pendientes.push(f);
+    var cells = f.celdas.map(function(c){
+      if(f.pendiente){
+        return '<td class="cell pendiente" title="'+(c.status||'REQUIERE_CONFIRMACION')+'">'+(c.label||'S/D')+'</td>';
+      }
+      if(c.fill_pct==null){
+        return '<td class="cell empty">'+(c.label||'—')+'</td>';
+      }
+      return '<td class="cell" style="background:'+heatColor(c.fill_pct)+'">'+c.label+'</td>';
+    }).join('');
+    var nombreTd = f.pendiente
+      ? '<td class="sitio" title="'+f.sitio+' · capacidad por confirmar ('+f.elementos_pendientes+' elementos)">'+f.sitio+'<span class="ast">*</span></td>'
+      : '<td class="sitio" title="'+f.sitio+' · cap. '+fmt(f.capacidad)+'">'+f.sitio+'</td>';
+    return '<tr'+(f.pendiente?' class="pendiente"':'')+'>'+nombreTd+cells+'</tr>';
   }).join('');
+  el.innerHTML = '<table class="heat-table">'+thead+'<tbody>'+rows+'</tbody></table>';
+  fitMatrixRows(el, filas.length + 1);
+
+  var foot = $('[data-footnote="'+key+'"]');
+  if(foot){
+    foot.textContent = pendientes.length
+      ? pendientes.map(function(f){ return '* '+f.sitio+' — capacidad por confirmar ('+f.elementos_pendientes+' elementos digitales sin regla de conversión a espacios, no incluidos en capacidad/ocupación/fill rate).'; }).join(' ')
+      : '';
+  }
+}
+
+/* El contenedor .heat-wrap tiene una altura fija (no puede haber scroll,
+   spec Sec.16 "sin scroll"): en vez de confiar en que el navegador
+   distribuya filas de <table> dentro de un height:100% (las tablas no
+   encogen celdas por debajo del contenido), se mide el alto disponible
+   una vez montado el DOM y se fuerza un alto de fila + tamano de fuente
+   consistentes via <tr style>. Misma funcion para ambas matrices: mismo
+   criterio de escala (spec Sec.18 "mismo tamaño de celdas cuando sea
+   posible"). */
+function fitMatrixRows(el, nRows){
+  var h = el.clientHeight;
+  if(!h || !nRows) return;
+  var rowH = Math.floor(h / nRows);
+  var font = rowH >= 22 ? 10.5 : (rowH >= 18 ? 9.5 : (rowH >= 15 ? 8.5 : 7.5));
+  var pad = rowH >= 20 ? 2 : 1;
+  $$('tr', el).forEach(function(tr){ tr.style.height = rowH+'px'; });
+  $$('th, td', el).forEach(function(c){ c.style.fontSize = font+'px'; });
+  $$('td.sitio', el).forEach(function(c){ c.style.padding = '0 '+(4+pad)+'px'; });
 }
 
 /* =========================================================
@@ -402,10 +517,10 @@ function baseOpts(suffix){
   return {
     responsive:true, maintainAspectRatio:false,
     animation:{duration:700},
-    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:13,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:14 } } },
+    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:12,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:12 } } },
     scales:{
-      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12}} },
-      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12},callback:function(v){return v+(suffix||'')}} }
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:11.5}} },
+      y:{ min:0, max:100, grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:11.5},callback:function(v){return v+(suffix||'')}} }
     }
   };
 }
@@ -416,9 +531,9 @@ function lineChart(id,labels,series,suffix,showLastVal){
   var opts=baseOpts(suffix);
   var plugins=[];
   if(showLastVal){
-    /* Etiqueta numerica SOLO en el ultimo punto (mes vigente del tablero,
-       julio): evita ruido visual sobre Ene-Jun. Offset por dataset para
-       que las 2 etiquetas de julio no se superpongan entre si. */
+    /* Etiqueta numerica SOLO en el ultimo punto (mes vigente, julio): evita
+       ruido visual sobre Ene-Jun. Offset por dataset para que las 3
+       etiquetas de julio no se superpongan entre si. */
     plugins.push({ id:'lastvals', afterDatasetsDraw:function(chart){
       var cx=chart.ctx;
       chart.data.datasets.forEach(function(ds,di){
@@ -428,18 +543,28 @@ function lineChart(id,labels,series,suffix,showLastVal){
         if(!pt||v==null) return;
         cx.save();
         cx.font='700 12px Poppins, sans-serif';
-        cx.fillStyle=ds.borderColor; cx.textAlign='center';
-        var yOff = -10 - (di*15);
-        cx.fillText(Number(v).toFixed(1).replace('.',',')+'%', pt.x, pt.y+yOff);
+        cx.fillStyle=ds.borderColor; cx.textAlign='left';
+        /* Offset horizontal (no solo vertical): cuando dos series terminan en
+           valores cercanos (p.ej. Pantallas 38,6% vs Shoppings 38,4%) un
+           offset solo-vertical todavia superpone el texto porque ambos
+           puntos caen casi en el mismo pixel Y. Se escalona en X e Y por
+           dataset para separar las 3 etiquetas de julio entre si. Si el
+           punto esta pegado al piso del grafico (AA2000 suele estar en 0%)
+           el offset se invierte hacia arriba para no pisar el eje X. */
+        var xOff = 8, yOff = -6 + (di*13);
+        var bottomLimit = chart.chartArea.bottom - 4;
+        if(pt.y + yOff > bottomLimit) yOff = -14;
+        cx.fillText(Number(v).toFixed(1).replace('.',',')+'%', pt.x+xOff, pt.y+yOff);
         cx.restore();
       });
     }});
-    opts.layout={padding:{top:26,bottom:4}};
+    opts.layout={padding:{top:22,bottom:4,right:46}};
   }
   charts[id]=new Chart(ctx,{ type:'line',
     data:{ labels:labels, datasets:series.map(function(s){return {
       label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
-      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+      borderWidth:3, borderDash:s.dash||[], tension:.32, pointRadius:4, pointStyle:s.point||'circle',
+      pointBackgroundColor:s.color, spanGaps:true, fill:false }; }) },
     options:opts, plugins:plugins
   });
 }

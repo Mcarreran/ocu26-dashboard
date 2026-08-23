@@ -1,16 +1,29 @@
 """Capa de datos para el dashboard TV2 - OCU26 (Core Comercial Digital).
 
+Rediseno completo 2026-08-22 (spec "TV2 - ESPACIOS/SLOTS", reemplaza el
+diseno anterior basado en "elementos activos"/"ocupacion por calendario"/
+rankings). Unidad de negocio unica: ESPACIO/SLOT digital, misma logica
+canonica de capacidad que TV1 (Marco Rector CM3 2026-08-19,
+build_tv1_dashboard.py compute_espacios): TOTEM en Shopping=10,
+PUENTE_LED=10, PANTALLA_LED=20, TRIEDRO/Tripstore AA2000=capacidad
+registrada (CapacidadSlotsReel). Las tasas y la formula NO se reimportan de
+build_tv1_dashboard.py (builders independientes por diseno, ver docstring
+original mas abajo) pero SI se duplican identicas a proposito: mismo Excel +
+misma formula = mismos numeros, verificado contra output/tv1_data.json.
+
 Se ejecuta DESPUES de scripts/semantic_model.py y scripts/metrics_engine.py
 (Gate 3B). Reutiliza export_data.load_pipeline (Gate 4A), mismo patron que
 build_tv1_dashboard.py: no reabre el Excel, no reimplementa reglas de
-negocio de Gate 3 (toda cifra sale de MetricsEngine.query()). No importa
-build_tv1_dashboard.py a proposito: TV1 queda protegida/aislada, cada TV
-es un builder independiente sobre el mismo pipeline compartido.
+negocio de Gate 3 (los slots ocupados salen de MetricsEngine._digital_period_activity,
+motor ya aprobado). No importa build_tv1_dashboard.py a proposito: TV1 queda
+protegida/aislada, cada TV es un builder independiente sobre el mismo
+pipeline compartido.
 
 Universo TV2 = CORE COMERCIAL DIGITAL = Pantallas LED + Shoppings Digital
-(Cencosud + Remeros) + AA2000 Digital. YPF/APSA/London Supply excluidos.
-AA2000 alimenta los KPIs generales del Core pero no tiene tarjeta ni
-ranking propio (spec TV2 Sec.4,19).
+(Cencosud + Remeros) + AA2000 Digital. YPF/Cencomedia/APSA/London Supply
+excluidos (nunca entran, ni siquiera se listan). AA2000 alimenta capacidad/
+ocupacion/disponibilidad y la evolucion mensual (3 series) pero no tiene
+tarjeta propia (spec Sec.4,14).
 
 Uso:
     python scripts/build_tv2_dashboard.py
@@ -21,9 +34,11 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -38,6 +53,7 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "tv2_template.ht
 REFERENCE_PATH = REPO_ROOT / "audit_sources" / "TV1_REFERENCE.html.html"
 DEFAULT_OUTPUT_HTML = REPO_ROOT / "tv2.html"
 DEFAULT_OUTPUT_JSON = REPO_ROOT / "output" / "tv2_data.json"
+TV1_CONTROL_JSON = REPO_ROOT / "output" / "tv1_data.json"
 
 MESES_ES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -45,16 +61,21 @@ MESES_ES = [
 ]
 MESES_ES_ABR = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
-# Periodo de referencia TV2 (spec Sec.3): Julio 2026, vs Junio 2026, evolucion Ene-Jul.
+ART_TZ = ZoneInfo("America/Argentina/Buenos_Aires")
+ART_TZ_NAME = "America/Argentina/Buenos_Aires"
+
+# Periodo de referencia TV2 (spec Sec.7): Julio 2026, vs Junio 2026, evolucion
+# Ene-Jul. Dinamico: cambiar estos dos numeros re-genera todo el tablero.
 REPORT_YEAR = 2026
 REPORT_MONTH = 7
 
-# Universo TV2 (spec Sec.4-6): Core Comercial Digital = Pantallas LED +
-# Shoppings Digital (Cencosud+Remeros) + AA2000 Digital. YPF/APSA/London
-# nunca entran (ni siquiera se listan aqui). Cada ElementoID pertenece a
-# una sola familia funcional, determinada por CircuitoNegocio (nunca por
-# nombre de sitio/ubicacion): evita que "Pantalla Led" ubicada en Remeros
-# se confunda con "Shoppings Remeros" (son CircuitoNegocio distintos).
+# Universo TV2 (spec Sec.4): Core Comercial Digital = Pantallas LED +
+# Shoppings Digital (Cencosud+Remeros) + AA2000 Digital. YPF/Cencomedia/
+# APSA/London nunca entran. Cada ElementoID pertenece a una sola familia
+# funcional, determinada por CircuitoNegocio (nunca por nombre de sitio):
+# evita que una Pantalla LED ubicada en "Remeros" se confunda con el
+# shopping "Remeros" (son CircuitoNegocio distintos: PANTALLAS_LED vs
+# REMEROS).
 PANTALLAS_CIRCUITOS = ["PANTALLAS_LED"]
 SHOPPINGS_CIRCUITOS = ["CENCOSUD", "REMEROS"]
 AA2000_CIRCUITOS = ["AA2000"]
@@ -65,9 +86,31 @@ FAMILY_MAP = {
     "REMEROS": "Shoppings",
     "AA2000": "AA2000",
 }
+FAMILIAS = ["Pantallas", "Shoppings", "AA2000"]
 
-RANKING_PANTALLAS_TOP_N = 5
-RANKING_SHOPPINGS_TOP_N = 3
+# Tasas de conversion a ESPACIOS/SLOTS (Marco Rector CM3 2026-08-19, identicas
+# a build_tv1_dashboard.py ESPACIOS_POR_FORMATO_DIGITAL: TOTEM de Shopping=10,
+# PUENTE_LED=10, PANTALLA_LED=20). Deliberadamente distintas del perfil legacy
+# de config/business_semantics.json (Gate3 slots_profiles): esas cifras NO se
+# reutilizan aqui, por instruccion explicita del usuario (ver TV1 Sec.
+# ESPACIOS_POR_FORMATO_DIGITAL).
+ESPACIOS_POR_FORMATO_DIGITAL: dict[str, int] = {
+    "PANTALLA_LED": 20,
+    "TOTEM": 10,
+    "PUENTE_LED": 10,
+}
+
+# Categorias de composicion fisica (tarjeta 1, spec Sec.9): Tripstore AA2000
+# se clasifica FISICAMENTE como Totem (mismo formato de catalogo, "Totem
+# Simple") aunque comercialmente pertenezca a AA2000, no a Shoppings.
+_CATEGORIA_A_ETIQUETA: dict[str, str] = {
+    "PANTALLA_LED": "Pantallas LED",
+    "TOTEM_SHOPPING": "Tótems",
+    "TRIPSTORE_AA2000": "Tótems",
+    "PUENTE_LED": "Puentes LED",
+    "TRIEDRO": "Triedros",
+}
+_ETIQUETA_ORDEN = ["Pantallas LED", "Tótems", "Puentes LED", "Triedros"]
 
 
 class BuildError(Exception):
@@ -95,6 +138,12 @@ def _fmt_es_int(n: int) -> str:
     return f"{n:,}".replace(",", ".")
 
 
+def _fmt_es_pct(v: float | None) -> str:
+    if v is None:
+        return "S/D"
+    return f"{v:.1f}".replace(".", ",")
+
+
 # ---------------------------------------------------------------------------
 # Universo TV2
 # ---------------------------------------------------------------------------
@@ -117,245 +166,448 @@ def build_tv2_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# KPI 1 - Ocupacion por calendario (Core Digital)
+# Capacidad en espacios/slots (identica a TV1 compute_espacios, Sec.6)
 # ---------------------------------------------------------------------------
 
 
-def _distinct_activos_registrados(
-    engine: MetricsEngine, circuitos: list[str], period: tuple[str, str], previous: tuple[str, str],
-) -> dict[str, Any]:
-    """COUNT DISTINCT ElementoID digital con campana / COUNT DISTINCT
-    ElementoID digital elegible, scope=circuitos (spec Sec.8: misma
-    definicion canonica que TV1 'Digital por calendario', recalculada con
-    scope TV2)."""
-    reg = engine.query("elementos_registrados", filters={"CircuitoNegocio": circuitos, "Medio": "Digital"})
-    reg_value = int(reg["Value"].iloc[0]) if len(reg) else 0
+def _espacio_capacidad_digital(row: pd.Series) -> tuple[float | None, str]:
+    """Capacidad en espacios de UN elemento digital TV2, y su categoria de
+    reporting (identico a build_tv1_dashboard._espacio_capacidad_digital,
+    duplicado a proposito: ver docstring del modulo).
 
-    act = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": circuitos, "Medio": "Digital"}, start_date=period[0], end_date=period[1])
-    act_value = int(act["Value"].iloc[0]) if len(act) else 0
+    - PANTALLA_LED: 20 (regla confirmada).
+    - TOTEM en CENCOSUD (Totem de Shopping): 10.
+    - TOTEM (formato OTRO, Descripcion "TV Led") en REMEROS: 10 (correccion
+      2026-08-22, regla de negocio confirmada por el usuario: los 6
+      elementos digitales de Remeros Shoppings son totems comerciales de 10
+      slots cada uno, aunque semantic_model los resuelve como
+      FormatoNegocio=OTRO -- la Descripcion "TV Led" no matchea ningun
+      keyword rule de business_semantics.json. Nunca se confunde con el
+      elemento Remeros de Pantallas LED: ese tiene CircuitoNegocio
+      PANTALLAS_LED, no REMEROS, y su propia regla PANTALLA_LED=20 sigue
+      intacta.
+    - TOTEM en AA2000 ("Tripstore"): capacidad REGISTRADA (CapacidadSlotsReel),
+      nunca la tasa de 10 de Shopping.
+    - PUENTE_LED: 10.
+    - TRIEDRO: capacidad registrada (CapacidadSlotsReel).
+    - Cualquier otro formato (p.ej. 'OTRO' fuera de Remeros): sin regla ->
+      (None, 'SIN_REGLA'), nunca se inventa una cifra (quedan en
+      REQUIERE_CONFIRMACION, spec Sec.4.C y Sec.9)."""
+    fmt = row["FormatoNegocio"]
+    circuito = row["CircuitoNegocio"]
+    if fmt == "PANTALLA_LED":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"]), "PANTALLA_LED"
+    if fmt == "PUENTE_LED":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"]), "PUENTE_LED"
+    if fmt == "TOTEM" and circuito == "CENCOSUD":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
+    if fmt == "OTRO" and circuito == "REMEROS":
+        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
+    if fmt == "TOTEM" and circuito == "AA2000":
+        legacy = row["CapacidadSlotsReel"]
+        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIPSTORE_AA2000"
+    if fmt == "TRIEDRO":
+        legacy = row["CapacidadSlotsReel"]
+        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIEDRO"
+    return None, "SIN_REGLA"
 
-    act_prev = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": circuitos, "Medio": "Digital"}, start_date=previous[0], end_date=previous[1])
-    act_prev_value = int(act_prev["Value"].iloc[0]) if len(act_prev) else 0
 
-    pct_actual = _round1(act_value / reg_value * 100.0) if reg_value else None
-    pct_anterior = _round1(act_prev_value / reg_value * 100.0) if reg_value else None
-    delta_pp = _round1(pct_actual - pct_anterior) if pct_actual is not None and pct_anterior is not None else None
+# Elementos exactos cubiertos por la regla "OTRO+REMEROS=Totem" (correccion
+# 2026-08-22): usado unicamente para la validacion de cantidad en
+# build_catalog_maps, nunca para filtrar/clasificar (la clasificacion real
+# sale de _espacio_capacidad_digital, dinamica sobre CircuitoNegocio/
+# FormatoNegocio).
+REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO = 6
+
+
+def _con_capacidad_digital(digital: pd.DataFrame) -> pd.DataFrame:
+    """Agrega columnas _capacidad/_categoria/_familia. Ver
+    build_tv1_dashboard._con_capacidad_digital (mismo patron, incluye el
+    manejo del caso limite de DataFrame vacio)."""
+    digital = digital.copy()
+    if digital.empty:
+        digital["_capacidad"] = pd.Series(dtype="float64")
+        digital["_categoria"] = pd.Series(dtype="object")
+        digital["_familia"] = pd.Series(dtype="object")
+        return digital
+    capacidades = digital.apply(_espacio_capacidad_digital, axis=1, result_type="expand")
+    digital["_capacidad"] = pd.to_numeric(capacidades[0], errors="coerce")
+    digital["_categoria"] = capacidades[1]
+    digital["_familia"] = digital["CircuitoNegocio"].map(FAMILY_MAP)
+    return digital
+
+
+def build_catalog_maps(universe: dict[str, Any]) -> dict[str, Any]:
+    """Estructuras de capacidad/elementos por familia y por sitio (spec
+    Sec.9,16,17): estructural, no depende de periodo/actividad. Devuelve
+    tambien el catalogo `cats` completo (incluye SIN_REGLA) para poder
+    contar los 19 soportes sin capacidad confirmada."""
+    cats = _con_capacidad_digital(universe["maestro"])
+    confirmed = cats[cats["_capacidad"].notna()].copy()
+    sin_regla = cats[cats["_capacidad"].isna()].copy()
+
+    # Validacion de cantidad (spec correccion Remeros 2026-08-22 Sec.1): SI el
+    # universo incluye elementos Remeros con esta regla, deben ser EXACTAMENTE
+    # 6. Un universo sintetico/de test SIN ningun elemento Remeros (0) es un
+    # caso distinto y valido (no es "la cantidad cambio", es que este universo
+    # no incluye Remeros); solo se bloquea una cantidad PARCIAL/inesperada
+    # (1-5 o 7+), que si indicaria que la base cambio y hay que revisar antes
+    # de seguir aplicando la regla en silencio.
+    remeros_totems = confirmed[(confirmed["CircuitoNegocio"] == "REMEROS") & (confirmed["_categoria"] == "TOTEM_SHOPPING")]
+    n_remeros_totems = int(remeros_totems["ElementoID"].nunique())
+    if n_remeros_totems != 0 and n_remeros_totems != REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO:
+        raise BuildError(
+            f"Regla 'Totems Remeros Shoppings Digital' esperaba "
+            f"{REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO} elementos, se encontraron "
+            f"{n_remeros_totems}: {sorted(remeros_totems['ElementoID'].unique().tolist())}. "
+            f"Revisar si cambio el universo de REMEROS antes de continuar."
+        )
+
+    familia_ids = {fam: confirmed.loc[confirmed["_familia"] == fam, "ElementoID"].tolist() for fam in FAMILIAS}
+    familia_capacidad = {fam: float(confirmed.loc[confirmed["_familia"] == fam, "_capacidad"].sum()) for fam in FAMILIAS}
+
+    sitio_ids: dict[str, dict[str, list[Any]]] = {}
+    sitio_capacidad: dict[str, dict[str, float]] = {}
+    for fam in FAMILIAS:
+        sub = confirmed[confirmed["_familia"] == fam]
+        sitio_ids[fam] = {s: g["ElementoID"].tolist() for s, g in sub.groupby("SitioNegocio")}
+        sitio_capacidad[fam] = {s: float(g["_capacidad"].sum()) for s, g in sub.groupby("SitioNegocio")}
+
+    # Sitios PENDIENTES (Caso C, spec Sec.4.C): sitios con elementos
+    # digitales de la familia que existen en el universo TV2 pero SIN regla
+    # de conversion a espacios confirmada (p.ej. los 11 "Patio de Comidas"
+    # OTRO de Cencosud en Unicenter). Remeros Shoppings YA NO cae aqui desde
+    # la correccion 2026-08-22 (paso a `confirmed` via la regla Totem
+    # arriba). Nunca se inventa capacidad para lo que queda pendiente: se
+    # muestra en las matrices como REQUIERE_CONFIRMACION.
+    sitio_pendiente_ids: dict[str, dict[str, list[Any]]] = {}
+    for fam in FAMILIAS:
+        sub = sin_regla[sin_regla["_familia"] == fam]
+        sitio_pendiente_ids[fam] = {s: g["ElementoID"].tolist() for s, g in sub.groupby("SitioNegocio")}
 
     return {
-        "activos": act_value,
-        "elegibles": reg_value,
-        "anterior_activos": act_prev_value,
-        "pct_actual": pct_actual,
-        "pct_anterior": pct_anterior,
-        "delta_pp": delta_pp,
+        "cats": cats,
+        "confirmed": confirmed,
+        "sin_regla": sin_regla,
+        "familia_ids": familia_ids,
+        "familia_capacidad": familia_capacidad,
+        "sitio_ids": sitio_ids,
+        "sitio_capacidad": sitio_capacidad,
+        "sitio_pendiente_ids": sitio_pendiente_ids,
     }
 
 
-def compute_kpi1_ocupacion_calendario(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    return _distinct_activos_registrados(engine, TV2_CIRCUITOS, period, previous)
+def compute_catalogo(maps: dict[str, Any]) -> dict[str, Any]:
+    """Tarjeta 1 - Espacios del catalogo digital (spec Sec.9): capacidad
+    comercial (930), N elementos con capacidad confirmada (72) y su
+    composicion por formato fisico (Pantallas LED/Totems/Puentes/Triedros,
+    Tripstore clasificado como Totem)."""
+    confirmed = maps["confirmed"]
+    familia_capacidad = maps["familia_capacidad"]
+    total = sum(familia_capacidad.values())
+    n_confirmados = int(confirmed["ElementoID"].nunique())
+    n_sin_confirmar = int(maps["sin_regla"]["ElementoID"].nunique())
 
-
-# ---------------------------------------------------------------------------
-# Fill rate (generico, reutilizado para KPI general / Pantallas / Shoppings / AA2000)
-# ---------------------------------------------------------------------------
-
-
-def _fill_family(engine: MetricsEngine, circuitos: list[str], period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """slots ocupados / capacidad aplicable (spec Sec.9), scope=circuitos.
-    fill_rate_slots ya escopea Medio=Digital internamente (metrics_engine
-    _compute_digital_metric). Preserva MetricStatus, nunca convierte
-    NO_APLICA/PARTIAL a cero."""
-    actual = engine.query("fill_rate_slots", filters={"CircuitoNegocio": circuitos}, start_date=period[0], end_date=period[1])
-    anterior = engine.query("fill_rate_slots", filters={"CircuitoNegocio": circuitos}, start_date=previous[0], end_date=previous[1])
-    a = actual.iloc[0]
-    p = anterior.iloc[0]
-
-    pct_actual = _round1(a["Value"]) if pd.notna(a["Value"]) else None
-    pct_anterior = _round1(p["Value"]) if pd.notna(p["Value"]) else None
-    delta_pp = _round1(pct_actual - pct_anterior) if pct_actual is not None and pct_anterior is not None else None
-    numerador = a["Numerator"] if pd.notna(a["Numerator"]) else None
-    denominador = a["Denominator"] if pd.notna(a["Denominator"]) else None
-
-    return {
-        "numerador": int(round(numerador)) if numerador is not None else None,
-        "numerador_raw": float(numerador) if numerador is not None else None,
-        "denominador": int(denominador) if denominador is not None else None,
-        "pct_actual": pct_actual,
-        "pct_anterior": pct_anterior,
-        "delta_pp": delta_pp,
-        "status": a["MetricStatus"],
-        "status_anterior": p["MetricStatus"],
-    }
-
-
-def compute_kpi2_fill_digital(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    return _fill_family(engine, TV2_CIRCUITOS, period, previous)
-
-
-def compute_pantallas_fill(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """Fill rate de Pantallas (uso interno: reconciliacion del Core, KPI5
-    y su desglose de disponibilidad, e insights). No es la tarjeta KPI3
-    (esa es ocupacion por calendario, ver compute_kpi3_pantallas_ocupacion)."""
-    return _fill_family(engine, PANTALLAS_CIRCUITOS, period, previous)
-
-
-def compute_shoppings_fill(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """Fill rate de Shoppings (mismo uso interno que compute_pantallas_fill)."""
-    return _fill_family(engine, SHOPPINGS_CIRCUITOS, period, previous)
-
-
-def compute_kpi3_pantallas_ocupacion(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """Tarjeta KPI3 'Pantallas LED': ocupacion por calendario (misma
-    definicion canonica que KPI1, scope=Pantallas)."""
-    return _distinct_activos_registrados(engine, PANTALLAS_CIRCUITOS, period, previous)
-
-
-def compute_kpi4_shoppings_ocupacion(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """Tarjeta KPI4 'Shoppings Digital': ocupacion por calendario (misma
-    definicion canonica que KPI1, scope=Shoppings, incluye Remeros)."""
-    return _distinct_activos_registrados(engine, SHOPPINGS_CIRCUITOS, period, previous)
-
-
-def compute_aa2000_fill(engine: MetricsEngine, period: tuple[str, str], previous: tuple[str, str]) -> dict[str, Any]:
-    """AA2000 no tiene tarjeta ni ranking propio (spec Sec.4,19): solo se
-    calcula para reconciliar el Core general y alimentar la apertura de
-    disponibilidad por familia."""
-    return _fill_family(engine, AA2000_CIRCUITOS, period, previous)
-
-
-def _assert_family_reconciles_with_core(kpi2: dict, pant: dict, shop: dict, aa2000: dict) -> None:
-    """Pantallas + Shoppings + AA2000 deben reconciliar con el fill general
-    del Core (spec Sec.4 tabla D): el universo TV2 es una particion
-    disjunta por CircuitoNegocio, asi que numerador/denominador deben
-    sumar exacto. Si algun dia esto deja de cumplirse (ej. un circuito
-    nuevo mal mapeado en FAMILY_MAP) el build debe fallar, no mostrar un
-    Core que no reconcilia."""
-    num_sum = sum(x["numerador_raw"] or 0.0 for x in (pant, shop, aa2000))
-    den_sum = sum(x["denominador"] or 0 for x in (pant, shop, aa2000))
-    if kpi2["denominador"] is not None and den_sum != kpi2["denominador"]:
-        raise BuildError(f"Capacidad no reconcilia: familias={den_sum} vs Core={kpi2['denominador']}")
-    if kpi2["numerador_raw"] is not None and abs(num_sum - kpi2["numerador_raw"]) > 0.01:
-        raise BuildError(f"Slots ocupados no reconcilian: familias={num_sum} vs Core={kpi2['numerador_raw']}")
-
-
-# ---------------------------------------------------------------------------
-# KPI 5 - Slots disponibles (Core) + apertura por familia
-# ---------------------------------------------------------------------------
-
-
-def compute_kpi5_slots_disponibles(
-    kpi2: dict[str, Any], pant: dict[str, Any], shop: dict[str, Any], aa2000: dict[str, Any],
-) -> dict[str, Any]:
-    """slots_disponibles = capacidad_total - slots_ocupados (spec Sec.16).
-    Disponibilidad es inversa a fill: MENOS disponible = mejor utilizacion."""
-
-    def _disponible(fam: dict[str, Any]) -> dict[str, Any]:
-        if fam["denominador"] is None or fam["numerador_raw"] is None:
-            return {"disponibles": None, "pct": None, "status": fam["status"]}
-        disp_raw = fam["denominador"] - fam["numerador_raw"]
-        return {
-            "disponibles": int(round(disp_raw)),
-            "pct": _round1(disp_raw / fam["denominador"] * 100.0) if fam["denominador"] else None,
-            "status": fam["status"],
-        }
-
-    core_actual_disp = kpi2["denominador"] - kpi2["numerador_raw"] if kpi2["denominador"] is not None and kpi2["numerador_raw"] is not None else None
-    pct_actual = _round1(core_actual_disp / kpi2["denominador"] * 100.0) if core_actual_disp is not None and kpi2["denominador"] else None
-
-    # anterior: recalculado a partir de pct_anterior de fill (ya redondeado
-    # de forma independiente, mismo patron que TV1 kpi5 delta_pp).
-    den = kpi2["denominador"]
-    pct_anterior = _round1(100.0 - kpi2["pct_anterior"]) if kpi2["pct_anterior"] is not None else None
-    delta_pp = _round1(pct_actual - pct_anterior) if pct_actual is not None and pct_anterior is not None else None
-
-    return {
-        "disponibles": int(round(core_actual_disp)) if core_actual_disp is not None else None,
-        "capacidad_total": den,
-        "pct_actual": pct_actual,
-        "pct_anterior": pct_anterior,
-        "delta_pp": delta_pp,
-        "apertura": {
-            "pantallas": _disponible(pant),
-            "shoppings": _disponible(shop),
-            "aa2000": _disponible(aa2000),
-        },
-    }
-
-
-# ---------------------------------------------------------------------------
-# Rankings (Pantallas Top5, Shoppings Top3) - por SitioNegocio
-# ---------------------------------------------------------------------------
-
-
-def _ranking_por_sitio(engine: MetricsEngine, circuitos: list[str], period: tuple[str, str], top_n: int) -> list[dict[str, Any]]:
-    """Fill rate + ocupacion calendario por SitioNegocio (dimension de
-    sitio fisico, ortogonal a CircuitoNegocio: config.sitio_negocio).
-    fill_rate_slots incluye TODOS los sitios registrados (incluso con 0
-    slots ocupados); elementos_con_actividad solo devuelve sitios con
-    >=1 elemento activo -> se hace left-join y se rellena 0 (nunca se
-    excluye un sitio con actividad real 0, ver spec Sec.17 'NO usar
-    NO_APLICA = 0': aqui el 0 es real, no ausencia de dato)."""
-    fill_df = engine.query("fill_rate_slots", group_by=["SitioNegocio"], filters={"CircuitoNegocio": circuitos}, start_date=period[0], end_date=period[1])
-    act_df = engine.query("elementos_con_actividad", group_by=["SitioNegocio"], filters={"CircuitoNegocio": circuitos, "Medio": "Digital"}, start_date=period[0], end_date=period[1])
-    reg_df = engine.query("elementos_registrados", group_by=["SitioNegocio"], filters={"CircuitoNegocio": circuitos, "Medio": "Digital"})
-
-    act_map = dict(zip(act_df["SitioNegocio"], act_df["Value"])) if len(act_df) else {}
-    reg_map = dict(zip(reg_df["SitioNegocio"], reg_df["Value"])) if len(reg_df) else {}
-
-    rows = []
-    for _, r in fill_df.iterrows():
-        sitio = r["SitioNegocio"]
-        if sitio is None or (isinstance(sitio, float) and pd.isna(sitio)):
+    etiquetas = confirmed["_categoria"].map(_CATEGORIA_A_ETIQUETA)
+    conteo = etiquetas.value_counts()
+    formatos = []
+    for nombre in _ETIQUETA_ORDEN:
+        n = int(conteo.get(nombre, 0))
+        if n == 0 and nombre not in conteo.index:
             continue
-        elegibles = int(reg_map.get(sitio, 0))
-        activos = int(act_map.get(sitio, 0))
-        ocup_pct = _round1(activos / elegibles * 100.0) if elegibles else None
-        fill_pct = _round1(r["Value"]) if pd.notna(r["Value"]) else None
-        rows.append({
-            "sitio": sitio,
-            "fill_pct": fill_pct,
-            "ocup_pct": ocup_pct,
-            "elegibles": elegibles,
-            "activos": activos,
-            "status": r["MetricStatus"],
+        formatos.append({
+            "nombre": nombre,
+            "elementos": n,
+            "pct": _round1(n / n_confirmados * 100.0) if n_confirmados else None,
         })
+    # Categoria residual: cualquier _categoria confirmada que no mapee a las
+    # 4 etiquetas canonicas (no deberia ocurrir con las reglas vigentes, pero
+    # nunca se oculta un elemento confirmado de la composicion, spec Sec.9
+    # "Otros digitales").
+    etiquetados = sum(f["elementos"] for f in formatos)
+    resto = n_confirmados - etiquetados
+    if resto > 0:
+        formatos.append({"nombre": "Otros digitales", "elementos": resto, "pct": _round1(resto / n_confirmados * 100.0)})
 
-    # Orden: fill DESC, ocupacion DESC, nombre ASC (spec Sec.17-18). NO_APLICA
-    # (fill_pct None) va al final, nunca se trata como 0.
-    rows.sort(key=lambda x: (
-        x["fill_pct"] is None,
-        -(x["fill_pct"] or 0),
-        -(x["ocup_pct"] or 0),
-        x["sitio"],
-    ))
-    return rows[:top_n]
+    suma_pct = round(sum(f["pct"] or 0.0 for f in formatos), 1)
+    if abs(suma_pct - 100.0) > 0.15:
+        raise BuildError(f"Porcentajes de composicion por formato no suman ~100% (tolerancia 0.1pp): {suma_pct}")
 
+    if n_confirmados + n_sin_confirmar != int(maps["cats"]["ElementoID"].nunique()):
+        raise BuildError("Confirmados + sin confirmar no reconcilia con el universo TV2 total")
 
-def compute_ranking_pantallas(engine: MetricsEngine, period: tuple[str, str]) -> list[dict[str, Any]]:
-    return _ranking_por_sitio(engine, PANTALLAS_CIRCUITOS, period, RANKING_PANTALLAS_TOP_N)
-
-
-def compute_ranking_shoppings(engine: MetricsEngine, period: tuple[str, str]) -> list[dict[str, Any]]:
-    return _ranking_por_sitio(engine, SHOPPINGS_CIRCUITOS, period, RANKING_SHOPPINGS_TOP_N)
+    total_i = int(round(total))
+    return {
+        # Capacidad estructural (catalogo de elementos con formato/tasa
+        # confirmada): no depende del periodo/actividad, por eso
+        # total_anterior/total_ytd_promedio son iguales a total (spec Sec.9
+        # "No mostrar una variación ficticia si la capacidad permaneció
+        # estable"). Se exponen igual para que el template no necesite
+        # asumir nada por su cuenta.
+        "total": total_i,
+        "shoppings": int(round(familia_capacidad["Shoppings"])),
+        "pantallas": int(round(familia_capacidad["Pantallas"])),
+        "aa2000": int(round(familia_capacidad["AA2000"])),
+        "total_anterior": total_i,
+        "total_ytd_promedio": float(total_i),
+        "elementos_confirmados": n_confirmados,
+        "elementos_sin_confirmar": n_sin_confirmar,
+        "formatos": formatos,
+    }
 
 
 # ---------------------------------------------------------------------------
-# Evolucion mensual (fill rate Pantallas vs Shoppings, Ene-Jul)
+# Ocupacion mensual por familia/sitio (apportionment, spec Sec.6-7)
 # ---------------------------------------------------------------------------
 
 
-def compute_evolution(engine: MetricsEngine, report_year: int, report_month: int) -> dict[str, Any]:
-    """Fill rate mensual Pantallas LED vs Shoppings Digital (spec Sec.20).
-    AA2000 no tiene serie propia (queda solo en los KPIs generales)."""
-    meses, pantallas, shoppings = [], [], []
-    for m in range(1, report_month + 1):
-        start, end = _period_bounds(report_year, m)
-        p = engine.query("fill_rate_slots", filters={"CircuitoNegocio": PANTALLAS_CIRCUITOS}, start_date=start, end_date=end).iloc[0]
-        s = engine.query("fill_rate_slots", filters={"CircuitoNegocio": SHOPPINGS_CIRCUITOS}, start_date=start, end_date=end).iloc[0]
-        meses.append(MESES_ES_ABR[m - 1])
-        pantallas.append(_round1(p["Value"]) if pd.notna(p["Value"]) else None)
-        shoppings.append(_round1(s["Value"]) if pd.notna(s["Value"]) else None)
-    return {"meses": meses, "pantallas": pantallas, "shoppings": shoppings}
+def _apportion(raw: dict[str, float], target: int) -> dict[str, int]:
+    """Reparto entero de `target` unidades entre las claves de `raw` segun el
+    metodo de mayores restos (Hamilton): cada clave recibe floor(valor), y
+    las unidades restantes (target - suma de floors) se asignan una a una a
+    las claves con mayor parte fraccionaria. Resuelve de forma determinista
+    y auditable la diferencia entre "redondear cada familia por separado"
+    (que puede no sumar el total ya redondeado) y "el total ya redondeado"
+    (Sec.5: "no corregir manualmente...identificar la regla que genera la
+    diferencia"): la regla es este reparto, no un ajuste manual. target debe
+    ser >= floor(suma(raw)) siempre se cumple porque floor(a)+floor(b)<=
+    floor(a+b)<=round(a+b)."""
+    if not raw:
+        if target != 0:
+            raise BuildError(f"Apportion: target={target} sin claves para repartir")
+        return {}
+    floors = {k: math.floor(v) for k, v in raw.items()}
+    remainder = target - sum(floors.values())
+    if remainder < 0 or remainder > len(raw):
+        raise BuildError(f"Apportion: remainder={remainder} fuera de rango para {len(raw)} claves (raw={raw}, target={target})")
+    fracs = sorted(raw.keys(), key=lambda k: (-(raw[k] - floors[k]), k))
+    result = dict(floors)
+    for i in range(remainder):
+        result[fracs[i]] += 1
+    return result
+
+
+def _family_raw_ocupados(engine: MetricsEngine, familia_ids: dict[str, list[Any]], period: tuple[str, str]) -> dict[str, float]:
+    raw = {}
+    for fam in FAMILIAS:
+        ids = familia_ids[fam]
+        if not ids:
+            raw[fam] = 0.0
+            continue
+        slots_s, _seg, _inc, _sal = engine._digital_period_activity(ids, period[0], period[1])
+        raw[fam] = float(slots_s.sum()) if len(slots_s) else 0.0
+    return raw
+
+
+def _site_raw_ocupados(engine: MetricsEngine, sitio_ids: dict[str, list[Any]], period: tuple[str, str]) -> dict[str, float]:
+    raw = {}
+    for sitio, ids in sitio_ids.items():
+        if not ids:
+            raw[sitio] = 0.0
+            continue
+        slots_s, _seg, _inc, _sal = engine._digital_period_activity(ids, period[0], period[1])
+        raw[sitio] = float(slots_s.sum()) if len(slots_s) else 0.0
+    return raw
+
+
+def compute_monthly(engine: MetricsEngine, maps: dict[str, Any], months: list[tuple[int, int]]) -> dict[tuple[int, int], dict[str, Any]]:
+    """Un snapshot por mes (spec Sec.6-7,15-17): ocupados por familia
+    (apportion sobre el total del Core ya redondeado) y ocupados por sitio
+    dentro de cada familia (apportion sobre el entero de esa familia).
+    Garantiza, para TODOS los meses (no solo julio): suma(familias)=core,
+    suma(sitios de una familia)=familia (spec Sec.20.G)."""
+    out: dict[tuple[int, int], dict[str, Any]] = {}
+    for year, month in months:
+        period = _period_bounds(year, month)
+        fam_raw = _family_raw_ocupados(engine, maps["familia_ids"], period)
+        core_target = round(sum(fam_raw.values()))
+        fam_int = _apportion(fam_raw, core_target)
+
+        sitio_int: dict[str, dict[str, int]] = {}
+        for fam in FAMILIAS:
+            sraw = _site_raw_ocupados(engine, maps["sitio_ids"][fam], period)
+            sitio_int[fam] = _apportion(sraw, fam_int[fam]) if sraw else {}
+            if sraw and sum(sitio_int[fam].values()) != fam_int[fam]:
+                raise BuildError(f"Matriz {fam} {year}-{month:02d} no reconcilia con la tarjeta: {sum(sitio_int[fam].values())} vs {fam_int[fam]}")
+
+        out[(year, month)] = {"raw": fam_raw, "core_target": core_target, "fam_int": fam_int, "sitio_int": sitio_int}
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Tarjetas 2-5 (Ocupacion / Disponibles / Pantallas / Shoppings)
+# ---------------------------------------------------------------------------
+
+
+def _family_card(nombre: str, capacidad: int, ocup_actual: int, ocup_anterior: int, ytd_sum: int, n_meses_ytd: int) -> dict[str, Any]:
+    disp_actual = capacidad - ocup_actual
+    disp_anterior = capacidad - ocup_anterior
+    fill_actual = _round1(ocup_actual / capacidad * 100.0) if capacidad else None
+    fill_anterior = _round1(ocup_anterior / capacidad * 100.0) if capacidad else None
+    disp_pct_actual = _round1(disp_actual / capacidad * 100.0) if capacidad else None
+    disp_pct_anterior = _round1(disp_anterior / capacidad * 100.0) if capacidad else None
+    cap_ytd = capacidad * n_meses_ytd
+    return {
+        "nombre": nombre,
+        "capacidad": capacidad,
+        "ocupados": ocup_actual,
+        "fill_pct": fill_actual,
+        "disponibles": disp_actual,
+        "disp_pct": disp_pct_actual,
+        "capacidad_anterior": capacidad,
+        "ocupados_anterior": ocup_anterior,
+        "fill_pct_anterior": fill_anterior,
+        "disponibles_anterior": disp_anterior,
+        "disp_pct_anterior": disp_pct_anterior,
+        "delta_ocupados": ocup_actual - ocup_anterior,
+        "delta_pp": _round1(fill_actual - fill_anterior) if fill_actual is not None and fill_anterior is not None else None,
+        "delta_disponibles": disp_actual - disp_anterior,
+        "delta_disp_pp": _round1(disp_pct_actual - disp_pct_anterior) if disp_pct_actual is not None and disp_pct_anterior is not None else None,
+        "ocupados_ytd_promedio": _round1(ytd_sum / n_meses_ytd) if n_meses_ytd else None,
+        "fill_pct_ytd": _round1(ytd_sum / cap_ytd * 100.0) if cap_ytd else None,
+        "disponibles_ytd_promedio": _round1((cap_ytd - ytd_sum) / n_meses_ytd) if n_meses_ytd else None,
+        "disp_pct_ytd": _round1((cap_ytd - ytd_sum) / cap_ytd * 100.0) if cap_ytd else None,
+    }
+
+
+def compute_cards(catalogo: dict[str, Any], monthly: dict[tuple[int, int], dict[str, Any]], ytd_months: list[tuple[int, int]], report_key: tuple[int, int], prev_key: tuple[int, int]) -> dict[str, Any]:
+    n_ytd = len(ytd_months)
+    ytd_sum_fam = {fam: sum(monthly[m]["fam_int"][fam] for m in ytd_months) for fam in FAMILIAS}
+
+    capacidad = {"Pantallas": catalogo["pantallas"], "Shoppings": catalogo["shoppings"], "AA2000": catalogo["aa2000"]}
+    cards = {
+        fam: _family_card(fam, capacidad[fam], monthly[report_key]["fam_int"][fam], monthly[prev_key]["fam_int"][fam], ytd_sum_fam[fam], n_ytd)
+        for fam in FAMILIAS
+    }
+
+    core_cap = catalogo["total"]
+    core_ocup_actual = monthly[report_key]["core_target"]
+    core_ocup_anterior = monthly[prev_key]["core_target"]
+    core_ytd_sum = sum(monthly[m]["core_target"] for m in ytd_months)
+    core_card = _family_card("Core Digital", core_cap, core_ocup_actual, core_ocup_anterior, core_ytd_sum, n_ytd)
+
+    esperado_core = cards["Pantallas"]["ocupados"] + cards["Shoppings"]["ocupados"] + cards["AA2000"]["ocupados"]
+    if esperado_core != core_card["ocupados"]:
+        raise BuildError(f"Ocupados por familia no reconcilian con el Core: {esperado_core} vs {core_card['ocupados']}")
+    esperado_disp = cards["Pantallas"]["disponibles"] + cards["Shoppings"]["disponibles"] + cards["AA2000"]["disponibles"]
+    if esperado_disp != core_card["disponibles"]:
+        raise BuildError(f"Disponibles por familia no reconcilian con el Core: {esperado_disp} vs {core_card['disponibles']}")
+
+    return {"core": core_card, "pantallas": cards["Pantallas"], "shoppings": cards["Shoppings"], "aa2000": cards["AA2000"]}
+
+
+# ---------------------------------------------------------------------------
+# Evolucion mensual (3 series, spec Sec.15)
+# ---------------------------------------------------------------------------
+
+
+def compute_evolution(catalogo: dict[str, Any], monthly: dict[tuple[int, int], dict[str, Any]], months: list[tuple[int, int]]) -> dict[str, Any]:
+    capacidad = {"Pantallas": catalogo["pantallas"], "Shoppings": catalogo["shoppings"], "AA2000": catalogo["aa2000"]}
+    meses = [MESES_ES_ABR[m - 1] for _y, m in months]
+    series = {}
+    for fam in FAMILIAS:
+        ocupados = [monthly[k]["fam_int"][fam] for k in months]
+        fill = [_round1(o / capacidad[fam] * 100.0) if capacidad[fam] else None for o in ocupados]
+        series[fam] = {"ocupados": ocupados, "fill": fill}
+
+    total_ocupados = [monthly[k]["core_target"] for k in months]
+    for i, (year, month) in enumerate(months):
+        suma_familias = sum(series[fam]["ocupados"][i] for fam in FAMILIAS)
+        if suma_familias != total_ocupados[i]:
+            raise BuildError(f"Evolucion {year}-{month:02d}: suma de familias {suma_familias} != total {total_ocupados[i]}")
+
+    return {
+        "meses": meses,
+        "pantallas": series["Pantallas"],
+        "shoppings": series["Shoppings"],
+        "aa2000": series["AA2000"],
+        "total_ocupados": total_ocupados,
+    }
+
+
+def _reconcile_evolution_with_tv1(evolution: dict[str, Any], months: list[tuple[int, int]]) -> None:
+    """Reconciliacion obligatoria (spec Sec.15,20.F) contra la fuente
+    READ-ONLY output/tv1_data.json: la suma mensual de las 3 familias TV2
+    debe coincidir exacto con evolution_espacios.digital de TV1 (misma
+    formula, mismo Excel). Si el archivo de control no existe todavia (TV1
+    nunca se construyo en este checkout) se omite con un aviso: TV2 nunca
+    escribe ni depende en tiempo de ejecucion de que TV1 se reconstruya."""
+    if not TV1_CONTROL_JSON.exists():
+        print(f"TV2_RECONCILE_SKIP: no existe {TV1_CONTROL_JSON}, no se pudo reconciliar contra TV1")
+        return
+    tv1_data = json.loads(TV1_CONTROL_JSON.read_text(encoding="utf-8"))
+    ev1 = tv1_data.get("evolution_espacios")
+    if not ev1:
+        return
+    tv1_meses = ev1["meses"]
+    tv1_digital = ev1["digital"]
+    tv1_by_label = dict(zip(tv1_meses, tv1_digital))
+    for i, label in enumerate(evolution["meses"]):
+        if label not in tv1_by_label:
+            continue
+        esperado = tv1_by_label[label]
+        obtenido = evolution["total_ocupados"][i]
+        if esperado != obtenido:
+            raise BuildError(
+                f"Evolucion TV2 no reconcilia con TV1 (output/tv1_data.json) en {label}: "
+                f"TV2={obtenido} vs TV1={esperado}"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Matrices mensuales por sitio (spec Sec.16-18)
+# ---------------------------------------------------------------------------
+
+
+def compute_matrix(fam: str, maps: dict[str, Any], monthly: dict[tuple[int, int], dict[str, Any]], months: list[tuple[int, int]]) -> dict[str, Any]:
+    sitio_capacidad = maps["sitio_capacidad"][fam]
+    # Un sitio con AL MENOS UN elemento confirmado (p.ej. Unicenter, que ya
+    # tiene Totems/Puentes/Triedros confirmados y ADEMAS algunos "Patio de
+    # Comidas" OTRO sin regla) mantiene su fila normal con la capacidad
+    # confirmada. Solo se agrega una fila "pendiente" nueva para sitios que
+    # hoy NO tienen ninguna presencia confirmada en la matriz (Remeros dejo
+    # de ser un ejemplo de esto desde la correccion 2026-08-22: sus 6 totems
+    # ya son `confirmed`, ver build_catalog_maps).
+    sitio_pendiente = {s: ids for s, ids in maps["sitio_pendiente_ids"].get(fam, {}).items() if s not in sitio_capacidad}
+    sitios = sorted(set(sitio_capacidad) | set(sitio_pendiente), key=str.casefold)
+    meses = [MESES_ES_ABR[m - 1] for _y, m in months]
+
+    filas = []
+    for sitio in sitios:
+        if sitio in sitio_pendiente:
+            # Caso C (spec correccion Remeros 2026-08-22): sitio con elementos
+            # digitales reales pero sin regla de conversion a espacios
+            # confirmada. Nunca se inventan slots: REQUIERE_CONFIRMACION en
+            # las 7 columnas, fuera de la capacidad/ocupacion/fill rate de la
+            # tarjeta (no participa de la suma de reconciliacion de abajo).
+            # Label corto para que la celda entre sin cortarse (spec Sec.23
+            # "sin textos cortados"): el estado real (REQUIERE_CONFIRMACION)
+            # queda en `status`, mas el asterisco de fila + el pie de matriz
+            # explican el motivo completo.
+            celdas = [{"ocupados": None, "capacidad": None, "fill_pct": None, "label": "S/D", "status": "REQUIERE_CONFIRMACION"} for _ in months]
+            filas.append({
+                "sitio": sitio, "capacidad": None, "celdas": celdas,
+                "pendiente": True, "elementos_pendientes": len(sitio_pendiente[sitio]),
+            })
+            continue
+        capacidad = int(round(sitio_capacidad[sitio]))
+        celdas = []
+        for key in months:
+            ocup = monthly[key]["sitio_int"][fam].get(sitio)
+            if ocup is None or capacidad == 0:
+                celdas.append({"ocupados": None, "capacidad": capacidad, "fill_pct": None, "label": "N/A"})
+                continue
+            fill_pct = _round1(ocup / capacidad * 100.0)
+            celdas.append({"ocupados": ocup, "capacidad": capacidad, "fill_pct": fill_pct, "label": f"{_fmt_es_int(ocup)}/{_fmt_es_int(capacidad)}"})
+        filas.append({"sitio": sitio, "capacidad": capacidad, "celdas": celdas, "pendiente": False})
+
+    ultimo = months[-1]
+    suma_ultimo = sum((f["celdas"][-1]["ocupados"] or 0) for f in filas)
+    esperado = monthly[ultimo]["fam_int"][fam]
+    if suma_ultimo != esperado:
+        raise BuildError(f"Matriz {fam}: suma del ultimo mes ({suma_ultimo}) no reconcilia con la tarjeta ({esperado})")
+
+    return {"meses": meses, "filas": filas}
 
 
 # ---------------------------------------------------------------------------
@@ -363,50 +615,45 @@ def compute_evolution(engine: MetricsEngine, report_year: int, report_month: int
 # ---------------------------------------------------------------------------
 
 
-def _fmt_es_pct(v: float | None) -> str:
-    if v is None:
-        return "S/D"
-    return f"{v:.1f}".replace(".", ",")
-
-
 def compute_insights(
-    kpi1: dict[str, Any], kpi2: dict[str, Any], kpi5: dict[str, Any],
-    pant: dict[str, Any], shop: dict[str, Any],
+    catalogo: dict[str, Any], cards: dict[str, Any],
     report_month_label: str, previous_month_label: str,
 ) -> dict[str, str]:
+    core, pant, shop, aa = cards["core"], cards["pantallas"], cards["shoppings"], cards["aa2000"]
+
     lectura = (
-        f"{report_month_label} registra {_fmt_es_int(kpi1['activos'])} de {_fmt_es_int(kpi1['elegibles'])} "
-        f"elementos del Core Digital con campaña (<b>{_fmt_es_pct(kpi1['pct_actual'])}%</b>). El fill rate alcanza "
-        f"<b>{_fmt_es_pct(kpi2['pct_actual'])}%</b> y quedan <b>{_fmt_es_int(kpi5['disponibles'])} slots disponibles</b>."
+        f"{report_month_label} registra <b>{_fmt_es_int(core['ocupados'])} slots ocupados</b> sobre "
+        f"{_fmt_es_int(catalogo['total'])} espacios de capacidad digital "
+        f"(Pantallas LED {_fmt_es_int(catalogo['pantallas'])} + Shoppings Digital {_fmt_es_int(catalogo['shoppings'])} + "
+        f"AA2000 {_fmt_es_int(catalogo['aa2000'])}). Fill rate <b>{_fmt_es_pct(core['fill_pct'])}%</b>, "
+        f"disponibles <b>{_fmt_es_int(core['disponibles'])} slots</b> ({_fmt_es_pct(core['disp_pct'])}%)."
     )
 
-    # Punto positivo: prioridad 1-4 = alguna mejora vs junio; si nada mejora,
-    # prioridad 5 = mejor desempeño relativo entre familias (spec Sec.23).
-    if kpi2["delta_pp"] is not None and kpi2["delta_pp"] > 0:
-        punto_positivo = f"El fill rate del Core mejora <b>{_fmt_es_pct(kpi2['delta_pp'])} pp</b> frente a {previous_month_label.lower()}."
-    elif pant["delta_pp"] is not None and pant["delta_pp"] > 0:
-        punto_positivo = f"Pantallas LED mejora <b>{_fmt_es_pct(pant['delta_pp'])} pp</b> de fill frente a {previous_month_label.lower()}."
-    elif shop["delta_pp"] is not None and shop["delta_pp"] > 0:
-        punto_positivo = f"Shoppings Digital mejora <b>{_fmt_es_pct(shop['delta_pp'])} pp</b> de fill frente a {previous_month_label.lower()}."
-    elif kpi1["delta_pp"] is not None and kpi1["delta_pp"] > 0:
-        punto_positivo = f"La ocupación por calendario mejora <b>{_fmt_es_pct(kpi1['delta_pp'])} pp</b> frente a {previous_month_label.lower()}."
+    # Punto positivo: familia con MENOR caida de fill (o mejora, si la hay).
+    familias_delta = [(nombre, c["delta_pp"]) for nombre, c in (("Pantallas LED", pant), ("Shoppings Digital", shop)) if c["delta_pp"] is not None]
+    mejoras = [x for x in familias_delta if x[1] > 0]
+    if mejoras:
+        mejoras.sort(key=lambda x: -x[1])
+        nombre, delta = mejoras[0]
+        punto_positivo = f"{nombre} mejora <b>{_fmt_es_pct(delta)} pp</b> de fill rate frente a {previous_month_label.lower()}."
+    elif familias_delta:
+        familias_delta.sort(key=lambda x: -x[1])  # menos negativo primero = menor caida
+        nombre, delta = familias_delta[0]
+        punto_positivo = f"{nombre} registra la menor caída de fill rate (<b>{_fmt_es_pct(delta)} pp</b>) frente a {previous_month_label.lower()}."
     else:
-        punto_positivo = (
-            f"Shoppings Digital concentra la mayor parte de la actividad del Core "
-            f"(<b>{_fmt_es_int(shop.get('_activos', 0) or 0)}</b> elementos activos), sosteniendo el negocio del mes."
-        )
+        punto_positivo = f"El Core Digital sostiene <b>{_fmt_es_pct(core['fill_pct'])}%</b> de fill rate en {report_month_label.lower()}."
 
-    # A atender: prioridad 1 = mayor caida de fill entre familias.
-    caidas = [("Pantallas LED", pant["delta_pp"]), ("Shoppings Digital", shop["delta_pp"])]
-    caidas = [(nombre, d) for nombre, d in caidas if d is not None and d < 0]
-    if caidas:
-        caidas.sort(key=lambda x: x[1])
-        nombre, delta = caidas[0]
-        a_atender = f"El fill rate de {nombre} cae <b>{_fmt_es_pct(abs(delta))} pp</b> frente a {previous_month_label.lower()}."
-    elif kpi1["delta_pp"] is not None and kpi1["delta_pp"] < 0:
-        a_atender = f"La ocupación por calendario cae <b>{_fmt_es_pct(abs(kpi1['delta_pp']))} pp</b> frente a {previous_month_label.lower()}."
-    else:
-        a_atender = f"El Core Digital conserva <b>{_fmt_es_int(kpi5['disponibles'])} slots disponibles</b> por vender."
+    # A atender: familia con MAYOR caida + AA2000 sin ocupacion + soportes sin confirmar.
+    partes_atender = []
+    if familias_delta:
+        peor_nombre, peor_delta = min(familias_delta, key=lambda x: x[1])
+        if peor_delta < 0:
+            partes_atender.append(f"{peor_nombre} cae <b>{_fmt_es_pct(abs(peor_delta))} pp</b> de fill frente a {previous_month_label.lower()}")
+    if aa["ocupados"] == 0:
+        partes_atender.append(f"AA2000 sigue sin ocupación (0/{_fmt_es_int(aa['capacidad'])})")
+    if catalogo["elementos_sin_confirmar"] > 0:
+        partes_atender.append(f"{_fmt_es_int(catalogo['elementos_sin_confirmar'])} soportes digitales sin capacidad confirmada")
+    a_atender = "; ".join(partes_atender) + "." if partes_atender else f"El Core Digital conserva <b>{_fmt_es_int(core['disponibles'])} slots disponibles</b> por vender."
 
     return {"lectura": lectura, "punto_positivo": punto_positivo, "a_atender": a_atender}
 
@@ -439,67 +686,44 @@ def build_tv2_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
 
     _transform_result, semantic_result, engine = load_pipeline(path)
     universe = build_tv2_universe(semantic_result)
+    maps = build_catalog_maps(universe)
 
-    period = _period_bounds(REPORT_YEAR, REPORT_MONTH)
     prev_year, prev_month = _previous_month(REPORT_YEAR, REPORT_MONTH)
-    previous = _period_bounds(prev_year, prev_month)
+    report_key = (REPORT_YEAR, REPORT_MONTH)
+    prev_key = (prev_year, prev_month)
+    ytd_months = [(REPORT_YEAR, m) for m in range(1, REPORT_MONTH + 1)]
+    all_months = sorted(set(ytd_months) | {prev_key})
 
-    kpi1 = compute_kpi1_ocupacion_calendario(engine, period, previous)
-    kpi2 = compute_kpi2_fill_digital(engine, period, previous)
-    pant_fill = compute_pantallas_fill(engine, period, previous)
-    shop_fill = compute_shoppings_fill(engine, period, previous)
-    aa2000 = compute_aa2000_fill(engine, period, previous)
-    _assert_family_reconciles_with_core(kpi2, pant_fill, shop_fill, aa2000)
-    kpi5 = compute_kpi5_slots_disponibles(kpi2, pant_fill, shop_fill, aa2000)
+    monthly = compute_monthly(engine, maps, all_months)
 
-    shop_activos = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": SHOPPINGS_CIRCUITOS, "Medio": "Digital"}, start_date=period[0], end_date=period[1])
-    shop_fill["_activos"] = int(shop_activos["Value"].iloc[0]) if len(shop_activos) else 0
-    pant_activos_df = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": PANTALLAS_CIRCUITOS, "Medio": "Digital"}, start_date=period[0], end_date=period[1])
-    pant_fill["_activos"] = int(pant_activos_df["Value"].iloc[0]) if len(pant_activos_df) else 0
-    aa2000_activos_df = engine.query("elementos_con_actividad", filters={"CircuitoNegocio": AA2000_CIRCUITOS, "Medio": "Digital"}, start_date=period[0], end_date=period[1])
-    aa2000["_activos"] = int(aa2000_activos_df["Value"].iloc[0]) if len(aa2000_activos_df) else 0
+    catalogo = compute_catalogo(maps)
+    cards = compute_cards(catalogo, monthly, ytd_months, report_key, prev_key)
+    evolution = compute_evolution(catalogo, monthly, ytd_months)
+    _reconcile_evolution_with_tv1(evolution, ytd_months)
+    matrix_shoppings = compute_matrix("Shoppings", maps, monthly, ytd_months)
+    matrix_pantallas = compute_matrix("Pantallas", maps, monthly, ytd_months)
+    insights = compute_insights(catalogo, cards, MESES_ES[REPORT_MONTH - 1], MESES_ES[prev_month - 1])
 
-    # Tarjetas KPI3/KPI4: ocupacion por calendario (no fill), spec ajuste TV2.
-    kpi3 = compute_kpi3_pantallas_ocupacion(engine, period, previous)
-    kpi4 = compute_kpi4_shoppings_ocupacion(engine, period, previous)
+    # AA2000 (Sec.14): sin tarjeta propia, apertura Aeroparque/Ezeiza para
+    # auditoria + insights.
+    aa2000_confirmed = maps["confirmed"][maps["confirmed"]["_familia"] == "AA2000"]
+    aeroparque_n = int(aa2000_confirmed.loc[aa2000_confirmed["SitioNegocio"] == "AEROPARQUE", "ElementoID"].nunique())
+    ezeiza_n = int(aa2000_confirmed.loc[aa2000_confirmed["SitioNegocio"] == "EZEIZA", "ElementoID"].nunique())
+    if aeroparque_n + ezeiza_n != int(aa2000_confirmed["ElementoID"].nunique()):
+        raise BuildError("AA2000: Aeroparque + Ezeiza no reconcilia con el total de elementos confirmados")
+    cards["aa2000"]["aeroparque_elementos"] = aeroparque_n
+    cards["aa2000"]["ezeiza_elementos"] = ezeiza_n
+    cards["aa2000"]["elementos"] = aeroparque_n + ezeiza_n
 
-    ranking_pantallas = compute_ranking_pantallas(engine, period)
-    ranking_shoppings = compute_ranking_shoppings(engine, period)
-    evolution = compute_evolution(engine, REPORT_YEAR, REPORT_MONTH)
-    # Insights inferiores: sin cambios de negocio, siguen basados en fill
-    # (pant_fill/shop_fill), no en las nuevas tarjetas de ocupacion calendario.
-    insights = compute_insights(kpi1, kpi2, kpi5, pant_fill, shop_fill, MESES_ES[REPORT_MONTH - 1], MESES_ES[prev_month - 1])
+    cards["pantallas"]["elementos"] = int(maps["confirmed"].loc[maps["confirmed"]["_familia"] == "Pantallas", "ElementoID"].nunique())
+    cards["shoppings"]["elementos"] = int(maps["confirmed"].loc[maps["confirmed"]["_familia"] == "Shoppings", "ElementoID"].nunique())
 
-    aa2000_elegibles = engine.query("elementos_registrados", filters={"CircuitoNegocio": AA2000_CIRCUITOS, "Medio": "Digital"})
-
-    core_digital = {
-        "elegibles": {
-            "pantallas": kpi3["elegibles"],
-            "shoppings": kpi4["elegibles"],
-            "aa2000": int(aa2000_elegibles["Value"].iloc[0]) if len(aa2000_elegibles) else 0,
-            "total": kpi1["elegibles"],
-        },
-        "con_campana": {
-            "pantallas": kpi3["activos"],
-            "shoppings": kpi4["activos"],
-            "aa2000": aa2000["_activos"],
-            "total": kpi1["activos"],
-        },
-        "aa2000_fill": aa2000,
-        "pantallas_fill": pant_fill,
-        "shoppings_fill": shop_fill,
-    }
-
-    reconciled_elegibles = (
-        core_digital["elegibles"]["pantallas"] + core_digital["elegibles"]["shoppings"] + core_digital["elegibles"]["aa2000"]
-    )
-    if reconciled_elegibles != core_digital["elegibles"]["total"]:
-        raise BuildError(f"Elegibles por familia no reconcilian con el Core: {reconciled_elegibles} vs {core_digital['elegibles']['total']}")
-    reconciled_activos = (
-        core_digital["con_campana"]["pantallas"] + core_digital["con_campana"]["shoppings"] + core_digital["con_campana"]["aa2000"]
-    )
-    if reconciled_activos != core_digital["con_campana"]["total"]:
-        raise BuildError(f"Con-campana por familia no reconcilia con el Core: {reconciled_activos} vs {core_digital['con_campana']['total']}")
+    # Exclusiones absolutas (spec Sec.4,20.J): nunca deben aparecer en el
+    # universo TV2 (guard explicito, ademas de la construccion por lista de
+    # circuitos permitidos).
+    for excluido in ("YPF", "CENCOMEDIA", "APSA", "LONDON_SUPPLY"):
+        if excluido in universe["circuitos"]:
+            raise BuildError(f"Circuito excluido {excluido} presente en el universo TV2")
 
     sha_after = vi.calculate_sha256(path)
     if sha_after != sha_before:
@@ -508,29 +732,26 @@ def build_tv2_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
             f"(antes={sha_before}, despues={sha_after})."
         )
 
+    generado_art = dt.datetime.now(ART_TZ)
     data = {
         "meta": {
-            "generado": dt.datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "generado": generado_art.strftime("%d/%m/%Y %H:%M"),
+            "generado_iso": generado_art.isoformat(timespec="seconds"),
+            "timezone": ART_TZ_NAME,
             "report_year": REPORT_YEAR,
             "report_month": REPORT_MONTH,
             "report_month_label": MESES_ES[REPORT_MONTH - 1],
             "previous_month": prev_month,
             "previous_month_label": MESES_ES[prev_month - 1],
-            "period_start": period[0],
-            "period_end": period[1],
+            "period_start": _period_bounds(REPORT_YEAR, REPORT_MONTH)[0],
+            "period_end": _period_bounds(REPORT_YEAR, REPORT_MONTH)[1],
             "fuente": "OCU26 · Base maestra + base campañas",
         },
-        "kpis": {
-            "ocupacion_calendario": kpi1,
-            "fill_digital": kpi2,
-            "pantallas": kpi3,
-            "shoppings": kpi4,
-            "slots_disponibles": kpi5,
-        },
-        "core_digital": core_digital,
-        "ranking_pantallas": ranking_pantallas,
-        "ranking_shoppings": ranking_shoppings,
+        "catalogo": catalogo,
+        "cards": cards,
         "evolution": evolution,
+        "matrix_shoppings": matrix_shoppings,
+        "matrix_pantallas": matrix_pantallas,
         "insights": insights,
     }
 
@@ -587,7 +808,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print("TV2_BUILD_OK")
     print(json.dumps(result["data"]["meta"], ensure_ascii=False, indent=2))
-    print(json.dumps(result["data"]["kpis"], ensure_ascii=False, indent=2))
+    print(json.dumps(result["data"]["catalogo"], ensure_ascii=False, indent=2))
+    print(json.dumps({k: {kk: vv for kk, vv in v.items() if kk not in ("nombre",)} for k, v in result["data"]["cards"].items()}, ensure_ascii=False, indent=2))
     return 0
 
 

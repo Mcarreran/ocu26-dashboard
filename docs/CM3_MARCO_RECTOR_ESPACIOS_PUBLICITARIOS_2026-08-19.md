@@ -1,3 +1,13 @@
+# DECISIÓN 21/08/2026 — CENCOMEDIA EXCLUIDA (VIGENTE, POSTERIOR A TODO LO ANTERIOR)
+
+Decisión 21/08/2026: Cencomedia queda excluida de todos los análisis de TV1–TV6. CENCOSUD permanece incluido. Sus filas no se eliminan de la base.
+
+Alcance de la exclusión: catálogos mostrados, espacios totales/ocupados/disponibles, porcentajes, campañas, presencias campaña–elemento, históricos, rankings, composiciones, barras, comparativos, numeradores, denominadores, insights, textos y leyendas. No se modifica el Excel ni los Gates; se usa el mapeo semántico real de `CircuitoNegocio=CENCOMEDIA` (nunca un filtro de texto como "CENCO"). APSA y London Supply siguen excluidos. MAB no queda excluido por esta decisión.
+
+Implementada en TV1 el 21/08/2026 (rama `tv1-espacios-2026-08-21`). TV2–TV6 todavía no fueron migradas ni regeneradas con esta exclusión; se aplicará cuando se migre cada tablero. Hallazgos READ-ONLY sobre el estado actual de TV2–TV6 respecto de Cencomedia: ver informe de esa migración.
+
+---
+
 # ACTUALIZACIÓN POSTERIOR — CIERRE BASE OCU26 + YPF
 
 Estado operativo actualizado al 19/08/2026:

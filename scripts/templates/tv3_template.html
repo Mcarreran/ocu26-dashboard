@@ -10,9 +10,10 @@
 <style>
 /* ============================================================
    BRAND PLUS · OCU26 BI · TV3 · Core Comercial Estático
-   Identidad institucional obligatoria (manual de marca)
-   Reutiliza el sistema visual productivo de TV1/TV2 (mismo stage,
-   header, tipografia, paleta, insight de 3 columnas).
+   Rediseno 2026-08-22 (prompt maestro TV3): 6 tarjetas + 3 paneles
+   (evolucion / 17 shoppings completos / soportes top 3) + footer.
+   Identidad institucional obligatoria (manual de marca), mismo sistema
+   visual productivo de TV1/TV2 (stage, header, tipografia, paleta).
    ============================================================ */
 
 :root{
@@ -37,9 +38,9 @@
   --panel-border:rgba(255,255,255,.12);
   --panel-border-2:rgba(126,166,255,.28);
 
-  --r-lg:26px;
-  --r-md:20px;
-  --r-sm:14px;
+  --r-lg:24px;
+  --r-md:18px;
+  --r-sm:12px;
 
   --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
@@ -75,38 +76,38 @@ body{
   background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
 }
 
-.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+.tv{position:absolute;inset:0;padding:30px 44px 24px;display:flex;flex-direction:column;z-index:2}
 
 /* ======================= HEADER ======================= */
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
-.hdr-left{display:flex;align-items:center;gap:28px}
-.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
-.logo-wrap img{width:190px;height:auto;display:block}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;min-height:78px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:24px}
+.logo-wrap{padding:4px 22px 4px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:168px;height:auto;display:block}
 .hdr-titles{display:flex;flex-direction:column;justify-content:center}
 .eyebrow{
-  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
-  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+  font-size:13px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:5px
 }
 .eyebrow .tvno{
   color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
   padding:2px 10px;letter-spacing:.08em;font-weight:700
 }
-.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
-.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
-.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
-.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
-.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
-.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.hdr-title{font-size:33px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:15px;font-weight:300;color:var(--bp-muted);margin-top:6px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:1px}
+.clock{font-size:25px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:12.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
 .question{
-  font-size:14.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
+  font-size:13px;color:var(--bp-white);font-weight:500;margin-top:3px;
   background:rgba(238,236,230,.14);border:1px solid rgba(238,236,230,.30);
-  padding:6px 14px;border-radius:999px;max-width:560px
+  padding:5px 13px;border-radius:999px;max-width:560px
 }
 
-/* ======================= KPIs (5 en una fila) ======================= */
-.kpis{display:grid;grid-template-columns:0.9fr 0.9fr 0.9fr 0.9fr 1.4fr;gap:16px;margin-top:18px;flex:none}
+/* ======================= KPIs (6 tarjetas) ======================= */
+.kpis{display:grid;grid-template-columns:1.15fr 0.92fr 0.92fr 0.92fr 1.14fr 0.95fr;gap:13px;margin-top:14px;flex:none}
 .kpi{
-  position:relative;min-height:152px;padding:19px 20px;border-radius:var(--r-lg);
+  position:relative;min-height:146px;min-width:0;padding:16px 17px;border-radius:var(--r-lg);
   background:linear-gradient(160deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
   display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
@@ -115,79 +116,102 @@ body{
 .kpi.k-opp::after{background:var(--bp-warning)}
 .kpi.k-alert::after{background:var(--bp-coral)}
 .kpi.k-ok::after{background:var(--bp-success)}
-.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
-.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-label{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--bp-muted);line-height:1.25}
+.kpi-note{font-size:11.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
 .kpi-note.pos{color:var(--bp-success)}
 .kpi-note.warn{color:var(--bp-warning)}
 .kpi-note.alert{color:var(--bp-coral)}
 .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
 
-.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split{display:flex;align-items:flex-end;gap:10px;margin-top:2px}
 .kpi-split .main{display:flex;flex-direction:column}
-.kpi-split .main .sv{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1}
-.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .main .sv{font-size:33px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
 .kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
 .kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
-.kpi-split .sec .sv{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-cream)}
-.kpi-split .sec .sl{font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
-.kpi-lead .kpi-split .main .sv{font-size:40px}
-.kpi-lead .kpi-split .sec .sv{font-size:24px}
-.kpi-wide{padding:19px 26px}
+.kpi-split .sec .sv{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-cream)}
+.kpi-split .sec .sv.pct-blue{color:var(--bp-blue)}
+.kpi-split .sec .sl{font-size:9.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px;line-height:1.25;max-width:96px}
+
+/* Tarjeta 1 - catalogo: 422 dominante a la izquierda + apertura a la derecha */
+.kpi-cat{display:flex;align-items:center;gap:14px;margin-top:4px;flex:1;min-width:0}
+.kpi-cat .cat-left{display:flex;flex-direction:column;flex:none}
+.kpi-cat .cat-left .sv{font-size:33px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-cat .cat-left .sl{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-cat .cat-sep{width:1px;align-self:stretch;background:var(--panel-border)}
+.kpi-cat .cat-right{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.cat-row{display:grid;grid-template-columns:1fr auto auto;align-items:baseline;gap:7px}
+.cat-name{font-size:10.5px;color:var(--bp-muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-val{font-size:12.5px;font-weight:700;color:var(--bp-white);white-space:nowrap;text-align:right}
+.cat-pct{font-size:11.5px;font-weight:700;color:var(--bp-blue);white-space:nowrap;text-align:right;min-width:40px}
+
+/* Tarjeta 5 - campanas / activaciones lado a lado, misma jerarquia que el resto */
+.kpi-dual{display:flex;gap:14px;margin-top:2px;min-width:0}
+.kpi-dual .dcol{display:flex;flex-direction:column;flex:1;min-width:0}
+.kpi-dual .dcol .sv{font-size:33px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-dual .dcol .sl{font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-dual .dsep{width:1px;background:var(--panel-border)}
 
 /* ======================= BODY ======================= */
-.body{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
-.split{display:grid;grid-template-rows:1fr 1fr;gap:22px;min-height:0}
+.body{display:grid;grid-template-columns:1.05fr 1fr;gap:18px;margin-top:16px;flex:1;min-height:0}
+.split{display:grid;grid-template-rows:1.8fr 1fr;gap:16px;min-height:0}
 .panel{
-  position:relative;padding:22px 26px;border-radius:var(--r-lg);min-height:0;
+  position:relative;padding:20px 24px;border-radius:var(--r-lg);min-height:0;
   background:linear-gradient(165deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
   display:flex;flex-direction:column
 }
-.panel-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;flex:none}
-.panel-title{font-size:19px;font-weight:700;letter-spacing:-.01em}
-.panel-sub{font-size:12.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;flex:none}
+.panel-title{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:11.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-legend{font-size:10.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em;margin-top:3px}
+.panel-legend b{color:var(--bp-cream);font-weight:700}
 .panel-body{flex:1;min-height:0;position:relative}
 .chart-wrap{position:absolute;inset:0}
 
-/* ======================= RANKINGS ======================= */
-.rank{display:flex;flex-direction:column;gap:10px;height:100%;justify-content:space-around}
-.rank.tight{gap:14px;justify-content:space-evenly}
-.rrow{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:12px}
-.rrow .rk{font-size:14px;font-weight:700;color:var(--bp-cream);text-align:center}
-.rname{font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rname .sub{display:block;font-size:11.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em}
-.rbar{grid-column:1 / -1;height:7px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
-.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
-.dual{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.01em;white-space:nowrap}
-.chip.ocup{background:rgba(238,236,230,.16);color:var(--bp-cream);border:1px solid rgba(238,236,230,.32)}
-.chip.detail{background:rgba(255,255,255,.08);color:var(--bp-muted);border:1px solid var(--panel-border)}
-.rank-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+/* ======================= PANEL 17 SHOPPINGS (grilla, no ranking) ======================= */
+.shop-grid{
+  position:absolute;inset:0;display:grid;
+  grid-template-columns:1fr 1fr;grid-auto-flow:column;
+  grid-template-rows:repeat(9,minmax(0,1fr));
+  gap:5px 16px;align-content:stretch;
+}
+.shop-row{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;
+  padding:0 10px;border-radius:8px;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);min-width:0;overflow:hidden;
+}
+.shop-row.zero{background:rgba(255,255,255,.015)}
+.shop-name{font-size:12px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-stats{font-size:10px;color:var(--bp-muted);letter-spacing:.01em;white-space:nowrap}
+.shop-pct{font-size:12px;font-weight:700;color:var(--bp-cream);white-space:nowrap;text-align:right;min-width:42px}
 
-/* ======================= SOPORTES (barras horizontales) ======================= */
-.soportes{display:flex;flex-direction:column;gap:16px;height:100%;justify-content:center}
-.sop-row{display:flex;flex-direction:column;gap:6px}
-.sop-head{display:flex;align-items:baseline;justify-content:space-between}
-.sop-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
-.sop-val{font-size:18px;font-weight:800;color:var(--bp-cream)}
-.sop-bar{height:10px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
-.sop-bar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
+/* ======================= SOPORTES (barras horizontales, top 3) ======================= */
+.soportes{display:flex;flex-direction:column;gap:8px;height:100%;justify-content:center}
+.sop-row{display:flex;flex-direction:column;gap:5px}
+.sop-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sop-name{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.sop-vals{font-size:12px;color:var(--bp-muted)}
+.sop-vals b{font-size:16px;font-weight:800;color:var(--bp-cream)}
+.sop-bar{height:9px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.sop-bar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
+.rank-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
 
 /* ======================= INSIGHT (3 columnas, igual TV1/TV2) ======================= */
 .insight{
-  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  margin-top:16px;flex:none;padding:16px 24px;border-radius:var(--r-md);
   background:linear-gradient(120deg,rgba(238,236,230,.14),rgba(238,236,230,.05));
   border:1px solid rgba(238,236,230,.30);display:flex;align-items:stretch;gap:0
 }
-.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:5px;padding:2px 22px;min-width:0}
 .insight-col + .insight-col{border-left:1px solid rgba(238,236,230,.22)}
 .insight-col .lab{
-  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+  font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;line-height:1
 }
 .insight-col.lectura .lab{color:var(--bp-cream)}
 .insight-col.positivo .lab{color:var(--bp-success)}
 .insight-col.atender .lab{color:var(--bp-warning)}
-.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p{font-size:14.5px;line-height:1.34;font-weight:400}
 .insight-col p b{font-weight:700;color:var(--bp-white)}
 
 .wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
@@ -219,17 +243,17 @@ body{
       <div class="kpis" data-kpis="tv3"></div>
       <div class="body">
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Ocupaci&oacute;n por shopping &middot; julio</div><div class="panel-sub">Shoppings Est&aacute;tico &middot; ocupaci&oacute;n calendario</div></div>
-          <div class="panel-body"><div class="rank" data-rank="shoppings"></div></div>
+          <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual de la ocupaci&oacute;n est&aacute;tica</div><div class="panel-sub">Shoppings &middot; AA2000 &middot; Otros &middot; % ocupados sobre su cat&aacute;logo</div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv3-evol"></canvas></div></div>
         </div>
         <div class="split">
           <div class="panel">
-            <div class="panel-head"><div class="panel-title">Soportes m&aacute;s vendidos &middot; julio</div><div class="panel-sub">Elementos con campa&ntilde;a por soporte</div></div>
-            <div class="panel-body"><div class="soportes" data-soportes></div></div>
+            <div class="panel-head"><div class="panel-title">Capacidad y ocupaci&oacute;n por shopping &middot; julio</div><div class="panel-sub" data-shop-tag></div><div class="panel-legend"><b>C</b> = cat&aacute;logo total &middot; <b>O</b> = ocupados &middot; <b>D</b> = disponibles</div></div>
+            <div class="panel-body"><div class="shop-grid" data-shop-grid></div></div>
           </div>
           <div class="panel">
-            <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual &middot; Core Est&aacute;tico</div><div class="panel-sub">Ocupaci&oacute;n por calendario</div></div>
-            <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv3-evol"></canvas></div></div>
+            <div class="panel-head"><div class="panel-title">Soportes m&aacute;s vendidos &middot; julio</div><div class="panel-sub">Top 3 por activaciones</div></div>
+            <div class="panel-body"><div class="soportes" data-soportes></div></div>
           </div>
         </div>
       </div>
@@ -273,50 +297,47 @@ function scaleStage(){
 }
 window.addEventListener('resize', scaleStage);
 
-/* ---------- RELOJ / FECHA ---------- */
+/* ---------- RELOJ / FECHA (America/Argentina/Buenos_Aires) ---------- */
+function artParts(){
+  var fmt = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    hour:'2-digit', minute:'2-digit', hour12:false,
+    day:'2-digit', month:'2-digit', year:'numeric',
+  });
+  var parts = {};
+  fmt.formatToParts(new Date()).forEach(function(p){ parts[p.type] = p.value; });
+  return parts;
+}
 function tick(){
-  var now = new Date();
-  var hh = String(now.getHours()).padStart(2,'0');
-  var mm = String(now.getMinutes()).padStart(2,'0');
-  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+  var p = artParts();
+  $$('[data-clock]').forEach(function(e){ e.textContent = p.hour+':'+p.minute; });
 }
 function stampUpdated(){
   var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  var now=new Date();
-  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  var p = artParts();
+  var txt='Actualizado '+p.day+' '+meses[parseInt(p.month,10)-1]+' '+p.year+' ART';
   $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
   $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
-  $$('[data-hdr-sub]').forEach(function(e){ e.textContent = 'Rendimiento Shoppings Estático + AA2000 Estático + Pilar Frontlight'; });
+  $$('[data-hdr-sub]').forEach(function(e){ e.textContent = 'Shoppings Estático (incl. Remeros) + AA2000 Estático + Pilar Frontlight'; });
 }
 
-/* ---------- KPI helpers (mismo patron que TV1/TV2) ---------- */
-function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
-  return '<div class="kpi '+(cardCls||'')+'">'+
-    '<div class="kpi-label">'+label+'</div>'+
-    '<div class="kpi-split">'+
-      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
-      '<div class="sep"></div>'+
-      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
-    '</div>'+
-    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
-  '</div>';
-}
-function setKpis(html){ var el=$('[data-kpis="tv3"]'); if(el) el.innerHTML=html; }
-
+/* ---------- helpers de tarjetas ---------- */
 function signedPp(v){
   if(v==null) return 'S/D';
   var s = v>0 ? '+' : '';
   return s+Number(v).toFixed(1).replace('.',',')+' pp';
 }
-/* Regla estandar: sube = mejora (verde), baja = atencion (rojo). */
+function signedInt(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+fmt(v);
+}
 function noteClsForDelta(v){
   if(v==null) return '';
   if(v>0) return 'pos';
   if(v<0) return 'alert';
   return '';
 }
-/* Disponibilidad es inversa: MENOS disponible = mejor utilizacion (verde),
-   MAS disponible = capacidad ociosa (rojo). */
 function noteClsForAvailability(v){
   if(v==null) return '';
   if(v<0) return 'pos';
@@ -324,38 +345,86 @@ function noteClsForAvailability(v){
   return '';
 }
 
+function kpiCatalogo(t1){
+  return '<div class="kpi">'+
+    '<div class="kpi-label">Elementos del cat&aacute;logo est&aacute;tico</div>'+
+    '<div class="kpi-cat">'+
+      '<div class="cat-left"><span class="sl">Total</span><span class="sv">'+fmt(t1.total)+'</span></div>'+
+      '<div class="cat-sep"></div>'+
+      '<div class="cat-right">'+
+        '<div class="cat-row"><span class="cat-name">Shoppings</span><span class="cat-val">'+fmt(t1.shoppings)+'</span><span class="cat-pct">'+pctEs(t1.pct_shoppings)+'</span></div>'+
+        '<div class="cat-row"><span class="cat-name">AA2000</span><span class="cat-val">'+fmt(t1.aa2000)+'</span><span class="cat-pct">'+pctEs(t1.pct_aa2000)+'</span></div>'+
+        '<div class="cat-row"><span class="cat-name">Otros</span><span class="cat-val">'+fmt(t1.otros)+'</span><span class="cat-pct">'+pctEs(t1.pct_otros)+'</span></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function kpiOcupacion(label, t, prevLbl, cardCls){
+  var note = prevLbl+' '+pctEs(t.pct_anterior)+' &middot; '+signedInt(t.delta_elementos)+' &middot; '+signedPp(t.delta_pp);
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Ocupados</span><span class="sv">'+fmt(t.ocupados)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">% de ocupaci&oacute;n de su cat&aacute;logo</span><span class="sv pct-blue">'+pctEs(t.pct_actual)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note '+noteClsForDelta(t.delta_pp)+'"><span class="dot"></span>'+note+'</div>'+
+  '</div>';
+}
+
+function kpiCampanas(t5, prevLbl){
+  return '<div class="kpi">'+
+    '<div class="kpi-label">Campa&ntilde;as del mes / activaciones</div>'+
+    '<div class="kpi-dual">'+
+      '<div class="dcol"><span class="sl">Campa&ntilde;as</span><span class="sv">'+fmt(t5.campanas_actual)+'</span></div>'+
+      '<div class="dsep"></div>'+
+      '<div class="dcol"><span class="sl">Activaciones</span><span class="sv">'+fmt(t5.activaciones_actual)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note '+noteClsForDelta(t5.delta_activaciones)+'"><span class="dot"></span>'+prevLbl+' '+fmt(t5.campanas_anterior)+' camp. &middot; '+fmt(t5.activaciones_anterior)+' activ. ('+signedInt(t5.delta_activaciones)+')</div>'+
+  '</div>';
+}
+
+function kpiDisponibles(t6, prevLbl){
+  var note = prevLbl+' '+pctEs(t6.pct_anterior)+' &middot; '+signedInt(t6.delta_elementos)+' &middot; '+signedPp(t6.delta_pp);
+  return '<div class="kpi k-opp">'+
+    '<div class="kpi-label">Elementos disponibles</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Disponibles</span><span class="sv">'+fmt(t6.disponibles)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">% del cat&aacute;logo</span><span class="sv">'+pctEs(t6.pct_actual)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note '+noteClsForAvailability(t6.delta_pp)+'"><span class="dot"></span>'+note+'</div>'+
+  '</div>';
+}
+
+function setKpis(html){ var el=$('[data-kpis="tv3"]'); if(el) el.innerHTML=html; }
+
 /* =========================================================
    TV 3 · render principal
    ========================================================= */
 function render(){
-  var k = D.kpis || {};
-  var oc = k.ocupacion_calendario || {};
-  var shop = k.shoppings_estatico || {};
-  var aa = k.aa2000_estatico || {};
-  var cob = k.cobertura_shoppings || {};
-  var disp = k.disponibles || {};
+  var t = D.tarjetas || {};
   var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
 
   var html = '';
-  html += kpiSplitBigLeft('Ocupaci&oacute;n por calendario', 'Activos', fmt(oc.activos), '% con campa&ntilde;a', pctEs(oc.pct_actual),
-    (prevLbl+' '+pctEs(oc.pct_anterior)+' &middot; '+signedPp(oc.delta_pp)), noteClsForDelta(oc.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Shoppings Est&aacute;tico', 'Activos', fmt(shop.activos), '% con campa&ntilde;a', pctEs(shop.pct_actual),
-    (prevLbl+' '+pctEs(shop.pct_anterior)+' &middot; '+signedPp(shop.delta_pp)), noteClsForDelta(shop.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('AA2000 Est&aacute;tico', 'Activos', fmt(aa.activos), '% con campa&ntilde;a', pctEs(aa.pct_actual),
-    (prevLbl+' '+pctEs(aa.pct_anterior)+' &middot; '+signedPp(aa.delta_pp)), noteClsForDelta(aa.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Shoppings con actividad', 'Activos', fmt(cob.activos), '% de cobertura', pctEs(cob.pct_actual),
-    (prevLbl+' '+pctEs(cob.pct_anterior)+' &middot; '+signedPp(cob.delta_pp)), noteClsForDelta(cob.delta_pp), 'kpi-lead');
-  html += kpiSplitBigLeft('Disponibles', 'Disponibles', fmt(disp.disponibles), '% del inventario', pctEs(disp.pct_actual),
-    (prevLbl+' '+pctEs(disp.pct_anterior)+' &middot; '+signedPp(disp.delta_pp)), noteClsForAvailability(disp.delta_pp), 'kpi-wide k-opp');
+  html += kpiCatalogo(t.catalogo || {});
+  html += kpiOcupacion('Ocupaci&oacute;n del mes', t.ocupacion_mes || {}, prevLbl);
+  html += kpiOcupacion('Shoppings Est&aacute;tico', t.shoppings_estatico || {}, prevLbl);
+  html += kpiOcupacion('AA2000 Est&aacute;tico', t.aa2000_estatico || {}, prevLbl);
+  html += kpiCampanas(t.campanas_activaciones || {}, prevLbl);
+  html += kpiDisponibles(t.disponibles || {}, prevLbl);
   setKpis(html);
 
-  renderRank('shoppings', D.ranking_shoppings || []);
-  renderSoportes(D.soportes_top || []);
+  renderShoppings(D.shoppings || {});
+  renderSoportes(D.soportes_top || [], D.soportes_sin_clasificar || {});
 
   var ev = D.evolution || {};
   lineChart('c-tv3-evol', ev.meses||[], [
-    {label:'Core Est&aacute;tico', data:ev.core||[], color:C.cream}
-  ], '', true);
+    {label:'Shoppings Estático', data:ev.shoppings_pct||[], color:C.blue},
+    {label:'AA2000 Estático', data:ev.aa2000_pct||[], color:C.warning},
+    {label:'Otros', data:ev.otros_pct||[], color:C.white, dash:[6,4], pointStyle:'rectRot'}
+  ]);
 
   var ins = D.insights || {};
   $('[data-insight-lectura]').innerHTML = ins.lectura || '';
@@ -363,80 +432,87 @@ function render(){
   $('[data-insight-atender]').innerHTML = ins.a_atender || '';
 }
 
-function renderRank(key, rows){
-  var el = $('[data-rank="'+key+'"]');
+function renderShoppings(panel){
+  var el = $('[data-shop-grid]');
+  var tag = $('[data-shop-tag]');
+  var rows = panel.rows || [];
+  if(tag) tag.textContent = 'Shoppings Estático · '+fmt(panel.sedes_con_actividad)+' de '+fmt(panel.total_sedes)+' sedes con actividad';
   if(!el) return;
-  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de ranking</div>'; return; }
-  el.innerHTML = rows.map(function(r,i){
-    var ocupTxt = r.ocup_pct==null ? 'S/D' : pctEs(r.ocup_pct);
-    var w = Math.max(2, Math.min(100, r.ocup_pct||0));
-    return '<div class="rrow">'+
-      '<div class="rk">'+(i+1)+'</div>'+
-      '<div class="rname">'+cap(r.sitio)+'</div>'+
-      '<div class="dual"><span class="chip detail">'+fmt(r.activos)+' ocup. &middot; '+fmt(r.disponibles)+' disp.</span><span class="chip ocup">'+ocupTxt+'</span></div>'+
-      '<div class="rbar"><i style="width:'+w+'%"></i></div>'+
+  if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de shoppings</div>'; return; }
+  el.innerHTML = rows.map(function(r){
+    var pctTxt = r.pct==null ? 'S/D' : pctEs(r.pct);
+    return '<div class="shop-row'+(r.ocupados===0?' zero':'')+'">'+
+      '<span class="shop-name">'+cap(r.sitio)+'</span>'+
+      '<span class="shop-stats">C '+fmt(r.catalogo)+' &middot; O '+fmt(r.ocupados)+' &middot; D '+fmt(r.disponibles)+'</span>'+
+      '<span class="shop-pct">'+pctTxt+'</span>'+
     '</div>';
   }).join('');
 }
 
-function renderSoportes(rows){
+function renderSoportes(rows, sinClasificar){
   var el = $('[data-soportes]');
   if(!el) return;
   if(!rows.length){ el.innerHTML = '<div class="rank-empty">Sin datos de soportes</div>'; return; }
-  var max = Math.max.apply(null, rows.map(function(r){return r.activos||0;}));
-  el.innerHTML = rows.map(function(r){
-    var w = max>0 ? Math.max(4, Math.round((r.activos||0)/max*100)) : 0;
+  var max = Math.max.apply(null, rows.map(function(r){return r.activaciones||0;}));
+  var html = rows.map(function(r){
+    var w = max>0 ? Math.max(4, Math.round((r.activaciones||0)/max*100)) : 0;
     return '<div class="sop-row">'+
-      '<div class="sop-head"><span class="sop-name">'+cap(r.soporte)+'</span><span class="sop-val">'+fmt(r.activos)+'</span></div>'+
+      '<div class="sop-head"><span class="sop-name">'+cap(r.soporte)+'</span><span class="sop-vals"><b>'+fmt(r.activaciones)+'</b> activ. &middot; '+fmt(r.campanas)+' camp.</span></div>'+
       '<div class="sop-bar"><i style="width:'+w+'%"></i></div>'+
     '</div>';
   }).join('');
+  el.innerHTML = html;
 }
 
 /* =========================================================
    CHART HELPERS (Chart.js) — solo panel de evolucion
    ========================================================= */
 var charts={};
-function baseOpts(suffix){
+function baseOpts(){
   return {
     responsive:true, maintainAspectRatio:false,
     animation:{duration:700},
-    plugins:{ legend:{ display:false } },
+    plugins:{ legend:{ display:true, position:'top', align:'end', labels:{color:C.muted, boxWidth:10, font:{family:'Poppins', size:11}} } },
     scales:{
-      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12}} },
-      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12},callback:function(v){return v+(suffix||'')}} }
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:11.5}} },
+      y:{ min:0, max:100, grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:11.5},stepSize:20,callback:function(v){return v+'%'}} }
     }
   };
 }
-function lineChart(id,labels,series,suffix,showLastVal){
+function lineChart(id,labels,series){
   if(!window.Chart){return fallbackNote(id);}
   if(charts[id]) charts[id].destroy();
   var ctx=document.getElementById(id); if(!ctx)return;
-  var opts=baseOpts(suffix);
-  var plugins=[];
-  if(showLastVal){
-    /* Etiqueta numerica SOLO en el ultimo punto (mes vigente del tablero,
-       julio): evita ruido visual sobre Ene-Jun. */
-    plugins.push({ id:'lastvals', afterDatasetsDraw:function(chart){
-      var cx=chart.ctx;
-      chart.data.datasets.forEach(function(ds,di){
-        var meta=chart.getDatasetMeta(di);
-        var i=meta.data.length-1;
-        var pt=meta.data[i], v=ds.data[i];
-        if(!pt||v==null) return;
-        cx.save();
-        cx.font='700 13px Poppins, sans-serif';
-        cx.fillStyle=ds.borderColor; cx.textAlign='center';
-        cx.fillText(fmt(v), pt.x, pt.y-14);
-        cx.restore();
-      });
-    }});
-    opts.layout={padding:{top:26,bottom:4}};
-  }
+  var opts=baseOpts();
+  var plugins=[{ id:'lastvals', afterDatasetsDraw:function(chart){
+    var cx=chart.ctx;
+    var labels = [];
+    chart.data.datasets.forEach(function(ds,di){
+      var meta=chart.getDatasetMeta(di);
+      var i=meta.data.length-1;
+      var pt=meta.data[i], v=ds.data[i];
+      if(!pt||v==null) return;
+      labels.push({x:pt.x+10, y:pt.y, text:pctEs(v), color:ds.borderColor});
+    });
+    /* Etiquetas a la derecha del ultimo punto, centradas verticalmente;
+       si dos series terminan con valores cercanos se separan (min 16px)
+       para que nunca se superpongan (ej. Core 34,6% / Shoppings 38,3%). */
+    labels.sort(function(a,b){ return a.y-b.y; });
+    for(var k=1;k<labels.length;k++){
+      if(labels[k].y - labels[k-1].y < 16) labels[k].y = labels[k-1].y + 16;
+    }
+    cx.save();
+    cx.font='700 12px Poppins, sans-serif';
+    cx.textAlign='left'; cx.textBaseline='middle';
+    labels.forEach(function(l){ cx.fillStyle=l.color; cx.fillText(l.text, l.x, l.y); });
+    cx.restore();
+  }}];
+  opts.layout={padding:{top:10,right:46,bottom:4}};
   charts[id]=new Chart(ctx,{ type:'line',
     data:{ labels:labels, datasets:series.map(function(s){return {
       label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
-      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+      borderWidth:3, borderDash:s.dash||[], tension:.38, pointRadius:3.5, pointStyle:s.pointStyle||'circle',
+      pointBackgroundColor:s.color, fill:false, spanGaps:true }; }) },
     options:opts, plugins:plugins
   });
 }

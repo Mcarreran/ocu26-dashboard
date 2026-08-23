@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brand Plus · TV1 · Visión General del Negocio</title>
+<title>Brand Plus · TV1 · Catálogo de Espacios Publicitarios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -77,7 +77,7 @@ body{
 .tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
 
 /* ======================= HEADER ======================= */
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:92px;flex:none}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;min-height:92px;flex:none}
 .hdr-left{display:flex;align-items:center;gap:28px}
 .logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
 .logo-wrap img{width:190px;height:auto;display:block}
@@ -98,18 +98,26 @@ body{
 .updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
 .period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
 .question{
-  font-size:14.5px;color:var(--bp-white);font-weight:500;margin-top:4px;
+  font-size:13px;color:var(--bp-white);font-weight:500;margin-top:4px;line-height:1.35;
   background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
-  padding:6px 14px;border-radius:999px;max-width:560px
+  padding:6px 16px;border-radius:16px;max-width:820px
 }
 
 /* ======================= KPIs (6 en una fila) ======================= */
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:18px;flex:none}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:18px;flex:none;
+  isolation:isolate /* backdrop-root propio del bloque de tarjetas: evita que el backdrop-filter
+  de cada .kpi "vea" (y sangre) el texto del header/badge de pregunta que esta justo arriba.
+  Complementa el isolation:isolate de .kpi (que evita el sangrado ENTRE tarjetas vecinas). */
+}
 .kpi{
   position:relative;min-height:152px;padding:19px 18px;border-radius:var(--r-lg);
   background:linear-gradient(160deg,var(--panel-2),var(--panel));
   border:1px solid var(--panel-border);backdrop-filter:blur(10px);
-  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+  isolation:isolate /* evita que backdrop-filter "sangre" contenido de tarjetas vecinas
+  (bug conocido de Chromium: blur(10px) muestrea ~10px mas alla del propio borde; con
+  gap:14px entre tarjetas eso alcanza a tocar la vecina). isolation:isolate fuerza un
+  stacking context propio por tarjeta y elimina el artefacto sin tocar el layout. */
 }
 .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
 .kpi.k-fijo::after{background:var(--bp-cream)}
@@ -136,29 +144,39 @@ body{
 .kpi-split .sec .sv{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
 .kpi-split .sec .sl{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
 
+/* Segunda fila compacta de la tarjeta YPF (Espacios totales YPF / Del total
+   ocupado): mismo patron main/sep/sec pero mas chico, separado por un
+   divisor superior, para no competir visualmente con la fila principal
+   (Ocupados / % ocupación de su catálogo). */
+.kpi-split-mini{display:flex;align-items:flex-end;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--panel-border)}
+.kpi-split-mini .msec{display:flex;flex-direction:column}
+.kpi-split-mini .msec .sv{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-white)}
+.kpi-split-mini .msec .sl{font-size:9.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split-mini .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+
 /* ======================= BODY ======================= */
-.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0}
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0;isolation:isolate}
 .panel{
   position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
   background:linear-gradient(165deg,var(--panel-2),var(--panel));
-  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);isolation:isolate;
   display:flex;flex-direction:column
 }
 .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex:none}
 .panel-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
-.panel-body{flex:1;min-height:0;position:relative}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
 .chart-wrap{position:absolute;inset:0}
 .panel-foot{flex:none;margin-top:12px;font-size:14.5px;color:var(--bp-muted)}
 .panel-foot b{color:var(--bp-white);font-weight:700}
 
 /* ======================= COMPOSICION (barras split) ======================= */
-.comp{display:flex;flex-direction:column;gap:16px;height:100%;justify-content:center}
-.comp-row{display:flex;flex-direction:column;gap:6px}
+.comp{display:flex;flex-direction:column;gap:7px;height:100%;justify-content:flex-start}
+.comp-row{display:flex;flex-direction:column;gap:3px}
 .comp-head{display:flex;justify-content:space-between;align-items:baseline}
 .comp-name{font-size:15.5px;font-weight:600}
 .comp-total{font-size:14px;font-weight:700;color:var(--bp-blue-soft)}
-.comp-bar{position:relative;height:26px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.comp-bar{position:relative;height:22px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
 .comp-seg{position:relative;height:100%;display:flex;align-items:center;min-width:0}
 .comp-seg.digital{background:var(--bp-teal)}
 .comp-seg.estatico{background:var(--bp-muted)}
@@ -199,26 +217,26 @@ body{
           <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
           <div class="hdr-titles">
             <div class="eyebrow"><span class="tvno">TV 1</span> OCU26 &middot; Inteligencia Comercial</div>
-            <div class="hdr-title">Visi&oacute;n general del negocio</div>
-            <div class="hdr-sub">Inventario, actividad y performance comercial <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
+            <div class="hdr-title">Cat&aacute;logo de Espacios Publicitarios</div>
+            <div class="hdr-sub">Capacidad, ocupaci&oacute;n, campa&ntilde;as y apertura por circuito <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
           </div>
         </div>
         <div class="hdr-right">
           <div class="clock" data-clock></div>
           <div class="updated" data-updated></div>
           <div class="period-tag" data-period></div>
-          <div class="question">&iquest;QU&Eacute; TENEMOS, CU&Aacute;NTO SE EST&Aacute; USANDO Y C&Oacute;MO RINDI&Oacute; EL MES?</div>
+          <div class="question">&iquest;CU&Aacute;NTOS ESPACIOS PUBLICITARIOS TENEMOS, CU&Aacute;NTOS EST&Aacute;N OCUPADOS, CU&Aacute;NTAS CAMPA&Ntilde;AS TENEMOS Y C&Oacute;MO SE DISTRIBUYEN?</div>
         </div>
       </header>
       <div class="kpis" data-kpis="tv1"></div>
       <div class="body">
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual <span data-year></span></div><div class="panel-tag">Unidades con campa&ntilde;a</div></div>
+          <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual de espacios ocupados <span data-year></span></div><div class="panel-tag">Est&aacute;tico &middot; Digital &middot; YPF</div></div>
           <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv1-evol"></canvas></div></div>
           <div class="panel-foot" data-evol-foot></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Composici&oacute;n del cat&aacute;logo comercial</div><div class="panel-tag" data-comp-tag></div></div>
+          <div class="panel-head"><div class="panel-title">Apertura de espacios por circuito</div><div class="panel-tag" data-comp-tag></div></div>
           <div class="panel-body"><div class="comp" data-comp></div></div>
         </div>
       </div>
@@ -258,17 +276,22 @@ function scaleStage(){
 }
 window.addEventListener('resize', scaleStage);
 
-/* ---------- RELOJ / FECHA ---------- */
+/* ---------- RELOJ / FECHA (America/Argentina/Buenos_Aires, siempre) ----------
+   El reloj vivo NUNCA usa la zona horaria del dispositivo/TV: se fuerza
+   explicitamente a Buenos Aires via Intl.DateTimeFormat, sin sumar/restar
+   horas a mano. "Actualizado" NUNCA usa la hora de apertura del HTML: se
+   lee unicamente de D.meta.generado (momento real de generacion del
+   builder, ya timezone-aware ART). */
+var ART_TZ = 'America/Argentina/Buenos_Aires';
+var clockFmt = new Intl.DateTimeFormat('es-AR', { timeZone: ART_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 function tick(){
-  var now = new Date();
-  var hh = String(now.getHours()).padStart(2,'0');
-  var mm = String(now.getMinutes()).padStart(2,'0');
-  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+  var parts = clockFmt.formatToParts(new Date());
+  var hh = '00', mm = '00';
+  parts.forEach(function(p){ if(p.type==='hour') hh=p.value; if(p.type==='minute') mm=p.value; });
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm+' ART'; });
 }
 function stampUpdated(){
-  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  var now=new Date();
-  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  var txt = D.meta && D.meta.generado ? ('Actualizado '+D.meta.generado+' ART') : 'Actualizado —';
   $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
   $$('[data-year]').forEach(function(e){ e.textContent = (D.meta?D.meta.report_year:''); });
   $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
@@ -323,46 +346,117 @@ function kpiSplitBigLeftDual(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1
     '</div>'+
   '</div>';
 }
+/* Variante con N lineas de nota neutras ademas de la comparacion coloreada
+   (evita apretar mucho texto en una sola linea -> tipografia ilegible u
+   overflow). extraNotes: array de strings, cada uno su propia linea chica. */
+function kpiSplitBigLeftMulti(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,extraNotes,cardCls){
+  var extras = (extraNotes||[]).map(function(n){ return '<div class="kpi-note kpi-note-sub">'+n+'</div>'; }).join('');
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      extras+
+    '</div>'+
+  '</div>';
+}
+/* Tarjeta 1 (Espacios comerciales, ajuste visual 22/08/2026): numero
+   principal + 2 lineas de detalle de INFRAESTRUCTURA FISICA (soportes
+   instalados), una capa distinta de "espacios comerciales" -- nunca se usa
+   para recalcular el numero principal. La distribucion Estatico/Digital/
+   YPF de soportes se retiro de la tarjeta visible (queda en el payload,
+   D.soportes_fisicos) para no confundir participacion fisica con capacidad
+   comercial; se reemplaza por una aclaracion textual sobre YPF. */
+function kpiTotalEspacios(label,value,soportesLine,mixLine,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+'</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note">'+soportesLine+'</div>'+
+      '<div class="kpi-note kpi-note-sub">'+mixLine+'</div>'+
+    '</div>'+
+  '</div>';
+}
+/* Tarjeta 6 (Espacios YPF), simplificada 21/08/2026: fila principal
+   Ocupados/% ocupación de su catálogo (mismo patron que las demas tarjetas),
+   linea de comparacion mensual, y una segunda fila compacta con Espacios
+   totales YPF / Del total ocupado. Reemplaza las leyendas extensas
+   anteriores ("2.150 dig + 383 est", "Estaciones 383/430"): esos detalles
+   siguen disponibles en el payload (espacios.ypf.digital/estatico), solo
+   se retiraron de la tarjeta visible. */
+function kpiYpfCard(label,ocupLbl,ocupVal,pctLbl,pctVal,compNote,compCls,totLbl,totVal,delLbl,delVal,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+ocupLbl+'</span><span class="sv">'+ocupVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+pctLbl+'</span><span class="sv">'+pctVal+'</span></div>'+
+    '</div>'+
+    (compNote ? '<div class="kpi-note '+(compCls||'')+'"><span class="dot"></span>'+compNote+'</div>' : '<div class="kpi-note"></div>')+
+    '<div class="kpi-split-mini">'+
+      '<div class="msec"><span class="sl">'+totLbl+'</span><span class="sv">'+totVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="msec"><span class="sl">'+delLbl+'</span><span class="sv">'+delVal+'</span></div>'+
+    '</div>'+
+  '</div>';
+}
 
 /* =========================================================
    TV 1 · render principal
    ========================================================= */
 function renderTV1(){
-  var k = D.kpis || {};
-  var core = k.core_comercial || {};
-  var act = k.unidades_actividad || {};
-  var ypf = k.ypf || {};
-  var est = k.estatico || {};
-  var dcal = k.digital_calendario || {};
-  var dfill = k.digital_fill || {};
+  var esp = D.espacios || {};
+  var dEst = esp.estatico || {};
+  var dDig = esp.digital || {};
+  var ypf = esp.ypf || {};
+  var camp = D.campanas_catalogo || {};
   var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
 
+  var sop = D.soportes_fisicos || {};
+
   var html = '';
-  html += kpi('Core comercial', fmt(core.value), '', 'Universo comercial core', '', '');
-  html += kpiSplitBigLeft('Unidades con campaña', 'Activas', fmt(act.value), '% del core', pctEs(act.pct_core),
-    (prevLbl+' '+fmt(act.anterior)+' &middot; '+signedInt(act.delta)), noteClsForDelta(act.delta), '');
-  html += kpiSplitBigLeftDual('YPF', 'Estaciones', fmt(ypf.estaciones_activas), '% del total', pctEs(ypf.pct_sobre_unidades_campana),
-    (prevLbl+' '+fmt(ypf.anterior)+' &middot; '+signedInt(ypf.delta)), noteClsForDelta(ypf.delta),
-    ('Presencia en activas: Est '+pctEs(ypf.mix_estatico_pct)+' &middot; Dig '+pctEs(ypf.mix_digital_pct)), '');
-  html += kpiSplitBigLeft('Estático', 'Activos', fmt(est.activos), 'Ocupación', pctEs(est.ocupacion_actual), (prevLbl+' '+pctEs(est.ocupacion_anterior)+' &middot; '+signedPp(est.delta_pp)+(est.ytd!=null?' &middot; YTD '+pctEs(est.ytd):'')), noteClsForDelta(est.delta_pp), 'k-fijo');
-  html += kpiSplitBigLeft('Digital por calendario', 'Activos', fmt(dcal.activos), '% con actividad', pctEs(dcal.pct_actual), (prevLbl+' '+pctEs(dcal.pct_anterior)+' &middot; '+signedPp(dcal.delta_pp)), noteClsForDelta(dcal.delta_pp), '');
-  html += kpiSplitBigLeft('Digital por fill rate', dfill.unidad||'Vendidos', fmt(dfill.numerador), '% capacidad vendida', pctEs(dfill.pct_actual), (prevLbl+' '+pctEs(dfill.pct_anterior)+' &middot; '+signedPp(dfill.delta_pp)), noteClsForDelta(dfill.delta_pp), '');
+  html += kpiTotalEspacios('Espacios comerciales', fmt(esp.totales),
+    'Infraestructura física: '+fmt(sop.total)+' soportes',
+    'YPF: múltiples soportes comparten 5 slots por estación',
+    '');
+  html += kpiSplitBigLeft('Espacios ocupados', 'Ocupados', fmt(esp.ocupados), '% ocupación', pctEs(esp.pct_ocupacion),
+    (prevLbl+' '+pctEs(esp.pct_ocupacion_anterior)+' &middot; '+signedPp(esp.delta_pp)), noteClsForDelta(esp.delta_pp), 'k-ok');
+  html += kpiSplitBigLeftDual('Campañas únicas', 'Campañas únicas', fmt(camp.campanas_unicas), 'Presencias en elementos', fmt(camp.presencias_en_elementos),
+    (prevLbl+' '+fmt(camp.campanas_unicas_anterior)+' &middot; '+signedInt(camp.delta_campanas)), noteClsForDelta(camp.delta_campanas),
+    ('Incluye YPF &middot; YTD '+fmt(camp.campanas_unicas_ytd)), '');
+  /* % OCUPACIÓN DE SU CATÁLOGO (principal, jerarquía alta, ya viene de
+     pct_ocupacion = ocupados/catálogo de la propia familia) + "Del total
+     ocupado: X%" (secundario, participacion_ocupado_pct = ocupados de la
+     familia / espacios ocupados totales). Nunca "resto hasta 100%": ambos
+     ya llegan precalculados con su propio numerador/denominador. */
+  html += kpiSplitBigLeftMulti('Espacios Estáticos', 'Ocupados', fmt(dEst.ocupados), '% ocupación de su catálogo', pctEs(dEst.pct_ocupacion),
+    (prevLbl+' '+pctEs(dEst.pct_ocupacion_anterior)+' &middot; '+signedPp(dEst.delta_pp)+' &middot; '+fmt(dEst.totales)+' espacios de catálogo'),
+    noteClsForDelta(dEst.delta_pp), ['Del total ocupado: '+pctEs(dEst.participacion_ocupado_pct)], 'k-fijo');
+  html += kpiSplitBigLeftMulti('Espacios Digitales', 'Ocupados', fmt(dDig.ocupados), '% ocupación de su catálogo', pctEs(dDig.pct_ocupacion),
+    (prevLbl+' '+pctEs(dDig.pct_ocupacion_anterior)+' &middot; '+signedPp(dDig.delta_pp)+' &middot; '+fmt(dDig.totales)+' espacios de catálogo'),
+    noteClsForDelta(dDig.delta_pp), ['Del total ocupado: '+pctEs(dDig.participacion_ocupado_pct)], '');
+  html += kpiYpfCard('Espacios YPF', 'Espacios ocupados', fmt(ypf.ocupados), '% ocupación de su catálogo', pctEs(ypf.pct_ocupacion),
+    (prevLbl+' '+pctEs(ypf.pct_ocupacion_anterior)+' &middot; '+signedPp(ypf.delta_pp)), noteClsForDelta(ypf.delta_pp),
+    'Espacios totales YPF', fmt(ypf.totales), 'Del total ocupado', pctEs(ypf.participacion_ocupado_pct), '');
   setKpis('tv1', html);
 
-  var ev = D.evolution || {};
+  var ev = D.evolution_espacios || {};
   lineChart('c-tv1-evol', ev.meses||[], [
     {label:'Digital', data:ev.digital||[], color:C.teal},
     {label:'Estático', data:ev.estatico||[], color:C.muted},
-    {label:'YPF', data:ev.ypf||[], color:C.violet}
+    {label:'YPF', data:ev.ypf||[], color:C.violet, axis:'y1'}
   ], '', true);
 
-  var camp = k.campanas_unicas || {};
-  $('[data-evol-foot]').innerHTML = 'Campañas únicas acumuladas a '+(D.meta?D.meta.report_month_label.toLowerCase():'')+': <b>'+fmt(camp.ytd)+'</b>';
+  var kCatTotal = (D.kpis && D.kpis.campanas_unicas) || {};
+  $('[data-evol-foot]').innerHTML = 'Campañas únicas acumuladas a '+(D.meta?D.meta.report_month_label.toLowerCase():'')+', catálogo total incluido YPF: <b>'+fmt(kCatTotal.ytd)+'</b>';
 
-  var comp = D.composition || {};
-  var catTotal = D.catalogo_comercial ? D.catalogo_comercial.value : comp.denominador;
-  $('[data-comp-tag]').textContent = 'Participación sobre '+fmt(catTotal)+' unidades comerciales';
-  renderComposition(comp);
+  var apertura = D.apertura_circuito || {};
+  $('[data-comp-tag]').textContent = 'Participación sobre '+fmt(apertura.denominador)+' espacios totales';
+  renderApertura(apertura);
 
   var ins = D.insights || {};
   $('[data-insight-lectura]').innerHTML = ins.lectura || '';
@@ -389,41 +483,40 @@ function noteClsForDelta(v){
   return '';
 }
 
-function renderComposition(comp){
-  var fams = comp.familias || [];
+function renderApertura(apertura){
+  var barras = apertura.barras || [];
   var el = $('[data-comp]');
-  if(!fams.length){ el.innerHTML = '<div class="comp-empty">Sin datos de composición</div>'; return; }
-  var rows = fams.map(function(f){
+  if(!barras.length){ el.innerHTML = '<div class="comp-empty">Sin datos de apertura por circuito</div>'; return; }
+  /* Ancho de cada segmento = % sobre Espacios Totales (tarjeta 1, misma escala
+     para las 5 barras: Shoppings/Pantallas LED/AA2000/YPF/Otros). Unidad =
+     espacios, no elementos (Pantalla LED=20, Tótem/Puente Shopping=10,
+     Tríedro/Tripstore=capacidad registrada, Estático=1, YPF=estación x5). */
+  var rows = barras.map(function(b){
     var segs = '';
-    /* Ancho de cada segmento = % sobre el catálogo comercial TV1 (misma escala para todas las barras).
-       "u." desambigua cantidad vs porcentaje (11 u. · 1,0% ≠ 11%). */
-    if(f.split===false){
-      /* YPF: una sola barra de estaciones YPF, sin split Digital/Estatico */
-      if(f.total>0){
-        segs = '<div class="comp-seg ypf" style="width:'+f.pct_total+'%;min-width:64px"><span>'+fmt(f.total)+' estaciones &middot; '+pctEs(f.pct_total)+'</span></div>';
-      }
-    } else {
-      if(f.digital>0){
-        segs += '<div class="comp-seg digital" style="width:'+f.digital_pct+'%;min-width:64px"><span>Dig '+fmt(f.digital)+' u. &middot; '+pctEs(f.digital_pct)+'</span></div>';
-      }
-      if(f.estatico>0){
-        segs += '<div class="comp-seg estatico" style="width:'+f.estatico_pct+'%;min-width:64px"><span>Est '+fmt(f.estatico)+' u. &middot; '+pctEs(f.estatico_pct)+'</span></div>';
-      }
+    /* min-width:150px (no 64px): un segmento nunca es solo digital+estatico
+       (maximo 2 por barra), asi que 2x150=300px siempre entra en el ancho
+       real del panel (~660px) sin desbordar, y alcanza para el texto
+       completo "Dig 1.234 esp. · 99,9%" sin que el segmento vecino lo tape. */
+    if(b.digital>0){
+      segs += '<div class="comp-seg digital" style="width:'+b.digital_pct+'%;min-width:150px"><span>Dig '+fmt(b.digital)+' esp. &middot; '+pctEs(b.digital_pct)+'</span></div>';
     }
-    if(f.total===0){
-      segs = '<div class="comp-empty" style="padding-left:2px">Sin unidades en el catálogo</div>';
+    if(b.estatico>0){
+      segs += '<div class="comp-seg estatico" style="width:'+b.estatico_pct+'%;min-width:150px"><span>Est '+fmt(b.estatico)+' esp. &middot; '+pctEs(b.estatico_pct)+'</span></div>';
     }
-    return '<div class="comp-row"><div class="comp-head"><div class="comp-name">'+f.nombre+'</div><div class="comp-total">'+pctEs(f.pct_total)+'</div></div>'+
+    if(b.total===0){
+      segs = '<div class="comp-empty" style="padding-left:2px">Sin espacios en este circuito</div>';
+    }
+    return '<div class="comp-row"><div class="comp-head"><div class="comp-name">'+b.nombre+'</div><div class="comp-total">'+fmt(b.total)+' esp. &middot; '+pctEs(b.pct_total)+'</div></div>'+
       '<div class="comp-bar">'+segs+'</div></div>';
   }).join('');
 
   var foot = '';
-  var cat = D.catalogo_comercial || {};
-  if(cat.nota_catalogo_ampliado){
-    foot += '<div class="comp-foot">* '+cat.nota_catalogo_ampliado+'</div>';
+  var sinRegla = (D.espacios && D.espacios.sin_regla_confirmada) || {};
+  if(sinRegla.elementos){
+    foot += '<div class="comp-foot">* '+fmt(sinRegla.elementos)+' soportes digitales sin capacidad confirmada se excluyen de las barras.</div>';
   }
-  if(comp.nota_otros){
-    foot += '<div class="comp-foot">* '+comp.nota_otros+'</div>';
+  if(apertura.nota){
+    foot += '<div class="comp-foot">* '+apertura.nota+'</div>';
   }
   el.innerHTML = rows + foot;
 }
@@ -450,6 +543,13 @@ function lineChart(id,labels,series,suffix,showVals){
   if(charts[id]) charts[id].destroy();
   var ctx=document.getElementById(id); if(!ctx)return;
   var opts=baseOpts(suffix);
+  /* Eje secundario (y1, oculto) para series en una escala mucho mayor
+     (ej. YPF miles vs Estático/Digital cientos): sin esto, las etiquetas de
+     valor de las series chicas quedan pegadas/ilegibles contra las grandes,
+     comprimidas todas en la franja inferior del mismo eje. */
+  if(series.some(function(s){return s.axis==='y1';})){
+    opts.scales.y1 = { display:false, position:'right', grid:{drawBorder:false} };
+  }
   var plugins=[];
   if(showVals){
     plugins.push({ id:'ptlabels', afterDatasetsDraw:function(chart){
@@ -472,7 +572,8 @@ function lineChart(id,labels,series,suffix,showVals){
   charts[id]=new Chart(ctx,{ type:'line',
     data:{ labels:labels, datasets:series.map(function(s){return {
       label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
-      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false }; }) },
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false,
+      yAxisID:s.axis||'y' }; }) },
     options:opts, plugins:plugins
   });
 }
