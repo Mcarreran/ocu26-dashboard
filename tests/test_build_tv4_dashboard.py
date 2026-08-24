@@ -90,8 +90,24 @@ _PROTECTED_SHA256 = {
 @pytest.mark.parametrize("rel_path", sorted(_PROTECTED_SHA256))
 def test_protected_tv_files_remain_byte_identical(rel_path):
     path = REPO_ROOT / rel_path
-    actual = hashlib.sha256(path.read_bytes()).hexdigest()
-    assert actual == _PROTECTED_SHA256[rel_path], f"{rel_path} cambio respecto al baseline pre-TV4"
+    # El baseline historico de _PROTECTED_SHA256 mezcla finales de linea: los
+    # fuentes .py/_template.html se hashearon en LF y los HTML de salida
+    # (tv1.html, tv3.html) en CRLF nativo de Windows. Un checkout de Git en
+    # otro sistema operativo (o con otro autocrlf) puede materializar
+    # cualquiera de los dos sin que el contenido logico cambie, asi que el
+    # guard acepta el hash crudo, su version LF o su version CRLF. Cualquier
+    # cambio de CONTENIDO real (no solo de fin de linea) sigue sin coincidir
+    # con ninguno de los tres y el test sigue fallando como corresponde.
+    raw = path.read_bytes()
+    lf = raw.replace(b"\r\n", b"\n")
+    crlf = lf.replace(b"\n", b"\r\n")
+    candidate_hashes = {
+        hashlib.sha256(raw).hexdigest(),
+        hashlib.sha256(lf).hexdigest(),
+        hashlib.sha256(crlf).hexdigest(),
+    }
+    expected = _PROTECTED_SHA256[rel_path]
+    assert expected in candidate_hashes, f"{rel_path} cambio respecto al baseline pre-TV4"
 
 
 # ---------------------------------------------------------------------------
