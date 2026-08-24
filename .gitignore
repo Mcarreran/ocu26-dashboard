@@ -182,3 +182,15 @@ cython_debug/
 
 # Gate 4A - salida generada por scripts/export_data.py, 100% regenerable a partir del Excel fuente
 output/
+
+# Archivos locales y privados: no publicar
+*.xlsx
+*.xls
+*.xlsm
+~$*
+*.zip
+*.7z
+*.rar
+.env
+*.pem
+*.key
