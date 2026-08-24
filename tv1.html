@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV1 · Catálogo de Espacios Publicitarios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV1 · Vision general del negocio
+   Identidad institucional obligatoria (manual de marca)
+   Evolucion de audit_sources/TV1_REFERENCE.html (arte conservado)
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:36px 48px 30px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;min-height:92px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:190px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:17px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-src{font-size:13px;font-weight:400;color:rgba(167,176,194,.85);letter-spacing:.02em;margin-left:4px;white-space:nowrap}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.clock{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:13.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12.5px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:13px;color:var(--bp-white);font-weight:500;margin-top:4px;line-height:1.35;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 16px;border-radius:16px;max-width:820px
+}
+
+/* ======================= KPIs (6 en una fila) ======================= */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:18px;flex:none;
+  isolation:isolate /* backdrop-root propio del bloque de tarjetas: evita que el backdrop-filter
+  de cada .kpi "vea" (y sangre) el texto del header/badge de pregunta que esta justo arriba.
+  Complementa el isolation:isolate de .kpi (que evita el sangrado ENTRE tarjetas vecinas). */
+}
+.kpi{
+  position:relative;min-height:152px;padding:19px 18px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+  isolation:isolate /* evita que backdrop-filter "sangre" contenido de tarjetas vecinas
+  (bug conocido de Chromium: blur(10px) muestrea ~10px mas alla del propio borde; con
+  gap:14px entre tarjetas eso alcanza a tocar la vecina). isolation:isolate fuerza un
+  stacking context propio por tarjeta y elimina el artefacto sin tocar el layout. */
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-value{font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:22px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:6px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.kpi-notes{display:flex;flex-direction:column;gap:3px}
+.kpi-note-sub{font-size:11px;color:var(--bp-muted);opacity:.85}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+/* Segunda fila compacta de la tarjeta YPF (Espacios totales YPF / Del total
+   ocupado): mismo patron main/sep/sec pero mas chico, separado por un
+   divisor superior, para no competir visualmente con la fila principal
+   (Ocupados / % ocupación de su catálogo). */
+.kpi-split-mini{display:flex;align-items:flex-end;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--panel-border)}
+.kpi-split-mini .msec{display:flex;flex-direction:column}
+.kpi-split-mini .msec .sv{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-white)}
+.kpi-split-mini .msec .sl{font-size:9.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split-mini .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:20px;flex:1;min-height:0;isolation:isolate}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);isolation:isolate;
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex:none}
+.panel-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
+.chart-wrap{position:absolute;inset:0}
+.panel-foot{flex:none;margin-top:12px;font-size:14.5px;color:var(--bp-muted)}
+.panel-foot b{color:var(--bp-white);font-weight:700}
+
+/* ======================= COMPOSICION (barras split) ======================= */
+.comp{display:flex;flex-direction:column;gap:7px;height:100%;justify-content:flex-start}
+.comp-row{display:flex;flex-direction:column;gap:3px}
+.comp-head{display:flex;justify-content:space-between;align-items:baseline}
+.comp-name{font-size:15.5px;font-weight:600}
+.comp-total{font-size:14px;font-weight:700;color:var(--bp-blue-soft)}
+.comp-bar{position:relative;height:22px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.comp-seg{position:relative;height:100%;display:flex;align-items:center;min-width:0}
+.comp-seg.digital{background:var(--bp-teal)}
+.comp-seg.estatico{background:var(--bp-muted)}
+.comp-seg.ypf{background:var(--bp-violet)}
+.comp-seg span{font-size:12px;font-weight:700;color:var(--bp-black-deep);padding-left:8px;white-space:nowrap;background:transparent}
+.comp-empty{font-size:13px;color:var(--bp-muted);padding:6px 0}
+.comp-foot{font-size:11.5px;color:var(--bp-muted);line-height:1.4;margin-top:2px}
+
+/* ======================= INSIGHT (3 columnas, 1 contenedor) ======================= */
+.insight{
+  margin-top:18px;flex:none;padding:18px 26px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:stretch;gap:0
+}
+.insight-col{flex:1;display:flex;flex-direction:column;gap:6px;padding:2px 24px;min-width:0}
+.insight-col + .insight-col{border-left:1px solid rgba(126,166,255,.25)}
+.insight-col .lab{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;line-height:1
+}
+.insight-col.lectura .lab{color:var(--bp-blue-soft)}
+.insight-col.positivo .lab{color:var(--bp-success)}
+.insight-col.atender .lab{color:var(--bp-warning)}
+.insight-col p{font-size:16px;line-height:1.36;font-weight:400}
+.insight-col p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv1">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap"><img src="data:image/png;base64,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" alt="Brand Plus"></div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 1</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Cat&aacute;logo de Espacios Publicitarios</div>
+            <div class="hdr-sub">Capacidad, ocupaci&oacute;n, campa&ntilde;as y apertura por circuito <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;CU&Aacute;NTOS ESPACIOS PUBLICITARIOS TENEMOS, CU&Aacute;NTOS EST&Aacute;N OCUPADOS, CU&Aacute;NTAS CAMPA&Ntilde;AS TENEMOS Y C&Oacute;MO SE DISTRIBUYEN?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv1"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Evoluci&oacute;n mensual de espacios ocupados <span data-year></span></div><div class="panel-tag">Est&aacute;tico &middot; Digital &middot; YPF</div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv1-evol"></canvas></div></div>
+          <div class="panel-foot" data-evol-foot></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Apertura de espacios por circuito</div><div class="panel-tag" data-comp-tag></div></div>
+          <div class="panel-body"><div class="comp" data-comp></div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="insight-col lectura"><div class="lab">Lectura</div><p data-insight-lectura></p></div>
+        <div class="insight-col positivo"><div class="lab">Punto positivo</div><p data-insight-positivo></p></div>
+        <div class="insight-col atender"><div class="lab">A atender</div><p data-insight-atender></p></div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV1_DATA = {"meta":{"generado":"22/08/2026 20:36","generado_iso":"2026-08-22T20:36:05-03:00","timezone":"America/Argentina/Buenos_Aires","report_year":2026,"report_month":7,"report_month_label":"Julio","previous_month":6,"previous_month_label":"Junio","period_start":"2026-07-01","period_end":"2026-07-31","ytd_start":"2026-01-01","fuente":"OCU26 · Base maestra + base campañas"},"kpis":{"core_comercial":{"value":1064,"non_ypf":513,"ypf_estaciones":551},"campanas_unicas":{"ytd":443,"mes_actual":133,"mes_anterior":159,"label_kpi":"CAMPAÑAS ÚNICAS","label_kpi_reason":"Se implementó Campañas únicas en lugar de Campañas vendidas porque la fuente no contiene una fecha inequívoca de venta (FechaInicio/FechaFin son fechas de flight, FechaHoraCarga es fecha de carga en el sistema, no de venta)."},"unidades_actividad":{"value":600,"anterior":562,"delta":38,"pct_core":56.4,"non_ypf_activo":217,"ypf_estaciones_activas":383,"ypf_estaciones_anterior":346,"digital_activo":71,"digital_anterior":72,"estatico_activo":146,"estatico_anterior":144},"ypf":{"estaciones_activas":383,"anterior":346,"delta":37,"pct_sobre_unidades_campana":63.8,"mix_estatico_pct":0.0,"mix_digital_pct":100.0},"estatico":{"activos":146,"ocupacion_actual":35.7,"ocupacion_anterior":36.1,"delta_pp":-0.4,"ytd":32.6,"status":"OK","numerador":4227,"denominador":11842,"universo_elegible":["CENCOSUD","PILAR_FRONTLIGHT","REMEROS"]},"digital_calendario":{"activos":71,"elegibles":91,"pct_actual":78.0,"pct_anterior":79.1,"delta_pp":-1.1},"digital_fill":{"numerador":321,"denominador":1575,"unidad":"slots ocupados","pct_actual":20.4,"pct_anterior":27.3,"delta_pp":-6.9,"status":"PARTIAL"}},"evolution":{"meses":["Ene","Feb","Mar","Abr","May","Jun","Jul"],"digital":[69,71,72,72,71,72,71],"estatico":[114,112,136,137,136,144,146],"ypf":[0,0,0,0,310,346,383]},"catalogo_comercial":{"value":1077,"non_ypf":526,"ypf_estaciones":551,"complementario_circuitos":["MAB"],"complementario_count":13,"nota_catalogo_ampliado":"Catálogo ampliado = Core Comercial 1.064 + MAB 13 = 1.077 unidades."},"composition":{"denominador":1077,"familias":[{"nombre":"Shoppings","split":true,"digital":68,"estatico":381,"total":449,"digital_pct":6.3,"estatico_pct":35.4,"pct_total":41.7},{"nombre":"Pantallas","split":true,"digital":11,"estatico":0,"total":11,"digital_pct":1.0,"estatico_pct":0.0,"pct_total":1.0},{"nombre":"YPF","split":false,"digital":0,"estatico":0,"total":551,"digital_pct":0.0,"estatico_pct":0.0,"pct_total":51.2},{"nombre":"AA2000","split":true,"digital":12,"estatico":40,"total":52,"digital_pct":1.1,"estatico_pct":3.7,"pct_total":4.8},{"nombre":"Otros","split":true,"digital":0,"estatico":14,"total":14,"digital_pct":0.0,"estatico_pct":1.3,"pct_total":1.3}],"otros_circuitos":["MAB","PILAR_FRONTLIGHT"],"nota_otros":"Otros = MAB 13 + Pilar Frontlight 1."},"espacios":{"totales":3958,"ocupados":1470,"disponibles":2488,"pct_ocupacion":37.1,"ocupados_anterior":1179,"pct_ocupacion_anterior":29.8,"delta_pp":7.3,"status":"PARTIAL","status_motivo":"Incluye AA2000 (CompletitudMaestro=PARCIAL, catálogo con Mendoza/Córdoba sin cargar) y MAB (CoberturaCatalogo=DESCONOCIDO): catálogo cargado y autorizado, no se afirma que sea el 100% del universo físico real.","soportes_fisicos_equivalentes":1326,"estatico":{"totales":435,"ocupados":146,"ocupados_anterior":144,"pct_ocupacion":33.6,"pct_ocupacion_anterior":33.1,"delta_pp":0.5,"participacion_ocupado_pct":9.9},"digital":{"totales":990,"ocupados":281,"ocupados_anterior":380,"pct_ocupacion":28.4,"pct_ocupacion_anterior":38.4,"delta_pp":-10.0,"participacion_ocupado_pct":19.1,"por_categoria":{"PANTALLA_LED":{"elementos":11,"totales":220,"ocupados":85.35483870967742,"capacidad_por_unidad":20},"TOTEM_SHOPPING":{"elementos":46,"totales":460,"ocupados":178.70967741935482,"capacidad_por_unidad":10},"PUENTE_LED":{"elementos":5,"totales":50,"ocupados":12.870967741935484,"capacidad_por_unidad":10},"TRIEDRO":{"elementos":6,"totales":60,"ocupados":3.838709677419355,"capacidad_por_unidad":"registrada (CapacidadSlotsReel)"},"TRIPSTORE_AA2000":{"elementos":10,"totales":200,"ocupados":0.0,"capacidad_por_unidad":"registrada (CapacidadSlotsReel)"}}},"ypf":{"totales":2533,"ocupados":1043,"ocupados_anterior":655,"pct_ocupacion":41.2,"pct_ocupacion_anterior":25.9,"delta_pp":15.3,"participacion_ocupado_pct":71.0,"digital":{"estaciones_catalogo":430,"estaciones_activas":383,"estaciones_completa":85,"estaciones_sobrecapacidad":23,"campanas_excedentes_total":33,"estaciones_requiere_confirmacion":0,"totales":2150,"ocupados":1043},"estatico":{"totales":383,"ocupados":0},"espacios_por_estacion":5,"nota":"Corrección 21/08/2026: la ocupación digital YPF se calcula estación por estación como mín(5, máximo de IDCampaña distintas realmente CONCURRENTES —solapamiento de fechas, no solo activas alguna vez en el período— en esa estación) — NUNCA estaciones activas × 5, que sobreestimaba la ocupación. Estaciones con más de 5 campañas concurrentes quedan en 5 ocupados y se registran como sobrecapacidad (excedentes ≠ espacios ocupados). YPF Estático (fotobox) no registra ninguna campaña en la base a la fecha (0 ocupados)."},"aa2000_tripstore":{"elementos":10,"totales":200,"ocupados":0,"ocupados_anterior":0,"capacidad_fuente":"CapacidadSlotsReel (capacidad registrada; NO la tasa de 10 de Tótem de Shopping)","nota":"Pertenece a AA2000 (barra 'AA2000' en la apertura por circuito); no se duplica en Shoppings."},"sin_regla_confirmada":{"elementos":13,"motivo":"Formatos digitales sin conversión de espacios confirmada (fuera de Pantalla LED / Tótem de Shopping / Puente LED / Tríedro / Tripstore AA2000): no se incluyen en Espacios Totales ni en ninguna barra, para no inventar una capacidad."}},"soportes_fisicos":{"total":4574,"estatico_no_ypf":435,"digital_no_ypf":91,"ypf":4048,"ypf_detalle":{"menu_board":462,"torres":2209,"punteras":994,"fotobox":383},"pct_estatico":9.5,"pct_digital":2.0,"pct_ypf":88.5},"campanas_catalogo":{"campanas_unicas":133,"campanas_unicas_anterior":159,"delta_campanas":-26,"campanas_unicas_ytd":443,"presencias_en_elementos":11477,"nota":"Presencias en elementos: cantidad de combinaciones únicas campaña–elemento. Una campaña cuenta más de una vez cuando está presente en distintos elementos."},"evolution_espacios":{"meses":["Ene","Feb","Mar","Abr","May","Jun","Jul"],"estatico":[114,112,136,137,136,144,146],"digital":[206,270,311,293,346,380,281],"ypf":[0,0,0,0,310,655,1043]},"apertura_circuito":{"denominador":3958,"barras":[{"nombre":"Shoppings","estatico":381,"digital":570,"total":951,"pct_total":24.0,"digital_pct":14.4,"estatico_pct":9.6},{"nombre":"Pantallas LED","estatico":0,"digital":220,"total":220,"pct_total":5.6,"digital_pct":5.6,"estatico_pct":0.0},{"nombre":"AA2000","estatico":40,"digital":200,"total":240,"pct_total":6.1,"digital_pct":5.1,"estatico_pct":1.0},{"nombre":"YPF","estatico":383,"digital":2150,"total":2533,"pct_total":64.0,"digital_pct":54.3,"estatico_pct":9.7},{"nombre":"Otros","estatico":14,"digital":0,"total":14,"pct_total":0.4,"digital_pct":0.0,"estatico_pct":0.4}],"nota":"Shoppings incluye Tótems, Puentes y Triedros; AA2000 incluye Tripstore; YPF incluye Estático; Otros incluye Pilar y MAB."},"insights":{"lectura":"Julio registra <b>1.470 espacios publicitarios ocupados</b> sobre 3.958 espacios de capacidad cargada y autorizada (1.326 soportes/estaciones equivalentes). <b>133 campañas únicas</b> (incluye YPF) y 11.477 presencias en elementos.","punto_positivo":"La ocupación de espacios crece <b>7,3 pp</b> frente a junio (29,8% → 37,1%).","a_atender":"2.488 espacios disponibles (62,9% de la capacidad). 13 soportes digitales quedan fuera del cálculo por no tener una conversión de espacios confirmada."}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV1 app.js
+   Renderiza el tablero desde window.TV1_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV1_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF',
+          teal:'#35B8C4', violet:'#8C7AE6' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA (America/Argentina/Buenos_Aires, siempre) ----------
+   El reloj vivo NUNCA usa la zona horaria del dispositivo/TV: se fuerza
+   explicitamente a Buenos Aires via Intl.DateTimeFormat, sin sumar/restar
+   horas a mano. "Actualizado" NUNCA usa la hora de apertura del HTML: se
+   lee unicamente de D.meta.generado (momento real de generacion del
+   builder, ya timezone-aware ART). */
+var ART_TZ = 'America/Argentina/Buenos_Aires';
+var clockFmt = new Intl.DateTimeFormat('es-AR', { timeZone: ART_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+function tick(){
+  var parts = clockFmt.formatToParts(new Date());
+  var hh = '00', mm = '00';
+  parts.forEach(function(p){ if(p.type==='hour') hh=p.value; if(p.type==='minute') mm=p.value; });
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm+' ART'; });
+}
+function stampUpdated(){
+  var txt = D.meta && D.meta.generado ? ('Actualizado '+D.meta.generado+' ART') : 'Actualizado —';
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-year]').forEach(function(e){ e.textContent = (D.meta?D.meta.report_year:''); });
+  $$('[data-period]').forEach(function(e){ e.textContent = D.meta ? ('Periodo: '+D.meta.report_month_label+' '+D.meta.report_year) : ''; });
+}
+
+/* ---------- KPI helper ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'">'+(noteCls?'<span class="dot"></span>':'')+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function kpiSplit(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="sec"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="main"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+/* Jerarquia visual estandar: cantidad (izquierda) blanca/grande, % (derecha) azul/menor.
+   Aplica a TODAS las tarjetas con cantidad+porcentaje (Unidades con campaña, YPF, Estático,
+   Digital por calendario, Digital por fill rate). */
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+/* Variante con 2 lineas de nota: comparacion vs mes anterior (coloreada por signo) + una
+   segunda linea informativa neutra (desglose o mix de presencia). */
+function kpiSplitBigLeftDual(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,note2,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
+    '</div>'+
+  '</div>';
+}
+/* Variante con N lineas de nota neutras ademas de la comparacion coloreada
+   (evita apretar mucho texto en una sola linea -> tipografia ilegible u
+   overflow). extraNotes: array de strings, cada uno su propia linea chica. */
+function kpiSplitBigLeftMulti(label,leftLbl,leftVal,rightLbl,rightVal,note1,note1Cls,extraNotes,cardCls){
+  var extras = (extraNotes||[]).map(function(n){ return '<div class="kpi-note kpi-note-sub">'+n+'</div>'; }).join('');
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      extras+
+    '</div>'+
+  '</div>';
+}
+/* Tarjeta 1 (Espacios comerciales, ajuste visual 22/08/2026): numero
+   principal + 2 lineas de detalle de INFRAESTRUCTURA FISICA (soportes
+   instalados), una capa distinta de "espacios comerciales" -- nunca se usa
+   para recalcular el numero principal. La distribucion Estatico/Digital/
+   YPF de soportes se retiro de la tarjeta visible (queda en el payload,
+   D.soportes_fisicos) para no confundir participacion fisica con capacidad
+   comercial; se reemplaza por una aclaracion textual sobre YPF. */
+function kpiTotalEspacios(label,value,soportesLine,mixLine,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+'</div>'+
+    '<div class="kpi-notes">'+
+      '<div class="kpi-note">'+soportesLine+'</div>'+
+      '<div class="kpi-note kpi-note-sub">'+mixLine+'</div>'+
+    '</div>'+
+  '</div>';
+}
+/* Tarjeta 6 (Espacios YPF), simplificada 21/08/2026: fila principal
+   Ocupados/% ocupación de su catálogo (mismo patron que las demas tarjetas),
+   linea de comparacion mensual, y una segunda fila compacta con Espacios
+   totales YPF / Del total ocupado. Reemplaza las leyendas extensas
+   anteriores ("2.150 dig + 383 est", "Estaciones 383/430"): esos detalles
+   siguen disponibles en el payload (espacios.ypf.digital/estatico), solo
+   se retiraron de la tarjeta visible. */
+function kpiYpfCard(label,ocupLbl,ocupVal,pctLbl,pctVal,compNote,compCls,totLbl,totVal,delLbl,delVal,cardCls){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+ocupLbl+'</span><span class="sv">'+ocupVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+pctLbl+'</span><span class="sv">'+pctVal+'</span></div>'+
+    '</div>'+
+    (compNote ? '<div class="kpi-note '+(compCls||'')+'"><span class="dot"></span>'+compNote+'</div>' : '<div class="kpi-note"></div>')+
+    '<div class="kpi-split-mini">'+
+      '<div class="msec"><span class="sl">'+totLbl+'</span><span class="sv">'+totVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="msec"><span class="sl">'+delLbl+'</span><span class="sv">'+delVal+'</span></div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* =========================================================
+   TV 1 · render principal
+   ========================================================= */
+function renderTV1(){
+  var esp = D.espacios || {};
+  var dEst = esp.estatico || {};
+  var dDig = esp.digital || {};
+  var ypf = esp.ypf || {};
+  var camp = D.campanas_catalogo || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var sop = D.soportes_fisicos || {};
+
+  var html = '';
+  html += kpiTotalEspacios('Espacios comerciales', fmt(esp.totales),
+    'Infraestructura física: '+fmt(sop.total)+' soportes',
+    'YPF: múltiples soportes comparten 5 slots por estación',
+    '');
+  html += kpiSplitBigLeft('Espacios ocupados', 'Ocupados', fmt(esp.ocupados), '% ocupación', pctEs(esp.pct_ocupacion),
+    (prevLbl+' '+pctEs(esp.pct_ocupacion_anterior)+' &middot; '+signedPp(esp.delta_pp)), noteClsForDelta(esp.delta_pp), 'k-ok');
+  html += kpiSplitBigLeftDual('Campañas únicas', 'Campañas únicas', fmt(camp.campanas_unicas), 'Presencias en elementos', fmt(camp.presencias_en_elementos),
+    (prevLbl+' '+fmt(camp.campanas_unicas_anterior)+' &middot; '+signedInt(camp.delta_campanas)), noteClsForDelta(camp.delta_campanas),
+    ('Incluye YPF &middot; YTD '+fmt(camp.campanas_unicas_ytd)), '');
+  /* % OCUPACIÓN DE SU CATÁLOGO (principal, jerarquía alta, ya viene de
+     pct_ocupacion = ocupados/catálogo de la propia familia) + "Del total
+     ocupado: X%" (secundario, participacion_ocupado_pct = ocupados de la
+     familia / espacios ocupados totales). Nunca "resto hasta 100%": ambos
+     ya llegan precalculados con su propio numerador/denominador. */
+  html += kpiSplitBigLeftMulti('Espacios Estáticos', 'Ocupados', fmt(dEst.ocupados), '% ocupación de su catálogo', pctEs(dEst.pct_ocupacion),
+    (prevLbl+' '+pctEs(dEst.pct_ocupacion_anterior)+' &middot; '+signedPp(dEst.delta_pp)+' &middot; '+fmt(dEst.totales)+' espacios de catálogo'),
+    noteClsForDelta(dEst.delta_pp), ['Del total ocupado: '+pctEs(dEst.participacion_ocupado_pct)], 'k-fijo');
+  html += kpiSplitBigLeftMulti('Espacios Digitales', 'Ocupados', fmt(dDig.ocupados), '% ocupación de su catálogo', pctEs(dDig.pct_ocupacion),
+    (prevLbl+' '+pctEs(dDig.pct_ocupacion_anterior)+' &middot; '+signedPp(dDig.delta_pp)+' &middot; '+fmt(dDig.totales)+' espacios de catálogo'),
+    noteClsForDelta(dDig.delta_pp), ['Del total ocupado: '+pctEs(dDig.participacion_ocupado_pct)], '');
+  html += kpiYpfCard('Espacios YPF', 'Espacios ocupados', fmt(ypf.ocupados), '% ocupación de su catálogo', pctEs(ypf.pct_ocupacion),
+    (prevLbl+' '+pctEs(ypf.pct_ocupacion_anterior)+' &middot; '+signedPp(ypf.delta_pp)), noteClsForDelta(ypf.delta_pp),
+    'Espacios totales YPF', fmt(ypf.totales), 'Del total ocupado', pctEs(ypf.participacion_ocupado_pct), '');
+  setKpis('tv1', html);
+
+  var ev = D.evolution_espacios || {};
+  lineChart('c-tv1-evol', ev.meses||[], [
+    {label:'Digital', data:ev.digital||[], color:C.teal},
+    {label:'Estático', data:ev.estatico||[], color:C.muted},
+    {label:'YPF', data:ev.ypf||[], color:C.violet, axis:'y1'}
+  ], '', true);
+
+  var kCatTotal = (D.kpis && D.kpis.campanas_unicas) || {};
+  $('[data-evol-foot]').innerHTML = 'Campañas únicas acumuladas a '+(D.meta?D.meta.report_month_label.toLowerCase():'')+', catálogo total incluido YPF: <b>'+fmt(kCatTotal.ytd)+'</b>';
+
+  var apertura = D.apertura_circuito || {};
+  $('[data-comp-tag]').textContent = 'Participación sobre '+fmt(apertura.denominador)+' espacios totales';
+  renderApertura(apertura);
+
+  var ins = D.insights || {};
+  $('[data-insight-lectura]').innerHTML = ins.lectura || '';
+  $('[data-insight-positivo]').innerHTML = ins.punto_positivo || '';
+  $('[data-insight-atender]').innerHTML = ins.a_atender || '';
+}
+
+function signedPp(v){
+  if(v==null) return 'S/D';
+  var s = v>0 ? '+' : '';
+  return s+Number(v).toFixed(1).replace('.',',')+' pp';
+}
+function signedInt(v){
+  if(v==null) return 'S/D';
+  return (v>0?'+':'')+fmt(v);
+}
+/* Regla de negocio: en TODAS estas KPIs, subir = mejora (verde), bajar =
+   atencion (rojo), sin cambio = neutral (gris). Coloreado por signo, no por
+   umbral de magnitud. */
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+
+function renderApertura(apertura){
+  var barras = apertura.barras || [];
+  var el = $('[data-comp]');
+  if(!barras.length){ el.innerHTML = '<div class="comp-empty">Sin datos de apertura por circuito</div>'; return; }
+  /* Ancho de cada segmento = % sobre Espacios Totales (tarjeta 1, misma escala
+     para las 5 barras: Shoppings/Pantallas LED/AA2000/YPF/Otros). Unidad =
+     espacios, no elementos (Pantalla LED=20, Tótem/Puente Shopping=10,
+     Tríedro/Tripstore=capacidad registrada, Estático=1, YPF=estación x5). */
+  var rows = barras.map(function(b){
+    var segs = '';
+    /* min-width:150px (no 64px): un segmento nunca es solo digital+estatico
+       (maximo 2 por barra), asi que 2x150=300px siempre entra en el ancho
+       real del panel (~660px) sin desbordar, y alcanza para el texto
+       completo "Dig 1.234 esp. · 99,9%" sin que el segmento vecino lo tape. */
+    if(b.digital>0){
+      segs += '<div class="comp-seg digital" style="width:'+b.digital_pct+'%;min-width:150px"><span>Dig '+fmt(b.digital)+' esp. &middot; '+pctEs(b.digital_pct)+'</span></div>';
+    }
+    if(b.estatico>0){
+      segs += '<div class="comp-seg estatico" style="width:'+b.estatico_pct+'%;min-width:150px"><span>Est '+fmt(b.estatico)+' esp. &middot; '+pctEs(b.estatico_pct)+'</span></div>';
+    }
+    if(b.total===0){
+      segs = '<div class="comp-empty" style="padding-left:2px">Sin espacios en este circuito</div>';
+    }
+    return '<div class="comp-row"><div class="comp-head"><div class="comp-name">'+b.nombre+'</div><div class="comp-total">'+fmt(b.total)+' esp. &middot; '+pctEs(b.pct_total)+'</div></div>'+
+      '<div class="comp-bar">'+segs+'</div></div>';
+  }).join('');
+
+  var foot = '';
+  var sinRegla = (D.espacios && D.espacios.sin_regla_confirmada) || {};
+  if(sinRegla.elementos){
+    foot += '<div class="comp-foot">* '+fmt(sinRegla.elementos)+' soportes digitales sin capacidad confirmada se excluyen de las barras.</div>';
+  }
+  if(apertura.nota){
+    foot += '<div class="comp-foot">* '+apertura.nota+'</div>';
+  }
+  el.innerHTML = rows + foot;
+}
+
+function setKpis(tv, html){ var el=$('[data-kpis="'+tv+'"]'); if(el) el.innerHTML=html; }
+
+/* =========================================================
+   CHART HELPERS (Chart.js) — solo panel de evolucion
+   ========================================================= */
+var charts={};
+function baseOpts(suffix){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:700},
+    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:14,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:16 } } },
+    scales:{
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13}} },
+      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13},callback:function(v){return v+(suffix||'')}} }
+    }
+  };
+}
+function lineChart(id,labels,series,suffix,showVals){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var opts=baseOpts(suffix);
+  /* Eje secundario (y1, oculto) para series en una escala mucho mayor
+     (ej. YPF miles vs Estático/Digital cientos): sin esto, las etiquetas de
+     valor de las series chicas quedan pegadas/ilegibles contra las grandes,
+     comprimidas todas en la franja inferior del mismo eje. */
+  if(series.some(function(s){return s.axis==='y1';})){
+    opts.scales.y1 = { display:false, position:'right', grid:{drawBorder:false} };
+  }
+  var plugins=[];
+  if(showVals){
+    plugins.push({ id:'ptlabels', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i]; if(v==null) return;
+          cx.save();
+          cx.font='700 11px Poppins, sans-serif';
+          cx.fillStyle=ds.borderColor; cx.textAlign='center';
+          var yOff = -10 - (di*13);
+          cx.fillText(Math.round(v), pt.x, pt.y+yOff);
+          cx.restore();
+        });
+      });
+    }});
+    opts.layout={padding:{top:30,bottom:6}};
+  }
+  charts[id]=new Chart(ctx,{ type:'line',
+    data:{ labels:labels, datasets:series.map(function(s){return {
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:false,
+      yAxisID:s.axis||'y' }; }) },
+    options:opts, plugins:plugins
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  renderTV1();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

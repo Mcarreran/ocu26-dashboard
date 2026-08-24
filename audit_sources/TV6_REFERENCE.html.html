@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV5 · Demanda Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · Wallboard 6 TVs
+   Identidad institucional obligatoria (manual de marca)
+   ============================================================ */
+
+:root{
+  /* Paleta oficial */
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---- Stage escalado 1920x1080 ---- */
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+/* textura LED / pixel sutil */
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+/* glow institucional inferior */
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+/* ---- TV sections ---- */
+.tv{position:absolute;inset:0;padding:40px 48px 36px;display:none;flex-direction:column;z-index:2}
+.tv.active{display:flex;animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:96px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:196px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:14px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:6px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:18px;font-weight:300;color:var(--bp-muted);margin-top:8px}
+.hdr-src{font-size:13px;font-weight:400;color:rgba(167,176,194,.85);letter-spacing:.02em;margin-left:4px;white-space:nowrap}
+
+/* KPI card partida (Actividad hoy) */
+.kpi-split{display:flex;align-items:flex-end;gap:16px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:48px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.kpi-split .main .sl{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:4px}
+.kpi-split .sec .sv{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:4px}
+.clock{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:14px;color:var(--bp-muted);letter-spacing:.02em}
+.question{
+  font-size:15px;color:var(--bp-white);font-weight:500;margin-top:6px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:6px 14px;border-radius:999px;max-width:520px
+}
+
+/* ======================= KPIs ======================= */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:22px;flex:none}
+.kpi{
+  position:relative;min-height:158px;padding:22px 24px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:13.5px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--bp-muted);line-height:1.3}
+.kpi-value{font-size:52px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:26px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-note{font-size:13.5px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+
+/* ======================= BODY ======================= */
+.body{display:grid;grid-template-columns:1.52fr 1fr;gap:22px;margin-top:22px;flex:1;min-height:0}
+.body.single{grid-template-columns:1fr}
+.panel{
+  position:relative;padding:24px 26px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px;flex:none}
+.panel-head.col{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:14px}
+.panel-title{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:13.5px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden}
+.chart-wrap{position:absolute;inset:0}
+
+/* dos sub-bloques (TV2) */
+.split{display:grid;grid-template-rows:1fr 1fr;gap:18px;min-height:0}
+
+/* ======================= RANKINGS ======================= */
+.rank{display:flex;flex-direction:column;gap:11px;height:100%;justify-content:space-around}
+.rank.tight{gap:8px}
+.rank.spread{justify-content:space-between}
+.rank.dense{gap:6px;justify-content:space-between}
+.rank.dense .rname{font-size:15px}
+.rank.dense .rname .sub{font-size:11.5px}
+.rank.dense .rbar{height:6px;margin-top:1px}
+.rank.dense .chip{font-size:12px;padding:4px 9px}
+.rrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:14px}
+.rrow .rk{font-size:15px;font-weight:700;color:var(--bp-blue-soft);text-align:center}
+.rname{font-size:16.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rname .sub{display:block;font-size:12.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em}
+.rname .subin{font-size:12.5px;font-weight:400;color:var(--bp-muted);letter-spacing:.02em;margin-left:8px}
+.rname .pend{display:block;font-size:12px;font-weight:600;color:var(--bp-warning);letter-spacing:.02em}
+.rbar.pend > i{background:linear-gradient(90deg,rgba(167,176,194,.4),rgba(167,176,194,.6))}
+.rmetric{font-size:19px;font-weight:800;letter-spacing:-.02em;text-align:right;min-width:64px}
+.rmetric small{font-size:12.5px;color:var(--bp-muted);font-weight:500}
+.rbar{grid-column:1 / -1;height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:-2px}
+.rbar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bp-blue),var(--bp-blue-soft))}
+.rbar.fijo > i{background:linear-gradient(90deg,#C9C4B4,var(--bp-cream))}
+.rbar.opp > i{background:linear-gradient(90deg,#C9922B,var(--bp-warning))}
+.rbar.ok > i{background:linear-gradient(90deg,#1FA968,var(--bp-success))}
+
+/* chips fill/ocup en rankings digitales */
+.dual{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.chip{font-size:13px;font-weight:700;padding:5px 11px;border-radius:8px;letter-spacing:.01em;white-space:nowrap}
+.chip.fill{background:rgba(28,96,255,.22);color:var(--bp-blue-soft);border:1px solid rgba(28,96,255,.36)}
+.chip.ocup{background:rgba(47,224,132,.16);color:var(--bp-success);border:1px solid rgba(47,224,132,.30)}
+
+/* ======================= MATRIZ (TV5) ======================= */
+.matrix{width:100%;border-collapse:collapse}
+.matrix th,.matrix td{padding:10px 8px;text-align:center;font-size:15px}
+.matrix th{font-size:12.5px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--panel-border)}
+.matrix th:first-child,.matrix td:first-child{text-align:left;font-weight:700}
+.matrix td{border-bottom:1px solid rgba(255,255,255,.05)}
+.cell{display:inline-flex;min-width:34px;justify-content:center;padding:4px 8px;border-radius:8px;font-weight:700;font-size:15px}
+.cell.z{color:var(--bp-muted);background:transparent;font-weight:400}
+
+/* ======================= PIPELINE (TV4) ======================= */
+.pipe{display:flex;flex-direction:column;gap:13px;justify-content:center;height:100%}
+.pipe-row{display:grid;grid-template-columns:180px 1fr 70px;align-items:center;gap:16px}
+.pipe-lbl{font-size:16px;font-weight:600}
+.pipe-track{height:26px;border-radius:9px;background:rgba(255,255,255,.07);overflow:hidden}
+.pipe-track > i{display:block;height:100%;border-radius:9px}
+.pipe-val{font-size:20px;font-weight:800;text-align:right}
+.pipe-hist .pipe-lbl{color:var(--bp-muted);font-weight:500}
+.pipe-hist .pipe-val{color:var(--bp-muted);font-weight:700}
+.pipe-hist .pipe-track{height:14px}
+.hist-tag{font-size:11px;font-weight:600;color:var(--bp-muted);background:rgba(167,176,194,.14);padding:2px 7px;border-radius:6px;margin-left:6px;letter-spacing:.03em}
+.pipe-sub{font-size:13px;font-weight:600;color:var(--bp-muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 -2px;padding-top:12px;border-top:1px solid var(--panel-border)}
+
+.timeline{display:flex;flex-direction:column;gap:12px;height:100%;justify-content:center}
+.tl{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:14px;padding:11px 14px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--panel-border)}
+.tl .date{font-size:17px;font-weight:800;color:var(--bp-blue-soft);text-align:center;line-height:1}
+.tl .date small{display:block;font-size:11px;color:var(--bp-muted);font-weight:500;margin-top:3px}
+.tl .cname{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl .ccirc{font-size:12.5px;color:var(--bp-muted)}
+.tl .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(28,96,255,.18);color:var(--bp-blue-soft);border:1px solid rgba(28,96,255,.3)}
+
+/* ======================= OPORTUNIDAD (TV6) ======================= */
+.opp-list{display:flex;flex-direction:column;gap:12px;height:100%;justify-content:center}
+.opp{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:16px;padding:14px 18px;border-radius:var(--r-md);background:rgba(255,255,255,.05);border:1px solid var(--panel-border)}
+.opp .oname{font-size:18px;font-weight:700}
+.opp .osub{font-size:13px;color:var(--bp-muted);margin-top:2px}
+.opp .ostat{text-align:right}
+.opp .ostat b{font-size:22px;font-weight:800;display:block;line-height:1}
+.opp .ostat span{font-size:12px;color:var(--bp-muted)}
+.nivel{font-size:12.5px;font-weight:700;padding:5px 13px;border-radius:999px;letter-spacing:.04em;white-space:nowrap}
+.nivel.alta{background:rgba(255,200,87,.16);color:var(--bp-warning);border:1px solid rgba(255,200,87,.34)}
+.nivel.media{background:rgba(126,166,255,.14);color:var(--bp-blue-soft);border:1px solid rgba(126,166,255,.3)}
+.nivel.baja{background:rgba(167,176,194,.12);color:var(--bp-muted);border:1px solid rgba(167,176,194,.24)}
+
+/* ======================= INSIGHT ======================= */
+.insight{
+  margin-top:20px;flex:none;padding:20px 28px;border-radius:var(--r-md);
+  background:linear-gradient(120deg,rgba(28,96,255,.18),rgba(28,96,255,.06));
+  border:1px solid rgba(28,96,255,.34);display:flex;align-items:center;gap:24px
+}
+.insight .lab{
+  font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:var(--bp-blue-soft);
+  writing-mode:vertical-rl;transform:rotate(180deg);border-right:1px solid rgba(126,166,255,.32);line-height:1;
+  align-self:stretch;display:flex;align-items:center;justify-content:center;padding:0 4px 0 0;flex:none
+}
+.insight p{font-size:21px;line-height:1.38;font-weight:400}
+.insight p b{font-weight:700;color:var(--bp-white)}
+.note{font-size:13px;color:var(--bp-muted);font-style:italic}
+
+/* ======================= NAV DOTS ======================= */
+#nav{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:20}
+#nav button{
+  width:38px;height:6px;border-radius:999px;border:none;cursor:pointer;
+  background:rgba(255,255,255,.20);transition:.25s;padding:0
+}
+#nav button.on{background:var(--bp-blue);width:52px}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+
+/* watermark isologo sutil */
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+
+/* muted / sin dato states */
+.muted{color:var(--bp-muted)}
+.tag-pending{font-size:12px;font-weight:600;color:var(--bp-warning);background:rgba(255,200,87,.12);padding:3px 9px;border-radius:7px;border:1px solid rgba(255,200,87,.28)}
+
+/* single-tv: ocultar nav multi y hint de teclas de navegacion */
+#nav{display:none}
+#hint{right:20px}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv5">
+      <div class="wm">∞</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap"><img src="data:image/png;base64,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" alt="Brand Plus"></div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 5</span> Demanda Comercial</div>
+            <div class="hdr-title">Así se comporta la demanda</div>
+            <div class="hdr-sub">Clientes, marcas y agencias · dónde pautan</div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="question">¿Quién pauta, en qué circuitos y con qué concentración?</div>
+        </div>
+      </header>
+      <div class="kpis" data-kpis="tv5"></div>
+      <div class="body">
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title" data-rank-title="tv5">Top clientes</div>
+            <div class="panel-sub"><span id="tv5-cyc">clientes · marcas · agencias</span> · activaciones del mes</div>
+          </div>
+          <div class="panel-body"><div class="rank" data-rank="tv5-top"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head col">
+            <div class="panel-title">Demanda por circuito</div>
+            <div class="panel-sub">Top clientes × grupo comercial · activaciones del mes</div>
+          </div>
+          <div class="panel-body"><div data-matrix="tv5"></div></div>
+        </div>
+      </div>
+      <div class="insight"><div class="lab">Lectura</div><p data-insight="tv5"></p></div>
+    </section>
+    <div id="hint">F · pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.OCU_DATA = {"meta": {"generado": "13/07/2026", "anio": 2026, "mes": 7, "mesNombre": "Jul", "mesLargo": "Julio", "fuente": "BASE_CAMPAÑAS (OCU26)", "totalCampanas": 1444, "totalElementosMaestro": 2770}, "tv1": {"totalElementos": 2770, "elementosConCampana": 142, "activasHoy": 383, "campanasUnicasHoy": 72, "corePct": 24.1, "frDigMes": 41.5, "frDigAnio": 36.9, "ocFijMes": 9.6, "ocFijAnio": 9.2, "mix": {"Digital": 1231, "Fijo": 1466, "Flexible": 104}, "mixDonut": {"digCore": 79, "fijCore": 588, "flex": 96, "compl": 2007}, "core": 667, "comp": 2103, "evolMeses": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], "evolFR": [32.1, 42.8, 48.8, 45.6, 53.9, 56.5, 41.5, 29.1, 23.9, 23.4, 23.2, 22.5], "evolOF": [7.5, 8.2, 10.0, 10.0, 10.0, 10.2, 9.6, 9.4, 8.9, 8.7, 8.7, 8.7]}, "tv2": {"frDigMes": 41.5, "ocDigMes": 89.1, "slotsDispMes": 27558, "capMes": 47120, "vendMes": 19562, "frPant": 38.5, "frSD": 42.7, "rankPant": [{"id": "C1 - CAB", "ubic": "CABILDO", "fill": 78.0, "ocup": 100.0}, {"id": "C6 - PIL", "ubic": "PILAR", "fill": 65.0, "ocup": 100.0}, {"id": "C3 - REM", "ubic": "REMEROS", "fill": 47.0, "ocup": 100.0}, {"id": "C8 - PAR", "ubic": "CERRITO", "fill": 47.0, "ocup": 100.0}, {"id": "C7 - AVE", "ubic": "AVELLANEDA", "fill": 45.0, "ocup": 100.0}, {"id": "C2 - JBJ", "ubic": "JUAN B JUSTO", "fill": 42.0, "ocup": 100.0}, {"id": "C10 - COR", "ubic": "CORDOBA", "fill": 30.0, "ocup": 100.0}, {"id": "C4 - 9DJ", "ubic": "9DEJULIO", "fill": 26.0, "ocup": 100.0}], "rankSD": [{"shopping": "UNICENTER", "fill": 65.0, "ocup": 95.0, "elems": 35}, {"shopping": "P.PILAR", "fill": 38.0, "ocup": 100.0, "elems": 6}, {"shopping": "P.ESCOBAR", "fill": 30.0, "ocup": 100.0, "elems": 2}, {"shopping": "P.PALERMO", "fill": 30.0, "ocup": 100.0, "elems": 3}, {"shopping": "F.P.BROWN", "fill": 23.0, "ocup": 100.0, "elems": 3}, {"shopping": "P.OESTE", "fill": 22.0, "ocup": 83.0, "elems": 6}, {"shopping": "F.QUILMES", "fill": 20.0, "ocup": 100.0, "elems": 3}], "evolMeses": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], "evolPant": [39.4, 40.1, 50.4, 51.5, 57.9, 56.5, 38.5, 22.5, 20.2, 18.6, 18.4, 15.9], "evolSD": [29.1, 43.8, 48.1, 43.3, 52.2, 56.5, 42.7, 31.9, 25.4, 25.4, 25.2, 25.2]}, "tv3": {"ocSFMes": 9.6, "ocSFAnio": 9.2, "fijDisp30": 533, "fijTotal": 588, "shoppingTop": "P.PILAR", "rankFijo": [{"shopping": "P.PILAR", "ocup": 62.0, "elems": 30, "ocupados": 23, "disp": 7}, {"shopping": "F.QUILMES", "ocup": 60.0, "elems": 5, "ocupados": 3, "disp": 2}, {"shopping": "REMEROS", "ocup": 52.0, "elems": 27, "ocupados": 14, "disp": 13}, {"shopping": "P.OESTE", "ocup": 37.0, "elems": 49, "ocupados": 18, "disp": 31}, {"shopping": "F.P.BROWN", "ocup": 20.0, "elems": 15, "ocupados": 3, "disp": 12}], "rankSoporte": [{"soporte": "Estandarte", "campanas": 15}, {"soporte": "Chupete", "campanas": 12}, {"soporte": "Frontlight", "campanas": 9}, {"soporte": "Bastidor", "campanas": 2}, {"soporte": "Cartel", "campanas": 1}, {"soporte": "Backlight", "campanas": 1}]}, "tv4": {"activacionesActivas": 383, "campanasUnicasActivas": 72, "finalizadasHist": 1046, "proxIniciar": 6, "proxFinalizar": 110, "reservasFuturas": 6, "pctCore": 100.0, "pipeline": {"Activas": 383, "Reservas": 6, "Finalizadas": 1046}, "distGrupo": {"Pantallas": 94, "Shoppings Digital": 234, "Shoppings Fijo": 55, "Complementario": 0}, "proxList": [{"tipo": "Inicia", "fecha": "18/07", "campana": "DG SHOWS VARIOS 2", "circuito": "Pantalla Led"}, {"tipo": "Inicia", "fecha": "20/07", "campana": "PATITAS", "circuito": "Shoppings Digital"}, {"tipo": "Inicia", "fecha": "26/07", "campana": "LATIN AD MELI 7-7", "circuito": "Pantalla Led"}, {"tipo": "Inicia", "fecha": "01/08", "campana": "OAK STREET", "circuito": "Shoppings Digital"}, {"tipo": "Inicia", "fecha": "01/08", "campana": "PLAYSTATION", "circuito": "Shoppings Digital"}]}, "tv5": {"clientesMes": 36, "marcasMes": 57, "agenciasMes": 4, "agenciasIdent": 2, "agenciasIncluyePend": true, "clienteTopIdent": "GCBA", "aconfirmarClientes": 364, "concTop5": 41.0, "topClientes": [{"nombre": "A CONFIRMAR", "campanas": 225, "pendiente": true}, {"nombre": "AGENCIA", "campanas": 139, "pendiente": true}, {"nombre": "GCBA", "campanas": 88, "pendiente": false}, {"nombre": "FENIX", "campanas": 74, "pendiente": false}, {"nombre": "LATIN AD", "campanas": 60, "pendiente": false}, {"nombre": "ZURICH", "campanas": 59, "pendiente": false}], "topMarcas": [{"nombre": "GCBA", "campanas": 88, "pendiente": false}, {"nombre": "ZURICH", "campanas": 59, "pendiente": false}, {"nombre": "YPF", "campanas": 51, "pendiente": false}, {"nombre": "NETFLIX", "campanas": 51, "pendiente": false}, {"nombre": "MERCADO LIBRE", "campanas": 48, "pendiente": false}, {"nombre": "SAMSUNG", "campanas": 43, "pendiente": false}], "topAgencias": [{"nombre": "A confirmar", "campanas": 952, "pendiente": true}, {"nombre": "No", "campanas": 341, "pendiente": true}, {"nombre": "CARAT", "campanas": 54, "pendiente": false}, {"nombre": "OMD", "campanas": 38, "pendiente": false}, {"nombre": "OSA", "campanas": 28, "pendiente": false}, {"nombre": "GROUPM", "campanas": 26, "pendiente": false}], "matriz": [{"cliente": "GCBA", "Pantallas": 39, "Shoppings Digital": 49, "Shoppings Fijo": 0, "Complementario": 0}, {"cliente": "FENIX", "Pantallas": 74, "Shoppings Digital": 0, "Shoppings Fijo": 0, "Complementario": 0}, {"cliente": "LATIN AD", "Pantallas": 60, "Shoppings Digital": 0, "Shoppings Fijo": 0, "Complementario": 0}, {"cliente": "ZURICH", "Pantallas": 12, "Shoppings Digital": 47, "Shoppings Fijo": 0, "Complementario": 0}, {"cliente": "YPF", "Pantallas": 4, "Shoppings Digital": 38, "Shoppings Fijo": 9, "Complementario": 0}]}, "tv6": {"compElems": 2103, "compSinCamp": 2103, "ciudadMas": "MARTINEZ", "circuitos": [{"circuito": "YPF Digital", "elementos": 1116, "campanas": 0, "ocup": 0.0, "medio": "Digital", "nivel": "Alta"}, {"circuito": "London Supply", "elementos": 442, "campanas": 0, "ocup": 0.0, "medio": "Fijo", "nivel": "Alta"}, {"circuito": "YPF Fijo", "elementos": 383, "campanas": 0, "ocup": 0.0, "medio": "Fijo", "nivel": "Alta"}, {"circuito": "Supermercados", "elementos": 100, "campanas": 0, "ocup": 0, "medio": "Flexible", "nivel": "Alta"}, {"circuito": "AA2000", "elementos": 52, "campanas": 0, "ocup": 0.0, "medio": "Fijo", "nivel": "Alta"}, {"circuito": "MAB", "elementos": 13, "campanas": 0, "ocup": 0.0, "medio": "Fijo", "nivel": "Media"}, {"circuito": "Pilar", "elementos": 1, "campanas": 0, "ocup": 0.0, "medio": "Fijo", "nivel": "Media"}], "ciudades": [{"ciudad": "CABA", "elementos": 422, "campanas": 462}, {"ciudad": "USHUAIA", "elementos": 172, "campanas": 0}, {"ciudad": "CALAFATE", "elementos": 141, "campanas": 0}, {"ciudad": "CORDOBA", "elementos": 136, "campanas": 0}, {"ciudad": "TRELEW", "elementos": 135, "campanas": 0}, {"ciudad": "ROSARIO", "elementos": 123, "campanas": 0}, {"ciudad": "MARTINEZ", "elementos": 100, "campanas": 610}, {"ciudad": "PILAR", "elementos": 77, "campanas": 155}]}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · app.js
+   Renderiza los 6 tableros desde window.OCU_DATA (BASE_CAMPAÑAS).
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.OCU_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctTxt = function(v){ return (v==null) ? 'Sin dato' : v+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  $$('[data-year]').forEach(function(e){ e.textContent = (D.meta?D.meta.anio:''); });
+}
+
+/* ---------- KPI helper ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'">'+(noteCls?'<span class="dot"></span>':'')+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value">'+value+u+'</div>'+ n +'</div>';
+}
+function setKpis(tv, html){ var el=$('[data-kpis="'+tv+'"]'); if(el) el.innerHTML=html; }
+
+/* ---------- RANK bar row ---------- */
+function rankRow(rank, name, sub, metricHtml, pct, barCls, inlineSub){
+  var w = Math.max(2, Math.min(100, pct||0));
+  var nameHtml = inlineSub
+    ? name+(sub?' <span class="subin">'+sub+'</span>':'')
+    : name+(sub?'<span class="sub">'+sub+'</span>':'');
+  return '<div class="rrow">'+
+      '<div class="rk">'+rank+'</div>'+
+      '<div class="rname">'+nameHtml+'</div>'+
+      '<div class="rmetric">'+metricHtml+'</div>'+
+      '<div class="rbar '+(barCls||'')+'"><i style="width:'+w+'%"></i></div>'+
+    '</div>';
+}
+
+/* =========================================================
+   TV 1
+   ========================================================= */
+function renderTV1(){
+  var t=D.tv1;
+  var mesUp = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'Mes').toUpperCase();
+  // card partida "Actividad hoy"
+  var actividad = '<div class="kpi k-ok">'+
+    '<div class="kpi-label">Actividad hoy</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Campañas activas únicas</span><span class="sv">'+fmt(t.campanasUnicasHoy)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">Activaciones en curso</span><span class="sv">'+fmt(t.activasHoy)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note pos"><span class="dot"></span>En circuito core</div></div>';
+
+  setKpis('tv1',
+    kpi('Elementos en catálogo', fmt(t.totalElementos),'', t.elementosConCampana+' con campaña cargada','', '') +
+    kpi('Core comercial', (t.corePct!=null?String(t.corePct).replace('.',',')+'%':'—'),'', fmt(t.core)+' de '+fmt(t.core+t.comp)+' elementos','warn','k-opp') +
+    actividad +
+    kpi('Fill rate digital · '+mesUp, pctTxt(t.frDigMes),'', 'Año '+pctTxt(t.frDigAnio),'', '') +
+    kpi('Ocupación fija · '+mesUp, pctTxt(t.ocFijMes),'', 'Año '+pctTxt(t.ocFijAnio),'', 'k-fijo')
+  );
+  // linea evol con % siempre visible
+  lineChart('c-tv1-evol', t.evolMeses, [
+    {label:'Fill rate digital core', data:t.evolFR, color:C.blue},
+    {label:'Ocupación fija core', data:t.evolOF, color:C.cream}
+  ], '%', true);
+  // donut core vs complementario, % siempre visible
+  // Core (digital+fijo) en universo blanco: fijo blanco puro, digital blanco azulado.
+  // Flexible mantiene su color. Complementario en celeste transparente (discreto).
+  var md=t.mixDonut;
+  donutChart('c-tv1-mix',
+    ['Digital','Fijo','Flexible gráfico','Complementario'],
+    [md.digCore, md.fijCore, md.flex, md.compl],
+    ['#AFC6FF', '#FFFFFF', '#7EA6FF', 'rgba(126,166,255,0.30)'], true,
+    ['#0B1D4D', '#1D1D1B', '#0B1D4D', '#AFC6FF']);
+  $('[data-insight="tv1"]').innerHTML =
+    'El negocio mantiene tracción en el core comercial —<b>pantallas y shoppings</b>—. '+
+    'Digital muestra <b>'+pctTxt(t.frDigMes)+' de fill rate</b> mensual y el inventario fijo presenta capacidad disponible para '+
+    'empujar ventas. El resto del catálogo funciona como <b>expansión comercial</b>.';
+}
+
+/* =========================================================
+   TV 2 · Digital core
+   ========================================================= */
+function renderTV2(){
+  var t=D.tv2;
+  var mesL = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'mes').toLowerCase();
+  var mesUp = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'Mes');
+  // Orden narrativo: digital core total -> ocupación calendario -> Pantallas -> Shoppings -> capacidad
+  setKpis('tv2',
+    kpi('Fill rate digital core · '+mesUp, pctTxt(t.frDigMes),'', 'Pantallas + Shoppings Digital','', '') +
+    kpi('Ocupación digital core · '+mesUp, pctTxt(t.ocDigMes),'', 'Elementos-día con pauta','pos','k-ok') +
+    kpi('Fill rate Pantallas · '+mesUp, pctTxt(t.frPant),'', 'Vía pública LED','', '') +
+    kpi('Fill rate Shoppings Dig. · '+mesUp, pctTxt(t.frSD),'', 'Circuito Cencosud','', '') +
+    kpi('Slots disponibles · '+mesUp, fmt(t.slotsDispMes),'', 'de '+fmt(t.capMes)+' de capacidad core','warn','k-opp')
+  );
+  // titulos de ranking con mes
+  var pt=$('[data-ptitle="tv2-pant"]'); if(pt) pt.textContent='Pantallas LED · ranking de '+mesL;
+  var st=$('[data-ptitle="tv2-sd"]'); if(st) st.textContent='Shoppings Digital · ranking de '+mesL;
+  // ranking pantallas (máx 8)
+  var pant = t.rankPant.slice(0,8).map(function(r,i){
+    return rankRow(i+1, cap(r.ubic), r.id,
+      '<span class="dual"><span class="chip fill">'+r.fill+'% fill</span><span class="chip ocup">'+r.ocup+'% ocup</span></span>',
+      r.fill, '', true);
+  }).join('');
+  $('[data-rank="tv2-pant"]').innerHTML = pant;
+  // ranking shoppings digital (máx 5)
+  var sd = t.rankSD.slice(0,5).map(function(r,i){
+    return rankRow(i+1, cap(r.shopping), r.elems+' elementos',
+      '<span class="dual"><span class="chip fill">'+r.fill+'% fill</span><span class="chip ocup">'+r.ocup+'% ocup</span></span>',
+      r.fill, '');
+  }).join('');
+  $('[data-rank="tv2-sd"]').innerHTML = sd;
+  // evolución (2 líneas, buen contraste)
+  lineChart('c-tv2-evol', t.evolMeses, [
+    {label:'Pantallas', data:t.evolPant, color:C.blue},
+    {label:'Shoppings Digital', data:t.evolSD, color:C.cream}
+  ], '%');
+  $('[data-insight="tv2"]').innerHTML =
+    '<b>Cabildo</b> lidera el rendimiento de pantallas y <b>Unicenter</b> encabeza Shoppings Digital. '+
+    'El digital core mantiene alta ocupación calendario, pero conserva <b>'+fmt(t.slotsDispMes)+' slots disponibles</b> en '+mesL+
+    ' para seguir vendiendo salidas.';
+}
+
+/* =========================================================
+   TV 3 · Fijo core
+   ========================================================= */
+function renderTV3(){
+  var t=D.tv3;
+  var mesL = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'mes').toLowerCase();
+  var mesUp = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'Mes');
+  var anio = (D.meta?D.meta.anio:'');
+  // Orden narrativo: universo fijo core -> ocup mensual -> ocup anual -> shopping top -> disponibilidad futura
+  setKpis('tv3',
+    kpi('Elementos fijos core', fmt(t.fijTotal),'', 'Inventario Shoppings Fijo','', '') +
+    kpi('Ocupación fija · '+mesUp, pctTxt(t.ocSFMes),'', 'Shoppings Fijo','', 'k-fijo') +
+    kpi('Ocupación fija · '+anio, pctTxt(t.ocSFAnio),'', 'acumulado anual','', 'k-fijo') +
+    kpi('Shopping top · '+mesUp, cap(t.shoppingTop),'', 'mayor ocupación fija','pos','k-ok') +
+    kpi('Disponibles · 30 días', fmt(t.fijDisp30),'', 'de '+fmt(t.fijTotal)+' elementos core','warn','k-opp')
+  );
+  // titulos con mes
+  var pt=$('[data-ptitle="tv3-shop"]'); if(pt) pt.textContent='Ocupación por shopping · '+mesL;
+  var pt2=$('[data-ptitle="tv3-sop"]'); if(pt2) pt2.textContent='Soportes más vendidos · '+mesL;
+  // ranking ocupación por shopping (máx 5)
+  var shop = t.rankFijo.slice(0,5).map(function(r,i){
+    return rankRow(i+1, cap(r.shopping), r.ocupados+' ocup. · '+r.disp+' disp.',
+      r.ocup+'<small>%</small>', r.ocup, 'fijo');
+  }).join('');
+  $('[data-rank="tv3-shop"]').innerHTML = shop || '<div class="muted">Sin ocupación cargada en el mes</div>';
+  // soportes más vendidos: activaciones del mes por soporte (máx 6), eje Y con nombres
+  barChart('c-tv3-sop', t.rankSoporte.slice(0,6).map(function(r){return cap(r.soporte)}),
+           t.rankSoporte.slice(0,6).map(function(r){return r.campanas}), C.cream, 'activaciones');
+  $('[data-insight="tv3"]').innerHTML =
+    '<b>Shoppings Fijo</b> sostiene la ocupación del inventario físico, con <b>'+cap(t.shoppingTop)+'</b> como mejor performer de '+mesL+'. '+
+    'Con <b>'+fmt(t.fijDisp30)+' elementos disponibles</b> en los próximos 30 días, los soportes más demandados del mes muestran dónde conviene empujar nuevas ventas.';
+}
+
+/* =========================================================
+   TV 4 · Pipeline
+   ========================================================= */
+function renderTV4(){
+  var t=D.tv4;
+  // Card doble "Actividad actual": campañas únicas + activaciones en curso
+  var actividad = '<div class="kpi k-ok">'+
+    '<div class="kpi-label">Actividad actual</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">Campañas únicas activas</span><span class="sv">'+fmt(t.campanasUnicasActivas)+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">Activaciones en curso</span><span class="sv">'+fmt(t.activacionesActivas)+'</span></div>'+
+    '</div>'+
+    '<div class="kpi-note"><span class="dot"></span>1 campaña puede estar en varios elementos</div></div>';
+
+  setKpis('tv4',
+    actividad +
+    kpi('Reservas futuras', fmt(t.reservasFuturas),'', 'inicio posterior a hoy','', '') +
+    kpi('Inician · 30 días', fmt(t.proxIniciar),'', 'inicio dentro de 30 días','warn','k-opp') +
+    kpi('Finalizan · 30 días', fmt(t.proxFinalizar),'', 'oportunidad de renovación','','k-alert') +
+    kpi('Pipeline en core', t.pctCore+'%','', 'pantallas + shoppings','pos','k-ok')
+  );
+
+  // Estado del pipeline: activas / reservas prominentes; finalizadas en gris (histórico secundario)
+  var live=[['Activas', t.pipeline.Activas, C.success],['Reservas', t.pipeline.Reservas, C.blueSoft]];
+  var maxLive=Math.max.apply(null, live.map(function(o){return o[1]}))||1;
+  var pipe = live.map(function(o){
+    var v=o[1]||0, w=Math.max(4, v/maxLive*100);
+    return '<div class="pipe-row"><div class="pipe-lbl">'+o[0]+'</div>'+
+      '<div class="pipe-track"><i style="width:'+w+'%;background:linear-gradient(90deg,'+o[2]+'88,'+o[2]+')"></i></div>'+
+      '<div class="pipe-val">'+fmt(v)+'</div></div>';
+  }).join('');
+  // finalizadas: fila gris compacta, histórico secundario
+  pipe += '<div class="pipe-row pipe-hist"><div class="pipe-lbl">Finalizadas <span class="hist-tag">histórico</span></div>'+
+    '<div class="pipe-track"><i style="width:100%;background:rgba(167,176,194,.28)"></i></div>'+
+    '<div class="pipe-val">'+fmt(t.pipeline.Finalizadas)+'</div></div>';
+
+  // distribución de activaciones activas hoy por grupo (misma unidad: activaciones)
+  var dg=t.distGrupo, tot=Object.keys(dg).reduce(function(a,k){return a+dg[k]},0)||1;
+  var grp = '<div class="pipe-sub">Activaciones activas hoy · por grupo comercial</div>';
+  [['Pantallas',C.blue],['Shoppings Digital',C.blueSoft],['Shoppings Fijo',C.cream],['Complementario',C.warning]].forEach(function(o){
+    var v=dg[o[0]]||0, w=Math.max(2, v/tot*100);
+    grp+='<div class="pipe-row"><div class="pipe-lbl" style="font-size:14px">'+o[0]+'</div>'+
+      '<div class="pipe-track" style="height:18px"><i style="width:'+w+'%;background:'+o[1]+'"></i></div>'+
+      '<div class="pipe-val" style="font-size:16px">'+fmt(v)+'</div></div>';
+  });
+  $('[data-pipe="tv4"]').innerHTML = pipe + grp;
+
+  // timeline próximas · 30 días (ya viene deduplicado y máx 5)
+  var tl = t.proxList.slice(0,5).map(function(r){
+    var dm=r.fecha.split('/');
+    return '<div class="tl"><div class="date">'+dm[0]+'<small>'+mesAbbr(dm[1])+'</small></div>'+
+      '<div><div class="cname">'+cap(r.campana)+'</div><div class="ccirc">'+r.circuito+'</div></div>'+
+      '<div class="badge">'+r.tipo+'</div></div>';
+  }).join('');
+  $('[data-timeline="tv4"]').innerHTML = tl || '<div class="muted">Sin próximas activaciones cargadas</div>';
+
+  $('[data-insight="tv4"]').innerHTML =
+    'Hay <b>'+fmt(t.campanasUnicasActivas)+' campañas únicas activas</b> y el pipeline se apoya principalmente en el core comercial '+
+    '—<b>pantallas y shoppings</b>—. Con <b>'+fmt(t.proxFinalizar)+' activaciones</b> que finalizan en los próximos 30 días, conviene '+
+    'anticipar renovaciones para sostener la ocupación del inventario que se libera.';
+}
+
+/* =========================================================
+   TV 5 · Demanda  (cicla clientes/marcas/agencias)
+   ========================================================= */
+var tv5views=[
+  {key:'topClientes', title:'Top clientes'},
+  {key:'topMarcas', title:'Top marcas'},
+  {key:'topAgencias', title:'Top agencias'}
+], tv5i=0, tv5timer=null;
+function renderTV5(){
+  var t=D.tv5;
+  var mesL = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'mes').toLowerCase();
+  var mesUp = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'Mes');
+  var agNota = t.agenciasIncluyePend ? 'incluye pendientes a imputar' : 'con agencia identificada';
+  // Card 4 doble: cliente top identificado + pendientes
+  var cardCli = '<div class="kpi">'+
+    '<div class="kpi-label">Cliente top identificado</div>'+
+    '<div class="kpi-value" style="font-size:38px">'+cap(t.clienteTopIdent)+'</div>'+
+    '<div class="kpi-note">excluye pendientes · <b style="color:var(--bp-warning)">A Confirmar: '+fmt(t.aconfirmarClientes)+'</b></div></div>';
+  setKpis('tv5',
+    kpi('Clientes activos · '+mesUp, fmt(t.clientesMes),'', 'con campaña vigente','', '') +
+    kpi('Marcas activas · '+mesUp, fmt(t.marcasMes),'', 'distintas marcas','pos','k-ok') +
+    kpi('Agencias activas · '+mesUp, fmt(t.agenciasMes),'', agNota,'', '') +
+    cardCli +
+    kpi('Concentración Top 5', t.concTop5+'%','', 'del total de activaciones','warn','k-opp')
+  );
+  drawTV5(t);
+  buildMatrix(t.matriz);
+  $('[data-insight="tv5"]').innerHTML =
+    'La demanda combina clientes recurrentes —<b>GCBA, Zurich, Fénix y Latin Ad</b>— con marcas fuertes como '+
+    '<b>Netflix, Mercado Libre y Samsung</b>. El top 5 concentra el <b>'+t.concTop5+'%</b> de las activaciones del mes; '+
+    'los registros "A Confirmar" representan carga comercial pendiente de imputar.';
+}
+function drawTV5(t){
+  var mesL = (D.meta && D.meta.mesLargo ? D.meta.mesLargo : 'mes').toLowerCase();
+  var v=tv5views[tv5i], list=t[v.key]||[];
+  $('[data-rank-title="tv5"]').textContent = v.title+' · '+mesL;
+  var max=Math.max.apply(null, list.map(function(r){return r.campanas}))||1;
+  $('[data-rank="tv5-top"]').innerHTML = list.map(function(r,i){
+    var sub = r.pendiente ? '<span class="pend">pendiente de imputación</span>' : '';
+    var metric = fmt(r.campanas)+'<small> activ.</small>';
+    return rankRow(i+1, cap(r.nombre), sub, metric, r.campanas/max*100, r.pendiente?'pend':'');
+  }).join('');
+  var cyc=$('#tv5-cyc');
+  if(cyc) cyc.innerHTML = tv5views.map(function(x,ix){return '<span style="opacity:'+(ix===tv5i?1:.4)+'">'+x.title.replace('Top ','')+'</span>';}).join(' · ');
+}
+function buildMatrix(m){
+  var cols=['Pantallas','Shoppings Digital','Shoppings Fijo','Complementario'];
+  var head='<tr><th>Cliente</th>'+cols.map(function(c){return '<th>'+c.replace('Shoppings ','Sh. ')+'</th>'}).join('')+'</tr>';
+  var rows=m.map(function(r){
+    return '<tr><td>'+cap(r.cliente)+'</td>'+cols.map(function(c){
+      var v=r[c]||0;
+      return '<td>'+(v>0?'<span class="cell" style="background:rgba(28,96,255,'+Math.min(.32,0.06+v/40)+')">'+v+'</span>':'<span class="cell z">—</span>')+'</td>';
+    }).join('')+'</tr>';
+  }).join('');
+  $('[data-matrix="tv5"]').innerHTML='<table class="matrix">'+head+rows+'</table>';
+}
+
+/* =========================================================
+   TV 6 · Oportunidad
+   ========================================================= */
+function renderTV6(){
+  var t=D.tv6;
+  var totalOpp=t.circuitos.reduce(function(a,c){return a+c.elementos},0);
+  var altas=t.circuitos.filter(function(c){return c.nivel==='Alta'}).length;
+  setKpis('tv6',
+    kpi('Inventario complementario', fmt(t.compElems),'', 'Elementos fuera del core','warn','k-opp') +
+    kpi('Sin campaña cargada', fmt(t.compSinCamp),'', 'Oportunidad / pendiente','warn','k-opp') +
+    kpi('Circuitos a activar', fmt(t.circuitos.length),'', altas+' con oportunidad alta','','k-opp') +
+    kpi('Ciudad más activa', cap(t.ciudadMas),'', 'Mayor cantidad de campañas','pos','k-ok') +
+    kpi('Cobertura territorial', fmt(t.ciudades.length)+'+','', 'Ciudades con inventario','', '')
+  );
+  // opp list
+  $('[data-opp="tv6"]').innerHTML = t.circuitos.map(function(c){
+    var estado = c.campanas>0 ? (c.campanas+' campañas') : 'Sin campañas aún';
+    return '<div class="opp">'+
+      '<div><div class="oname">'+c.circuito+'</div><div class="osub">'+c.medio+' · '+estado+'</div></div>'+
+      '<div class="ostat"><b>'+fmt(c.elementos)+'</b><span>elementos</span></div>'+
+      '<div class="nivel '+c.nivel.toLowerCase()+'">Oportunidad '+c.nivel+'</div></div>';
+  }).join('');
+  // ciudades
+  var maxc=Math.max.apply(null, t.ciudades.map(function(r){return r.elementos}))||1;
+  $('[data-rank="tv6-city"]').innerHTML = t.ciudades.map(function(r,i){
+    var sub = r.campanas>0 ? r.campanas+' campañas' : 'sin actividad aún';
+    return rankRow(i+1, cap(r.ciudad), sub, fmt(r.elementos)+'<small> elem.</small>', r.elementos/maxc*100, 'opp');
+  }).join('');
+  $('[data-insight="tv6"]').innerHTML =
+    '<b>YPF, London Supply y AA2000</b> concentran la mayor capacidad instalada sin comercializar: '+
+    '<b>'+fmt(t.compSinCamp)+' elementos</b> listos para vender apenas se cargue la actividad. '+
+    'Territorialmente la operación se apoya en AMBA y Córdoba, con margen para desarrollar el interior y los aeropuertos del sur.';
+}
+
+/* =========================================================
+   CHART HELPERS (Chart.js)
+   ========================================================= */
+var charts={};
+function baseOpts(suffix){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:700},
+    plugins:{ legend:{ labels:{ color:C.muted, font:{family:'Poppins',size:14,weight:'500'}, usePointStyle:true, pointStyleWidth:12, padding:16 } } },
+    scales:{
+      x:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13}} },
+      y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13},callback:function(v){return v+(suffix||'')}} }
+    }
+  };
+}
+function lineChart(id,labels,series,suffix,showVals){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var opts=baseOpts(suffix);
+  var plugins=[];
+  if(showVals){
+    plugins.push({ id:'ptlabels', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i]; if(v==null) return;
+          cx.save();
+          cx.font='700 12px Poppins, sans-serif';
+          cx.fillStyle=ds.borderColor; cx.textAlign='center';
+          var yOff = di===0 ? -12 : 16;
+          cx.fillText(Math.round(v)+'%', pt.x, pt.y+yOff);
+          cx.restore();
+        });
+      });
+    }});
+    opts.layout={padding:{top:22,bottom:6}};
+  }
+  charts[id]=new Chart(ctx,{ type:'line',
+    data:{ labels:labels, datasets:series.map(function(s){return {
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color+'22',
+      borderWidth:3, tension:.38, pointRadius:3.5, pointBackgroundColor:s.color, fill:true }; }) },
+    options:opts, plugins:plugins
+  });
+}
+function barChart(id,labels,data,color,unit){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var maxv=Math.max.apply(null,data)||1;
+  var plugins=[{ id:'barvals', afterDatasetsDraw:function(chart){
+    var cx=chart.ctx, meta=chart.getDatasetMeta(0);
+    meta.data.forEach(function(bar,i){
+      var v=data[i]; if(v==null) return;
+      cx.save();
+      cx.font='700 16px Poppins, sans-serif';
+      cx.fillStyle='#FFFFFF'; cx.textAlign='left'; cx.textBaseline='middle';
+      cx.fillText(fmt(v), bar.x+10, bar.y);
+      cx.restore();
+    });
+  }}];
+  charts[id]=new Chart(ctx,{ type:'bar',
+    data:{ labels:labels, datasets:[{ data:data, backgroundColor:color+'cc', borderRadius:8, barThickness:26, maxBarThickness:30 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:700},
+      layout:{padding:{right:44}},
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      scales:{
+        x:{ display:false, beginAtZero:true, max:maxv*1.12, grid:{display:false}, ticks:{display:false} },
+        y:{ grid:{display:false,drawBorder:false},
+            ticks:{ color:'#FFFFFF', font:{family:'Poppins',size:15,weight:'600'}, crossAlign:'far', padding:6 } }
+      }
+    },
+    plugins:plugins
+  });
+}
+function donutChart(id,labels,data,colors,showVals,labelColors){
+  if(!window.Chart){return fallbackNote(id);}
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx)return;
+  var total=data.reduce(function(a,b){return a+(b||0)},0)||1;
+  var plugins=[];
+  if(showVals){
+    plugins.push({ id:'dolabels', afterDatasetsDraw:function(chart){
+      var cx=chart.ctx, meta=chart.getDatasetMeta(0);
+      meta.data.forEach(function(arc,i){
+        var v=data[i]; if(v==null) return;
+        var pctv=v/total*100; if(pctv<4) return;
+        var pos=arc.tooltipPosition();
+        cx.save();
+        cx.font='700 15px Poppins, sans-serif';
+        cx.fillStyle=(labelColors&&labelColors[i])?labelColors[i]:'#FFFFFF';
+        cx.textAlign='center'; cx.textBaseline='middle';
+        cx.fillText(Math.round(pctv)+'%', pos.x, pos.y);
+        cx.restore();
+      });
+    }});
+  }
+  charts[id]=new Chart(ctx,{ type:'doughnut',
+    data:{ labels:labels, datasets:[{ data:data, backgroundColor:colors, borderColor:'rgba(5,7,13,.6)', borderWidth:3, hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'60%', animation:{duration:700},
+      plugins:{ legend:{ position:'right', labels:{ color:'#FFFFFF', font:{family:'Poppins',size:15,weight:'500'}, usePointStyle:true, padding:14,
+        generateLabels:function(chart){
+          var d=chart.data;
+          return d.labels.map(function(lb,i){
+            var v=d.datasets[0].data[i], p=Math.round(v/total*100);
+            return { text: lb+'   '+p+'%', fillStyle:d.datasets[0].backgroundColor[i], strokeStyle:'rgba(255,255,255,.35)', lineWidth:1, fontColor:'#FFFFFF', pointStyle:'circle', index:i };
+          });
+        } } } } },
+    plugins:plugins
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- utils ---------- */
+function cap(s){ if(s==null)return '—'; s=String(s).toLowerCase();
+  return s.replace(/\b\w/g,function(m){return m.toUpperCase();})
+          .replace(/\bYpf\b/g,'YPF').replace(/\bAa2000\b/gi,'AA2000').replace(/\bGcba\b/gi,'GCBA')
+          .replace(/\bKfc\b/gi,'KFC').replace(/\bHbo\b/gi,'HBO').replace(/\bBbva\b/gi,'BBVA').replace(/\bMab\b/gi,'MAB'); }
+function mesAbbr(mm){ var a=['','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return a[parseInt(mm,10)]||''; }
+
+
+/* ---------- MODO SINGLE TV ---------- */
+var tv5timer=null;
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  $('#tv5').classList.add('active');
+  renderTV5();
+  if(true){ tv5timer=setInterval(function(){ tv5i=(tv5i+1)%tv5views.length; drawTV5(D.tv5); },5000); }
+  var f=document.getElementById('fsbtn');
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>

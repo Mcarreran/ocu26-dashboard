@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Plus · TV4 · Pulso comercial YPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND PLUS · OCU26 BI · TV4 · Pulso comercial YPF
+   TV4 reemplaza el scope anterior de este slot (Pipeline Comercial): YPF
+   pasa a reportarse aqui, no en TV5 (decision explicita del usuario).
+   Hoja de estilos derivada de TV5 (mismo sistema visual TV1-6): cards,
+   panel, insight triple. audit_sources/TV5_REFERENCE.html se uso solo
+   como referencia visual, nunca como fuente de datos.
+   ============================================================ */
+
+:root{
+  --bp-blue:#1C60FF;
+  --bp-blue-dark:#0B1D4D;
+  --bp-blue-mid:#123EAA;
+  --bp-blue-soft:#7EA6FF;
+  --bp-black:#1D1D1B;
+  --bp-black-deep:#05070D;
+  --bp-navy:#071124;
+  --bp-cream:#EEECE6;
+  --bp-white:#FFFFFF;
+  --bp-muted:#A7B0C2;
+  --bp-coral:#FF4E46;
+  --bp-warning:#FFC857;
+  --bp-success:#2FE084;
+  --bp-teal:#35B8C4;
+  --bp-violet:#8C7AE6;
+
+  --panel:rgba(255,255,255,.055);
+  --panel-2:rgba(255,255,255,.09);
+  --panel-border:rgba(255,255,255,.12);
+  --panel-border-2:rgba(126,166,255,.28);
+
+  --r-lg:26px;
+  --r-md:20px;
+  --r-sm:14px;
+
+  --font:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%;background:var(--bp-black-deep);overflow:hidden}
+
+body{
+  font-family:var(--font);
+  color:var(--bp-white);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bp-black-deep)}
+#stage{
+  width:1920px;height:1080px;position:relative;flex:none;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 700px at 8% -6%, rgba(28,96,255,.42), transparent 55%),
+    radial-gradient(900px 600px at 108% 118%, rgba(18,62,170,.30), transparent 55%),
+    linear-gradient(135deg,#0A1836 0%,#071124 42%,#05070D 100%);
+  overflow:hidden;
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:16px 16px;opacity:.09;
+}
+#stage::after{
+  content:"";position:absolute;left:0;right:0;bottom:-160px;height:340px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%,rgba(28,96,255,.20),transparent 70%);
+}
+
+.tv{position:absolute;inset:0;padding:32px 48px 26px;display:flex;flex-direction:column;z-index:2}
+
+/* ======================= HEADER ======================= */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;height:104px;flex:none}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo-wrap{padding:6px 26px 6px 0;display:flex;align-items:center;border-right:1px solid var(--panel-border)}
+.logo-wrap img{width:170px;height:auto;display:block}
+.hdr-titles{display:flex;flex-direction:column;justify-content:center}
+.eyebrow{
+  font-size:13px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+  color:var(--bp-blue-soft);display:flex;align-items:center;gap:12px;margin-bottom:5px
+}
+.eyebrow .tvno{
+  color:var(--bp-white);background:var(--bp-blue);border-radius:8px;
+  padding:2px 10px;letter-spacing:.08em;font-weight:700
+}
+.hdr-title{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.hdr-sub{font-size:15.5px;font-weight:300;color:var(--bp-muted);margin-top:7px}
+.hdr-src{font-size:12px;font-weight:400;color:rgba(167,176,194,.85);letter-spacing:.02em;margin-left:4px;white-space:nowrap}
+.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:2px}
+.clock{font-size:25px;font-weight:700;letter-spacing:-.02em}
+.updated{font-size:12.5px;color:var(--bp-muted);letter-spacing:.02em}
+.period-tag{font-size:12px;color:var(--bp-blue-soft);letter-spacing:.04em;font-weight:600}
+.question{
+  font-size:13.5px;color:var(--bp-white);font-weight:500;margin-top:3px;
+  background:rgba(28,96,255,.16);border:1px solid rgba(28,96,255,.34);
+  padding:5px 14px;border-radius:999px;max-width:580px
+}
+
+/* ======================= LEYENDA CAPACIDAD (visible y compacta, Sec.5) ======================= */
+.cap-legend{
+  flex:none;margin-top:10px;font-size:12px;line-height:1.35;color:var(--bp-muted);
+  display:flex;align-items:center;gap:8px;
+}
+.cap-legend .tag{
+  flex:none;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--bp-blue-soft);background:rgba(28,96,255,.14);border:1px solid rgba(28,96,255,.30);
+  padding:2px 8px;border-radius:6px;
+}
+
+/* ======================= KPIs (5 en una fila, ancho proporcional) ======================= */
+/* Campanas (col 3) es la tarjeta mas angosta -- solo 2 numeros grandes en
+   columnas, sin split label/valor extendido -- el ancho liberado se
+   redistribuye entre las otras 4 para mejorar la respiracion general. */
+.kpis{display:grid;grid-template-columns:1.12fr 1.2fr 0.82fr 1.05fr 0.98fr;gap:16px;margin-top:12px;flex:none}
+.kpi{
+  position:relative;min-height:172px;padding:19px 21px;border-radius:var(--r-lg);
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;justify-content:space-between;overflow:hidden
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bp-blue);opacity:.85}
+.kpi.k-fijo::after{background:var(--bp-cream)}
+.kpi.k-opp::after{background:var(--bp-warning)}
+.kpi.k-alert::after{background:var(--bp-coral)}
+.kpi.k-ok::after{background:var(--bp-success)}
+.kpi-label{font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-muted);line-height:1.28}
+.kpi-value{font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:4px}
+.kpi-value .u{font-size:22px;font-weight:600;color:var(--bp-blue-soft);margin-left:2px}
+.kpi-value.big-blue{color:var(--bp-blue-soft)}
+.kpi-note{font-size:12.5px;color:var(--bp-muted);display:flex;align-items:center;gap:7px}
+.kpi-note.pos{color:var(--bp-success)}
+.kpi-note.warn{color:var(--bp-warning)}
+.kpi-note.alert{color:var(--bp-coral)}
+.kpi-notes{display:flex;flex-direction:column;gap:3px}
+.kpi-note-sub{font-size:11px;color:var(--bp-muted);opacity:.85}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.kpi-split{display:flex;align-items:flex-end;gap:12px;margin-top:2px}
+.kpi-split .main{display:flex;flex-direction:column}
+.kpi-split .main .sv{font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-split .main .sl{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+.kpi-split .sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-split .sec{display:flex;flex-direction:column;padding-bottom:2px}
+.kpi-split .sec .sv{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--bp-blue-soft)}
+.kpi-split .sec .sl{font-size:9.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--bp-muted);margin-bottom:3px}
+
+.kpi-badge-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.kpi-badge{
+  font-size:10.5px;font-weight:600;letter-spacing:.02em;color:var(--bp-white);
+  background:rgba(255,255,255,.08);border:1px solid var(--panel-border);
+  padding:2px 8px;border-radius:999px;white-space:nowrap
+}
+.kpi-badge b{color:var(--bp-blue-soft);font-weight:700}
+
+/* Card 2 — Ocupacion: par "absoluto  %" en una sola linea, jerarquia por
+   tamano/color (blanco=absoluto domina, azul=porcentaje). */
+.kpi-hero-row{display:flex;align-items:baseline;gap:22px;margin-top:2px}
+.hero-item{display:flex;flex-direction:column;gap:2px}
+.hero-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--bp-muted)}
+.hero-value{font-weight:800;letter-spacing:-.045em;line-height:1}
+.hero-value.abs{font-size:42px;color:var(--bp-white)}
+.hero-value.pct{font-size:33px;color:var(--bp-blue-soft)}
+
+/* Card 3 — Campanas: dos columnas compactas (unicas | activaciones). */
+.kpi-cols{display:flex;align-items:baseline;gap:14px;margin-top:2px}
+.kpi-cols .col{display:flex;flex-direction:column;gap:2px}
+.kpi-cols .col-sep{width:1px;align-self:stretch;background:var(--panel-border);margin:2px 0}
+.kpi-cols .col-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--bp-muted)}
+.kpi-cols .col-value{font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-cols .col-value.white{font-size:32px;color:var(--bp-white)}
+.kpi-cols .col-value.blue{font-size:26px;color:var(--bp-blue-soft)}
+
+/* ======================= BODY ======================= */
+/* Columna izquierda (grafico arriba + insight compacto abajo) + mapa a la
+   derecha ocupando la altura completa de ambas filas (Sec.4 del ajuste). */
+.body-grid{display:grid;grid-template-columns:0.86fr 1.3fr;gap:20px;margin-top:16px;flex:1;min-height:0}
+.body-left{display:flex;flex-direction:column;gap:16px;min-height:0}
+.body-left .chart-panel{flex:2.35;min-height:0}
+.body-left .insight-compact{flex:1;min-height:0}
+.map-panel{min-height:0}
+.panel{
+  position:relative;padding:22px 24px;border-radius:var(--r-lg);min-height:0;
+  background:linear-gradient(165deg,var(--panel-2),var(--panel));
+  border:1px solid var(--panel-border);backdrop-filter:blur(10px);
+  display:flex;flex-direction:column
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px;flex:none}
+.panel-head.col{flex-direction:column;align-items:flex-start;gap:3px}
+.panel-title{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.panel-sub{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.02em}
+.panel-tag{font-size:13px;font-weight:500;color:var(--bp-muted);letter-spacing:.04em}
+.panel-body{flex:1;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.chart-wrap{position:absolute;inset:0}
+
+/* ======================= MAPA GEOGRAFICO REAL (lat/lon, fuente auxiliar) ======================= */
+.map-legend{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex:none;flex-wrap:wrap}
+.map-legend .bar{flex:1;max-width:180px;height:8px;border-radius:6px;background:linear-gradient(90deg,rgba(28,96,255,.35),var(--bp-blue),var(--bp-warning))}
+.map-legend .lbl{font-size:11px;color:var(--bp-muted);letter-spacing:.03em;white-space:nowrap}
+.map-legend .lbl-sep{width:1px;height:12px;background:var(--panel-border);margin:0 2px}
+.map-legend .swatch{width:12px;height:12px;border-radius:3px;flex:none}
+.map-legend .swatch.prov-cover{background:rgba(255,200,87,.55);border:1.4px solid rgba(255,200,87,.9)}
+.geo-meta{font-size:12px;color:var(--bp-muted);margin-bottom:7px;flex:none}
+.geo-meta b{color:var(--bp-white);font-weight:700}
+/* Composicion cartografica: mapa nacional (flexible) + recorte AMBA
+   (cuadrado real via aspect-ratio) + overlay de conexion entre ambos. */
+.map-dual-wrap{flex:1;min-height:0;position:relative;display:flex;align-items:stretch;gap:14px}
+.map-national-wrap{flex:1;min-width:0;position:relative;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--panel-border);overflow:hidden}
+.map-amba-wrap{flex:none;height:100%;aspect-ratio:1/1;position:relative;display:flex;flex-direction:column;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--panel-border);overflow:hidden}
+.map-amba-title{flex:none;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--bp-white);padding:8px 10px 2px}
+.map-national-wrap svg{display:block;width:100%;flex:1;min-height:0}
+/* Zoom CABA+Zona Norte ~57% del alto util, mapa general ~43% (Sec.5). */
+.amba-general-wrap{flex:0.75;min-height:0;position:relative;border-top:1px solid rgba(255,255,255,.06)}
+.amba-general-wrap svg{display:block;width:100%;height:100%}
+.amba-zoom-header{flex:none;display:flex;align-items:center;gap:6px;padding:6px 10px 3px;border-top:1px solid var(--panel-border)}
+.amba-zoom-title{font-size:10.5px;font-weight:700;letter-spacing:.03em;color:var(--bp-white)}
+.amba-badge{font-size:9.5px;font-weight:600;color:var(--bp-blue-soft);background:rgba(28,96,255,.14);border:1px solid rgba(28,96,255,.30);padding:1px 7px;border-radius:999px;white-space:nowrap}
+.amba-zoom-wrap{flex:1;min-height:0;position:relative}
+.amba-zoom-wrap svg{display:block;width:100%;height:100%}
+.map-connector-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.map-connector-amba{z-index:2}
+.map-point{transition:none}
+.map-point-label{font-size:10px;font-weight:600;fill:rgba(255,255,255,.92);font-family:'Poppins',sans-serif;paint-order:stroke;stroke:rgba(5,7,13,.8);stroke-width:3px}
+.map-prov-label{font-size:11px;font-weight:600;fill:rgba(126,166,255,.5);font-family:'Poppins',sans-serif;letter-spacing:.02em}
+/* Leyendas provinciales EXTERNAS (fuera del territorio), tipografia chica
+   y regular + linea guia fina hacia el centroide real (Sec.1 del ajuste). */
+.map-ext-label{font-size:10.5px;font-weight:400;fill:rgba(230,234,242,.88);font-family:'Poppins',sans-serif;letter-spacing:.01em}
+.map-leader-line{stroke:rgba(255,200,87,.4);stroke-width:1}
+.map-amba-marker-label{font-size:10px;font-weight:600;fill:rgba(255,255,255,.92);font-family:'Poppins',sans-serif;paint-order:stroke;stroke:rgba(5,7,13,.8);stroke-width:3px}
+.geo-note{font-size:11px;color:var(--bp-muted);line-height:1.4;margin-top:8px;flex:none}
+
+/* ======================= INSIGHT COMPACTO (1 tarjeta, 3 lineas apiladas) ======================= */
+.insight-compact{justify-content:center;gap:0}
+.ic-row{padding:8px 2px;min-width:0}
+.ic-row + .ic-row{border-top:1px solid rgba(255,255,255,.08)}
+.ic-label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;line-height:1;margin-bottom:4px}
+.ic-lectura .ic-label{color:var(--bp-blue-soft)}
+.ic-positivo .ic-label{color:var(--bp-success)}
+.ic-atender .ic-label{color:var(--bp-warning)}
+.ic-row p{font-size:14.5px;line-height:1.32;font-weight:400;max-height:2.64em;overflow:hidden}
+.ic-row p b{font-weight:700;color:var(--bp-white)}
+
+.wm{position:absolute;right:40px;bottom:60px;font-size:150px;font-weight:800;color:rgba(255,255,255,.02);letter-spacing:-.06em;pointer-events:none;user-select:none;z-index:1}
+.muted{color:var(--bp-muted)}
+#hint{position:absolute;bottom:12px;right:20px;font-size:12px;color:rgba(167,176,194,.6);z-index:20;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <section class="tv" id="tv4">
+      <div class="wm">&#8734;</div>
+      <header class="hdr">
+        <div class="hdr-left">
+          <div class="logo-wrap">{{LOGO_IMG_TAG}}</div>
+          <div class="hdr-titles">
+            <div class="eyebrow"><span class="tvno">TV 4</span> OCU26 &middot; Inteligencia Comercial</div>
+            <div class="hdr-title">Pulso comercial YPF</div>
+            <div class="hdr-sub">Cat&aacute;logo de espacios, ocupaci&oacute;n y territorio de la red YPF <span class="hdr-src">| Fuente: OCU26 &middot; Base maestra + base campa&ntilde;as</span></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <div class="clock" data-clock></div>
+          <div class="updated" data-updated></div>
+          <div class="period-tag" data-period></div>
+          <div class="question">&iquest;CU&Aacute;NTO CAT&Aacute;LOGO YPF TENEMOS Y CU&Aacute;NTO SE EST&Aacute; USANDO?</div>
+        </div>
+      </header>
+      <div class="cap-legend"><span class="tag">Regla</span><span data-cap-legend></span></div>
+      <div class="kpis" data-kpis="tv4"></div>
+      <div class="body-grid">
+        <div class="body-left">
+          <div class="panel chart-panel">
+            <div class="panel-head col">
+              <div class="panel-title">Evoluci&oacute;n mensual de la ocupaci&oacute;n YPF</div>
+              <div class="panel-sub">Digital: 5 espacios por estaci&oacute;n &middot; Est&aacute;tico: 1 por elemento &middot; ocupados/capacidad vigente</div>
+            </div>
+            <div class="panel-body"><div class="chart-wrap"><canvas id="c-tv4-hist"></canvas></div></div>
+          </div>
+          <div class="panel insight-compact">
+            <div class="ic-row ic-lectura"><span class="ic-label">Lectura</span><p data-ic-lectura></p></div>
+            <div class="ic-row ic-positivo"><span class="ic-label">Punto positivo</span><p data-ic-positivo></p></div>
+            <div class="ic-row ic-atender"><span class="ic-label">A atender</span><p data-ic-atender></p></div>
+          </div>
+        </div>
+        <div class="panel map-panel">
+          <div class="panel-head col">
+            <div class="panel-title" data-mapa-titulo>Mapa de intensidad comercial</div>
+            <div class="panel-sub" data-mapa-subtitulo></div>
+          </div>
+          <div class="panel-body">
+            <div class="map-legend">
+              <span class="lbl">Puntos: Menor</span><span class="bar"></span><span class="lbl">Mayor</span>
+              <span class="lbl-sep"></span>
+              <span class="swatch prov-cover"></span><span class="lbl">Provincia con actividad sin cobertura puntual completa</span>
+            </div>
+            <div class="geo-meta" data-geo-meta></div>
+            <div class="map-dual-wrap">
+              <div class="map-national-wrap"><svg data-geo-svg-national></svg></div>
+              <div class="map-amba-wrap">
+                <div class="map-amba-title">Detalle AMBA</div>
+                <div class="amba-general-wrap"><svg data-geo-svg-amba-general></svg></div>
+                <div class="amba-zoom-header">
+                  <span class="amba-zoom-title">CABA + Zona Norte</span>
+                  <span class="amba-badge" data-amba-badge-caba></span>
+                  <span class="amba-badge" data-amba-badge-zn></span>
+                </div>
+                <div class="amba-zoom-wrap"><svg data-geo-svg-amba-zoom></svg></div>
+                <svg class="map-connector-overlay map-connector-amba" data-geo-connector-amba></svg>
+              </div>
+              <svg class="map-connector-overlay" data-geo-connector></svg>
+            </div>
+            <div class="geo-note" data-geo-note></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div id="hint">F &middot; pantalla completa</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>window.TV4_DATA = {{TV4_DATA_JSON}};</script>
+<script>window.ARG_PAIS_GEOJSON = {{ARG_PAIS_GEOJSON}};</script>
+<script>window.ARG_PROVINCIAS_GEOJSON = {{ARG_PROVINCIAS_GEOJSON}};</script>
+<script>window.CABA_COMUNAS_GEOJSON = {{CABA_COMUNAS_GEOJSON}};</script>
+<script>window.GBA_PARTIDOS_GEOJSON = {{GBA_PARTIDOS_GEOJSON}};</script>
+<script>/* ============================================================
+   BRAND PLUS · OCU26 BI · TV4 app.js
+   Renderiza el tablero desde window.TV4_DATA. No calcula reglas de
+   negocio: solo formatea y dibuja lo que la capa Python ya resolvio.
+   ============================================================ */
+(function(){
+'use strict';
+var D = window.TV4_DATA || {};
+var C = { blue:'#1C60FF', blueSoft:'#7EA6FF', cream:'#EEECE6', coral:'#FF4E46',
+          success:'#2FE084', warning:'#FFC857', muted:'#A7B0C2', white:'#FFFFFF',
+          teal:'#35B8C4', violet:'#8C7AE6' };
+var GRID = 'rgba(255,255,255,.08)';
+var $ = function(s,el){return (el||document).querySelector(s)};
+var $$ = function(s,el){return Array.prototype.slice.call((el||document).querySelectorAll(s))};
+var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('es-AR'); };
+var pctEs = function(v){ return (v==null) ? 'S/D' : Number(v).toFixed(1).replace('.',',')+'%'; };
+
+/* ---------- ESCALADO 1920x1080 ---------- */
+function scaleStage(){
+  var s = 1920, h = 1080;
+  var k = Math.min(window.innerWidth/s, window.innerHeight/h);
+  $('#stage').style.transform = 'scale('+k+')';
+}
+window.addEventListener('resize', scaleStage);
+
+/* ---------- RELOJ / FECHA ---------- */
+function tick(){
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  $$('[data-clock]').forEach(function(e){ e.textContent = hh+':'+mm; });
+}
+function stampUpdated(){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var now=new Date();
+  var txt='Actualizado '+String(now.getDate()).padStart(2,'0')+' '+meses[now.getMonth()]+' '+now.getFullYear();
+  $$('[data-updated]').forEach(function(e){ e.textContent = txt; });
+  var meta = D.meta || {};
+  $$('[data-period]').forEach(function(e){ e.textContent = meta.report_month_label ? ('Período: '+meta.report_month_label+' '+meta.report_year) : ''; });
+}
+
+/* ---------- KPI helpers ---------- */
+function kpi(label,value,unit,note,noteCls,cardCls,valueCls){
+  var u = unit ? '<span class="u">'+unit+'</span>' : '';
+  var n = note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>';
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-value '+(valueCls||'')+'">'+value+u+'</div>'+ n +'</div>';
+}
+function kpiDual(label,note1,note1Cls,note2,cardCls){
+  return {
+    open: '<div class="kpi '+(cardCls||'')+'"><div class="kpi-label">'+label+'</div>',
+    notes: '<div class="kpi-notes">'+
+      '<div class="kpi-note '+(note1Cls||'')+'"><span class="dot"></span>'+note1+'</div>'+
+      (note2 ? '<div class="kpi-note kpi-note-sub">'+note2+'</div>' : '')+
+    '</div></div>'
+  };
+}
+function kpiSplitBigLeft(label,leftLbl,leftVal,rightLbl,rightVal,note,noteCls,cardCls,extraSec){
+  return '<div class="kpi '+(cardCls||'')+'">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-split">'+
+      '<div class="main"><span class="sl">'+leftLbl+'</span><span class="sv">'+leftVal+'</span></div>'+
+      '<div class="sep"></div>'+
+      '<div class="sec"><span class="sl">'+rightLbl+'</span><span class="sv">'+rightVal+'</span></div>'+
+      (extraSec ? '<div class="sep"></div><div class="sec"><span class="sl">'+extraSec.lbl+'</span><span class="sv">'+extraSec.val+'</span></div>' : '')+
+    '</div>'+
+    (note ? '<div class="kpi-note '+(noteCls||'')+'"><span class="dot"></span>'+note+'</div>' : '<div class="kpi-note"></div>')+
+  '</div>';
+}
+function noteClsForDelta(v){
+  if(v==null) return '';
+  if(v>0) return 'pos';
+  if(v<0) return 'alert';
+  return '';
+}
+function signedInt(v){ if(v==null) return 'S/D'; return (v>0?'+':'')+fmt(v); }
+function signedPp(v){ if(v==null) return 'S/D'; var s=v>0?'+':''; return s+Number(v).toFixed(1).replace('.',',')+' pp'; }
+function setKpis(html){ var el=$('[data-kpis="tv4"]'); if(el) el.innerHTML=html; }
+
+/* =========================================================
+   TV 4 · render principal
+   ========================================================= */
+function render(){
+  var k = D.kpis || {};
+  var cat = k.catalogo || {};
+  var oc = k.ocupacion || {};
+  var ocA = oc.actual || {};
+  var ocP = oc.anterior || {};
+  var camp = k.campanas || {};
+  var elem = k.elementos_activos || {};
+  var comp = elem.composicion_actual || {};
+  var fl = k.formato_lider || {};
+  var flA = fl.actual || {};
+  var flP = fl.anterior || {};
+  var prevLbl = D.meta ? D.meta.previous_month_label : 'mes anterior';
+
+  var hist = D.historico || {};
+  $('[data-cap-legend]').textContent = hist.leyenda_capacidad || 'Capacidad digital: 5 espacios por estación.';
+
+  var html = '';
+
+  /* Card 1 — Catálogo YPF: estaciones (jerarquía alta) · espacios · elementos */
+  html += kpiSplitBigLeft('Catálogo YPF', 'Estaciones', fmt(cat.estaciones), 'Espacios', fmt(cat.espacios),
+    'Digital: 5 espacios por estación · Estático: 1 espacio por elemento', '', '',
+    { lbl:'Elementos', val: fmt(cat.elementos) });
+
+  /* Card 2 — Ocupación del mes: absoluto (blanco, domina) + % (azul) en una
+     misma linea; debajo catálogo/comparación/sobrecapacidad, sin repetir el
+     numero absoluto. */
+  html += (function(){
+    var sobreCap = ocA.estaciones_sobre_capacidad>0
+      ? '<div class="kpi-note warn"><span class="dot"></span>'+fmt(ocA.estaciones_sobre_capacidad)+' estaciones sobre capacidad</div>' : '';
+    return '<div class="kpi k-opp">'+
+      '<div class="kpi-label">Ocupación de espacios · '+(D.meta?D.meta.report_month_label:'')+'</div>'+
+      '<div class="kpi-hero-row">'+
+        '<div class="hero-item"><span class="hero-label">Espacios ocupados</span><span class="hero-value abs">'+fmt(ocA.ocupados_totales)+'</span></div>'+
+        '<div class="hero-item"><span class="hero-label">% de ocupación</span><span class="hero-value pct">'+pctEs(ocA.ocupacion_pct)+'</span></div>'+
+      '</div>'+
+      '<div class="kpi-notes">'+
+        '<div class="kpi-note '+noteClsForDelta(oc.delta_abs)+'"><span class="dot"></span>Catálogo '+fmt(oc.espacios_totales_catalogo)+' espacios · '+prevLbl+' '+fmt(ocP.ocupados_totales)+' ('+pctEs(ocP.ocupacion_pct)+') · '+signedInt(oc.delta_abs)+' · '+signedPp(oc.delta_pp)+'</div>'+
+        sobreCap+
+      '</div></div>';
+  })();
+
+  /* Card 3 — Campañas / Activaciones: dos columnas compactas, tarjeta mas
+     angosta (ver .kpis grid-template-columns). */
+  html += (function(){
+    return '<div class="kpi">'+
+      '<div class="kpi-label">Campañas · '+(D.meta?D.meta.report_month_label:'')+'</div>'+
+      '<div class="kpi-cols">'+
+        '<div class="col"><span class="col-label">Únicas</span><span class="col-value white">'+fmt(camp.campanas_unicas_actual)+'</span></div>'+
+        '<div class="col-sep"></div>'+
+        '<div class="col"><span class="col-label">Activaciones</span><span class="col-value blue">'+fmt(camp.activaciones_actual)+'</span></div>'+
+      '</div>'+
+      '<div class="kpi-note '+noteClsForDelta(camp.delta_campanas)+'"><span class="dot"></span>'+prevLbl+': '+fmt(camp.campanas_unicas_anterior)+' campañas · '+fmt(camp.activaciones_anterior)+' activ.</div>'+
+    '</div>';
+  })();
+
+  /* Card 4 — Elementos activos + apertura por formato */
+  html += (function(){
+    var order = ['Menú Board','Torres','Punteras','Fotobox'];
+    var badges = order.filter(function(l){ return comp[l]; }).map(function(l){
+      return '<span class="kpi-badge">'+l+' <b>'+pctEs(comp[l].pct)+'</b></span>';
+    }).join('');
+    return '<div class="kpi">'+
+      '<div class="kpi-label">Elementos activos · '+(D.meta?D.meta.report_month_label:'')+'</div>'+
+      '<div class="kpi-value">'+fmt(elem.actual)+'</div>'+
+      '<div class="kpi-note '+noteClsForDelta(elem.delta)+'"><span class="dot"></span>'+prevLbl+' '+fmt(elem.anterior)+' · '+signedInt(elem.delta)+'</div>'+
+      '<div class="kpi-badge-row">'+badges+'</div>'+
+    '</div>';
+  })();
+
+  /* Card 5 — Formato líder */
+  html += kpi('Formato líder · '+(D.meta?D.meta.report_month_label:''), flA.label||'—', '',
+    fmt(flA.campanas_unicas)+' campañas únicas'+(flA.empate_resuelto_por_elementos_activos?' (desempate por elementos activos)':'')+' · '+prevLbl+': '+(flP.label||'—')+' ('+fmt(flP.campanas_unicas)+')',
+    '', 'k-opp');
+
+  setKpis(html);
+
+  drawHistorico(hist);
+  drawMapa(D.mapa || {});
+  drawCompactInsights(oc, ocA);
+}
+
+/* ---------- Insight compacto: 3 oraciones cortas, generadas desde el
+   payload (kpis.ocupacion), nunca hardcodeadas. ---------- */
+function num1(v){ return (v==null||isNaN(v)) ? 'S/D' : Number(v).toFixed(1).replace('.',','); }
+function drawCompactInsights(oc, ocA){
+  var capacidad = oc.espacios_totales_catalogo;
+  var lectura = 'Julio ocupa <b>'+fmt(ocA.ocupados_totales)+'</b> de '+fmt(capacidad)+' espacios YPF (<b>'+pctEs(ocA.ocupacion_pct)+'</b>).';
+
+  var dpp = oc.delta_pp;
+  var dir = (dpp!=null && dpp<0) ? 'bajó' : 'subió';
+  var positivo = 'La ocupación '+dir+' <b>'+num1(Math.abs(dpp||0))+' pp</b> frente a junio.';
+
+  var sobreCap = ocA.estaciones_sobre_capacidad || 0;
+  var verbo = sobreCap===1 ? 'estación supera' : 'estaciones superan';
+  var atender = '<b>'+fmt(sobreCap)+'</b> '+verbo+' la capacidad digital de 5 espacios.';
+
+  $('[data-ic-lectura]').innerHTML = lectura;
+  $('[data-ic-positivo]').innerHTML = positivo;
+  $('[data-ic-atender]').innerHTML = atender;
+}
+
+/* ---------- HISTORICO: linea, 2 series visibles (Digital/Estatico), sin
+   tope 100%. "Total" se sigue calculando y viaja en el payload (D.historico.
+   series.Total, usado por la tarjeta de ocupacion e insights) pero NUNCA se
+   dibuja ni aparece en la leyenda: con Estatico en 0% todo el periodo, la
+   linea Total quedaba pegada a Digital y confundia mas de lo que aclaraba. ---------- */
+var chartRef = null;
+function drawHistorico(h){
+  var meses = h.meses || [];
+  var series = h.series || {};
+  var order = ['Digital','Estático'];
+  var colors = { 'Digital': C.warning, 'Estático': C.blueSoft };
+
+  if(!window.Chart){ return fallbackNote('c-tv4-hist'); }
+  var ctx = document.getElementById('c-tv4-hist'); if(!ctx) return;
+  if(chartRef) chartRef.destroy();
+
+  /* Chart.js no dibuja el trazo de linea/punto cuando un valor cae EXACTO
+     sobre el minimo del eje (aqui 0): el punto queda justo en el borde de
+     chartArea y su stroke se recorta por completo (verificado empiricamente:
+     le pasa por igual a Digital en Ene-Abr y a Estatico en los 7 meses, sin
+     relacion con el color ni con "clip"/animation/tension). Fix cosmetico:
+     valores en 0 se plotean con un epsilon proporcional al maximo del eje
+     (8% de suggestedMax; se probo empiricamente que 0,6 y hasta 2,5% seguian
+     recortados y 15% sobraba -- 8% es el punto seguro) SOLO para la
+     posicion del punto; el tooltip y la
+     etiqueta final siguen leyendo el 0,0% real desde _detail, sin alterar
+     el dato mostrado. */
+  var maxPct = 100;
+  order.forEach(function(k){ (series[k]||[]).forEach(function(pt){ if(pt.pct!=null && pt.pct>maxPct) maxPct = pt.pct; }); });
+  var suggestedMax = Math.ceil((maxPct*1.12)/10)*10;
+  var ZERO_EPS = suggestedMax * 0.08;
+
+  var datasets = order.filter(function(k){ return series[k]; }).map(function(k){
+    return {
+      label: k,
+      data: (series[k]||[]).map(function(pt){ return (pt.pct===0) ? ZERO_EPS : pt.pct; }),
+      _detail: series[k]||[],
+      borderColor: colors[k],
+      backgroundColor: colors[k],
+      pointBackgroundColor: colors[k],
+      pointRadius: 3.5,
+      pointHoverRadius: 5,
+      borderWidth: 2.5,
+      tension: 0,
+      fill: false,
+    };
+  });
+
+  var lastLabelsPlugin = { id:'lastlabels', afterDatasetsDraw:function(chart){
+    var cx = chart.ctx;
+    chart.data.datasets.forEach(function(ds,di){
+      var meta = chart.getDatasetMeta(di);
+      var i = meta.data.length-1; if(i<0) return;
+      var pt = meta.data[i]; var v = ds.data[i]; if(v==null) return;
+      var real = (ds._detail && ds._detail[i] && ds._detail[i].pct!=null) ? ds._detail[i].pct : v;
+      cx.save();
+      cx.font = '700 12px Poppins, sans-serif';
+      cx.fillStyle = ds.borderColor;
+      cx.textAlign = 'left';
+      cx.fillText(pctEs(real), pt.x + 8, pt.y + 4);
+      cx.restore();
+    });
+  }};
+
+  chartRef = new Chart(ctx, {
+    type:'line',
+    data:{ labels: meses, datasets: datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:700},
+      layout:{ padding:{ top:10, right:56, bottom:6 } },
+      plugins:{
+        legend:{ position:'top', labels:{ color:C.muted, font:{family:'Poppins',size:13,weight:'500'}, usePointStyle:true, pointStyleWidth:10, padding:14 } },
+        tooltip:{
+          callbacks:{
+            label:function(item){
+              var d = item.dataset._detail[item.dataIndex] || {};
+              return item.dataset.label+': '+fmt(d.ocupados)+' de '+fmt(d.capacidad)+' ('+pctEs(d.pct)+')';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ grid:{display:false,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:13}} },
+        y:{ grid:{color:GRID,drawBorder:false}, ticks:{color:C.muted,font:{family:'Poppins',size:12},callback:function(v){return v+'%';}}, beginAtZero:true, suggestedMax:suggestedMax }
+      }
+    },
+    plugins:[lastLabelsPlugin]
+  });
+}
+function fallbackNote(id){ var c=document.getElementById(id); if(c&&c.parentNode) c.parentNode.innerHTML='<div class="muted" style="display:flex;align-items:center;justify-content:center;height:100%">Gráfico no disponible sin conexión</div>'; }
+
+/* ---------- MAPA: base cartografica REAL (Natural Earth 1:10m, Argentina
+   pais + provincias) + puntos de estacion georreferenciados por APIE.
+   Intensidad = activaciones acumuladas Ene-Jul. Cobertura parcial real
+   (nunca se inventan posiciones). ---------- */
+var SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  var el = document.createElementNS(SVG_NS, tag);
+  Object.keys(attrs||{}).forEach(function(k){ el.setAttribute(k, attrs[k]); });
+  return el;
+}
+function mapHeatColor(t){
+  var lo=[28,96,255], hi=[255,200,87];
+  var r=Math.round(lo[0]+(hi[0]-lo[0])*t), g=Math.round(lo[1]+(hi[1]-lo[1])*t), b=Math.round(lo[2]+(hi[2]-lo[2])*t);
+  return 'rgb('+r+','+g+','+b+')';
+}
+function geoRingCentroid(geometry){
+  var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+  var best = null, bestLen = 0;
+  polys.forEach(function(rings){
+    var ring = rings[0];
+    if(ring && ring.length > bestLen){ bestLen = ring.length; best = ring; }
+  });
+  if(!best) return null;
+  var sx=0, sy=0;
+  best.forEach(function(pt){ sx+=pt[0]; sy+=pt[1]; });
+  return [sx/best.length, sy/best.length];
+}
+function geoPathD(geometry, projX, projY){
+  var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+  var d = '';
+  polys.forEach(function(rings){
+    rings.forEach(function(ring){
+      ring.forEach(function(pt, i){
+        var x = projX(pt[0]), y = projY(pt[1]);
+        d += (i===0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+      });
+      d += 'Z ';
+    });
+  });
+  return d;
+}
+function geometryBounds(geometry){
+  var polys = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+  var latMin=90, latMax=-90, lonMin=180, lonMax=-180;
+  polys.forEach(function(rings){
+    rings.forEach(function(ring){
+      ring.forEach(function(pt){
+        if(pt[0]<lonMin) lonMin=pt[0]; if(pt[0]>lonMax) lonMax=pt[0];
+        if(pt[1]<latMin) latMin=pt[1]; if(pt[1]>latMax) latMax=pt[1];
+      });
+    });
+  });
+  return {lat_min:latMin, lat_max:latMax, lon_min:lonMin, lon_max:lonMax};
+}
+/* Agrupa puntos muy cercanos en pixeles (proyectados) para reducir la
+   superposicion en AMBA/Buenos Aires: greedy single-pass, radio fijo en px. */
+function clusterPoints(puntos, projX, projY, pxRadius){
+  var withXY = puntos.map(function(p){ return {p:p, x:projX(p.lon), y:projY(p.lat)}; });
+  var clusters = [];
+  withXY.forEach(function(item){
+    var found = null;
+    for(var i=0;i<clusters.length;i++){
+      var c = clusters[i];
+      var dx = c.x-item.x, dy = c.y-item.y;
+      if(Math.sqrt(dx*dx+dy*dy) <= pxRadius){ found = c; break; }
+    }
+    if(found){
+      var n = found.items.length;
+      found.x = (found.x*n + item.x)/(n+1);
+      found.y = (found.y*n + item.y)/(n+1);
+      found.items.push(item.p);
+      found.activaciones += (item.p.activaciones||0);
+    } else {
+      clusters.push({x:item.x, y:item.y, items:[item.p], activaciones:(item.p.activaciones||0)});
+    }
+  });
+  return clusters;
+}
+/* Proyeccion equirectangular con correccion de latitud (cos) para que
+   Argentina (o el recorte AMBA) conserve su proporcion real: una unica
+   escala px/grado (la mas chica de las dos dimensiones, tipo "contain"),
+   centrada dentro del area disponible (que puede tener margenes L/R/T/B
+   asimetricos, usados para reservar la columna de leyendas externas). */
+function buildProjection(bounds, cw, ch, padL, padR, padT, padB){
+  var latSpan = Math.max(bounds.lat_max - bounds.lat_min, 0.01);
+  var lonSpan = Math.max(bounds.lon_max - bounds.lon_min, 0.01);
+  var centerLat = (bounds.lat_min + bounds.lat_max) / 2;
+  var cosLat = Math.max(Math.cos(centerLat * Math.PI / 180), 0.15);
+  var availW = Math.max(cw - padL - padR, 10), availH = Math.max(ch - padT - padB, 10);
+  var scale = Math.min(availW / (lonSpan * cosLat), availH / latSpan);
+  var usedW = lonSpan * cosLat * scale, usedH = latSpan * scale;
+  var originX = padL + (availW - usedW) / 2, originY = padT + (availH - usedH) / 2;
+  return {
+    x: function(lon){ return originX + (lon - bounds.lon_min) * cosLat * scale; },
+    y: function(lat){ return originY + (bounds.lat_max - lat) * scale; },
+    scale: scale
+  };
+}
+function padBounds(b, pct, minDeg){
+  var latPad = Math.max((b.lat_max - b.lat_min) * pct, minDeg);
+  var lonPad = Math.max((b.lon_max - b.lon_min) * pct, minDeg);
+  return {lat_min:b.lat_min-latPad, lat_max:b.lat_max+latPad, lon_min:b.lon_min-lonPad, lon_max:b.lon_max+lonPad};
+}
+
+var _ambaMarkerPx = null; // {x,y} del marcador AMBA en coords del SVG nacional, para el conector
+
+function drawMapa(m){
+  $('[data-mapa-titulo]').textContent = m.titulo || 'Mapa de intensidad comercial';
+  $('[data-mapa-subtitulo]').textContent = (m.subtitulo || '') + (m.periodo_label ? (' · '+m.periodo_label) : '');
+  $('[data-geo-note]').textContent = m.nota_breve || m.nota || '';
+  $('[data-geo-meta]').innerHTML =
+    '<b>'+fmt(m.n_estaciones_con_actividad)+'</b> activas · '+
+    '<b>'+fmt(m.n_estaciones_con_geo)+'</b> con coordenada · '+
+    '<b>'+fmt(m.n_estaciones_solo_provincia)+'</b> solo provincia · '+
+    '<b>'+fmt(m.n_estaciones_sin_ubicacion)+'</b> sin ubicación';
+
+  drawNationalMap(m);
+  drawAmbaGeneral(m);
+  drawAmbaZoom(m);
+  drawConnector(m);
+  drawAmbaConnector(m);
+}
+
+/* ---------- Mapa nacional: territorio + cobertura provincial (leyendas
+   EXTERNAS con linea guia) + puntos NO-AMBA + marcador agregado AMBA. ---------- */
+function drawNationalMap(m){
+  var wrap = $('.map-national-wrap');
+  var svg = $('[data-geo-svg-national]');
+  var puntos = (m.puntos || []).filter(function(p){ return !p.amba; });
+  var provinciasActivas = m.provincias || [];
+  var provMap = {};
+  provinciasActivas.forEach(function(p){ provMap[p.nombre] = p; });
+  var pais = window.ARG_PAIS_GEOJSON, provinciasGeo = window.ARG_PROVINCIAS_GEOJSON;
+
+  svg.innerHTML = '';
+  if(!puntos.length && !provinciasActivas.length){
+    svg.setAttribute('viewBox', '0 0 100 100');
+    var msg = svgEl('text', {x:'50', y:'50', 'text-anchor':'middle', fill:'#A7B0C2', 'font-size':'6', 'font-family':'Poppins'});
+    msg.textContent = 'Sin estaciones ubicables.';
+    svg.appendChild(msg);
+    return;
+  }
+
+  var lats = puntos.map(function(p){return p.lat;});
+  var lons = puntos.map(function(p){return p.lon;});
+  if(provinciasGeo && provinciasGeo.features){
+    provinciasGeo.features.forEach(function(f){
+      if(!provMap[f.properties.name]) return;
+      var b = geometryBounds(f.geometry);
+      lats.push(b.lat_min, b.lat_max); lons.push(b.lon_min, b.lon_max);
+    });
+  }
+  if(!lats.length){ lats = [-55,-22]; lons = [-73,-53]; }
+  var rawBounds = {lat_min:Math.min.apply(null,lats), lat_max:Math.max.apply(null,lats), lon_min:Math.min.apply(null,lons), lon_max:Math.max.apply(null,lons)};
+  var bounds = padBounds(rawBounds, 0.14, 0.8);
+
+  var cw = wrap.clientWidth || 560, ch = wrap.clientHeight || 380;
+  svg.setAttribute('viewBox', '0 0 '+cw+' '+ch);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  /* Columnas de leyenda externa a ambos lados (Sec.1: "no colocar los
+     nombres y cantidades encima del territorio"): se reserva margen fijo
+     y el territorio se proyecta en el centro. */
+  /* Suficiente para el nombre de provincia mas largo activo ("Santiago del
+     Estero · N est.") sin recortarse contra el borde del SVG. */
+  var LABEL_MARGIN = Math.min(Math.max(cw * 0.24, 172), 210);
+  var proj = buildProjection(bounds, cw, ch, LABEL_MARGIN, LABEL_MARGIN, 8, 8);
+  var projX = proj.x, projY = proj.y;
+
+  if(pais && pais.features){
+    pais.features.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'rgba(126,166,255,.10)', stroke:'rgba(126,166,255,.55)', 'stroke-width':'2'
+      }));
+    });
+  }
+
+  /* Cobertura provincial: mismo criterio de tinte que antes (ambar segun
+     intensidad para "solo provincia", celeste tenue para las que ya tienen
+     puntos), pero SIN texto encima -- el nombre/cantidad se resuelve abajo
+     como leyenda externa + linea guia, para las 19 provincias activas por
+     igual (no solo las "solo provincia"). */
+  var maxProvActiv = Math.max.apply(null, provinciasActivas.filter(function(p){return p.estaciones_con_punto===0;}).map(function(p){return p.activaciones||0;})) || 1;
+  var centroids = {}; // nombre -> {lon,lat} real (centroide de poligono, SOLO para dibujar la linea guia, nunca como estacion)
+  if(provinciasGeo && provinciasGeo.features){
+    provinciasGeo.features.forEach(function(f){
+      var name = f.properties.name;
+      var prov = provMap[name];
+      var isActive = !!prov;
+      var soloProvincia = isActive && prov.estaciones_con_punto === 0;
+      var fill, stroke, sw;
+      if(soloProvincia){
+        var t = (prov.activaciones||0) / maxProvActiv;
+        var alpha = 0.16 + 0.42*Math.sqrt(t);
+        fill = 'rgba(255,200,87,'+alpha.toFixed(2)+')'; stroke = 'rgba(255,200,87,.85)'; sw = '1.6';
+      } else if(isActive){
+        fill = 'rgba(28,96,255,.07)'; stroke = 'rgba(126,166,255,.45)'; sw = '1.2';
+      } else {
+        fill = 'none'; stroke = 'rgba(126,166,255,.22)'; sw = '1';
+      }
+      var path = svgEl('path', { d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd', fill:fill, stroke:stroke, 'stroke-width':sw });
+      if(isActive){
+        var title = svgEl('title', {});
+        title.textContent = name+' · '+fmt(prov.estaciones_activas)+' estaciones activas'+(soloProvincia?' (cobertura territorial, sin coordenada puntual)':'')+' · '+fmt(prov.activaciones)+' activaciones';
+        path.appendChild(title);
+      }
+      svg.appendChild(path);
+      if(isActive){
+        var c = geoRingCentroid(f.geometry);
+        if(c) centroids[name] = {lon:c[0], lat:c[1]};
+      }
+    });
+  }
+
+  /* Leyendas externas (Sec.1): una columna a la izquierda y otra a la
+     derecha, ordenadas norte->sur, con separacion minima automatica para
+     que dos etiquetas cercanas nunca se superpongan, y una linea fina
+     hacia el centroide real de cada provincia. */
+  var left = [], right = [];
+  provinciasActivas.forEach(function(p){
+    var c = centroids[p.nombre]; if(!c) return;
+    var cx = projX(c.lon), cy = projY(c.lat);
+    var entry = {nombre:p.nombre, count:p.estaciones_activas, cx:cx, cy:cy};
+    (cx < cw/2 ? left : right).push(entry);
+  });
+  function layoutColumn(list, side){
+    list.sort(function(a,b){ return a.cy - b.cy; });
+    var MIN_GAP = 15, top = 14, bottom = ch - 14;
+    var y = top;
+    list.forEach(function(e, i){
+      var desired = Math.max(e.cy, y);
+      e.labelY = Math.min(desired, bottom - (list.length-1-i)*MIN_GAP);
+      y = e.labelY + MIN_GAP;
+    });
+    var labelX = side==='left' ? (LABEL_MARGIN - 10) : (cw - LABEL_MARGIN + 10);
+    var anchor = side==='left' ? 'end' : 'start';
+    list.forEach(function(e){
+      svg.appendChild(svgEl('line', {
+        x1:labelX, y1:e.labelY, x2:e.cx, y2:e.cy, class:'map-leader-line'
+      }));
+      var label = svgEl('text', {x:labelX, y:e.labelY+3.5, 'text-anchor':anchor, class:'map-ext-label'});
+      label.textContent = e.nombre+' · '+fmt(e.count)+' est.';
+      svg.appendChild(label);
+    });
+  }
+  layoutColumn(left, 'left');
+  layoutColumn(right, 'right');
+
+  /* Puntos reales FUERA de AMBA, tamaño moderado (la concentracion real de
+     AMBA se ve en el recorte de la derecha, no aca -- Sec.1). */
+  if(puntos.length){
+    var maxV = Math.max.apply(null, puntos.map(function(p){return p.activaciones||0;})) || 1;
+    var minR = 3.5, maxR = 13;
+    var clusters = clusterPoints(puntos, projX, projY, 16);
+    clusters.slice().sort(function(a,b){return a.activaciones-b.activaciones;}).forEach(function(cl){
+      var t = cl.activaciones / maxV;
+      var r = minR + (maxR-minR) * Math.sqrt(Math.min(t,1));
+      var circle = svgEl('circle', {
+        cx:cl.x, cy:cl.y, r:r, fill:mapHeatColor(Math.min(t,1)), 'fill-opacity':'0.85',
+        stroke:'rgba(255,255,255,.4)', 'stroke-width':'1.1', class:'map-point'
+      });
+      var title = svgEl('title', {});
+      title.textContent = cl.items.length>1
+        ? (cl.items.length+' estaciones agrupadas · '+fmt(cl.activaciones)+' activaciones')
+        : ((cl.items[0].ciudad||'—')+' (APIE '+cl.items[0].apie+') · '+fmt(cl.items[0].activaciones)+' activaciones');
+      circle.appendChild(title);
+      svg.appendChild(circle);
+    });
+  }
+
+  /* Marcador agregado AMBA (Sec.1): NO es una estacion, es un ancla visual
+     real (promedio ponderado de coordenadas reales) que indica "hay zoom
+     de esta zona a la derecha". Forma distinta (cuadrado redondeado, no
+     circulo) para no confundirlo con un punto de estacion. */
+  _ambaMarkerPx = null;
+  if(m.amba_marker){
+    var ax = projX(m.amba_marker.lon), ay = projY(m.amba_marker.lat);
+    _ambaMarkerPx = {x:ax, y:ay, cw:cw, ch:ch};
+    var rect = svgEl('rect', {
+      x:ax-9, y:ay-9, width:18, height:18, rx:5, fill:'rgba(28,96,255,.22)',
+      stroke:'rgba(126,166,255,.95)', 'stroke-width':'1.6', 'stroke-dasharray':'3 2'
+    });
+    var rtitle = svgEl('title', {});
+    rtitle.textContent = 'AMBA (detalle a la derecha) · '+fmt(m.amba_marker.estaciones)+' estaciones · '+fmt(m.amba_marker.activaciones)+' activaciones';
+    rect.appendChild(rtitle);
+    svg.appendChild(rect);
+    var alabel = svgEl('text', {x:ax, y:ay-14, 'text-anchor':'middle', class:'map-amba-marker-label'});
+    alabel.textContent = 'AMBA · '+fmt(m.amba_marker.estaciones)+' est.';
+    svg.appendChild(alabel);
+  }
+}
+
+/* Dibuja comunas CABA + partidos GBA (geometria politica real, local y
+   versionada -- Sec.1 del ajuste "Correccion del mapa AMBA"): limite
+   exterior de CABA destacado, comunas finas, partidos finos y de bajo
+   contraste. Reutilizable por el mapa general y el zoom. */
+function drawPoliticalLayers(svg, projX, projY, opts){
+  opts = opts || {};
+  var comunas = window.CABA_COMUNAS_GEOJSON, partidos = window.GBA_PARTIDOS_GEOJSON;
+  var provinciasGeo = window.ARG_PROVINCIAS_GEOJSON;
+  var partidoSW = opts.partidoStrokeWidth || 0.8;
+  var comunaSW = opts.comunaStrokeWidth || 0.7;
+  if(partidos && partidos.features){
+    partidos.features.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'rgba(255,255,255,.02)', stroke:'rgba(167,176,194,.34)', 'stroke-width':String(partidoSW)
+      }));
+    });
+  }
+  if(comunas && comunas.features){
+    comunas.features.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'rgba(28,96,255,.05)', stroke:'rgba(126,166,255,.4)', 'stroke-width':String(comunaSW)
+      }));
+    });
+  }
+  /* Limite exterior de CABA destacado: se reutiliza el poligono de
+     provincia "Ciudad de Buenos Aires" (ya real, ya cargado, sin necesidad
+     de disolver los 15 poligonos de comuna). */
+  if(provinciasGeo && provinciasGeo.features){
+    var cabaFeature = provinciasGeo.features.filter(function(f){ return f.properties.name === 'Ciudad de Buenos Aires'; });
+    cabaFeature.forEach(function(f){
+      svg.appendChild(svgEl('path', {
+        d: geoPathD(f.geometry, projX, projY), 'fill-rule':'evenodd',
+        fill:'none', stroke:'rgba(255,255,255,.75)', 'stroke-width': String(opts.cabaStrokeWidth || 2)
+      }));
+    });
+  }
+}
+
+/* Clasifica y dibuja burbujas + hasta N etiquetas (halo, sin negrita) sin
+   taparse entre si ni sobre los limites (Sec.2/4). Devuelve los clusters
+   dibujados para que el caller decida el encuadre del rectangulo de zoom. */
+function drawPointsAndLabels(svg, puntos, projX, projY, opts){
+  opts = opts || {};
+  var clusterPx = opts.clusterPx || 12;
+  var minR = opts.minR || 2.6, maxR = opts.maxR || 10;
+  var maxLabels = (opts.maxLabels != null) ? opts.maxLabels : 5;
+  if(!puntos.length) return [];
+  var maxV = Math.max.apply(null, puntos.map(function(p){return p.activaciones||0;})) || 1;
+  var clusters = clusterPoints(puntos, projX, projY, clusterPx);
+  var sorted = clusters.slice().sort(function(a,b){ return a.activaciones-b.activaciones; });
+  sorted.forEach(function(cl){
+    var t = cl.activaciones / maxV;
+    var r = minR + (maxR-minR) * Math.sqrt(Math.min(t,1));
+    cl.r = r;
+    var circle = svgEl('circle', {
+      cx:cl.x, cy:cl.y, r:r, fill:mapHeatColor(Math.min(t,1)), 'fill-opacity':'0.78',
+      stroke:'rgba(255,255,255,.45)', 'stroke-width':'0.9', class:'map-point'
+    });
+    var title = svgEl('title', {});
+    title.textContent = cl.items.length>1
+      ? (cl.items.length+' estaciones agrupadas · '+fmt(cl.activaciones)+' activaciones')
+      : ((cl.items[0].ciudad||'—')+' (APIE '+cl.items[0].apie+') · '+fmt(cl.items[0].activaciones)+' activaciones');
+    circle.appendChild(title);
+    svg.appendChild(circle);
+  });
+  /* Etiquetas de los focos principales, con linea guia si el texto no
+     entra pegado al punto (mismo criterio que las leyendas del nacional). */
+  var topLabeled = maxLabels>0 ? sorted.slice(-maxLabels) : [];
+  topLabeled.forEach(function(cl){
+    var labelX = cl.x + cl.r + 16, labelY = cl.y;
+    var text = cl.items.length>1 ? (cl.items.length+' est.') : (cl.items[0].ciudad || '');
+    if(!text) return;
+    svg.appendChild(svgEl('line', {x1:cl.x+cl.r+1.5, y1:cl.y, x2:labelX-2, y2:labelY, class:'map-leader-line'}));
+    var label = svgEl('text', { x:labelX, y:labelY+3.2, 'text-anchor':'start', class:'map-point-label' });
+    label.textContent = text;
+    svg.appendChild(label);
+  });
+  return sorted;
+}
+
+var _ambaGeneralZoomRectPx = null; // rect del recorte CABA+ZN, en coords del SVG general (para el conector)
+
+/* ---------- AMBA general: contexto completo (CABA + GBA), burbujas chicas,
+   pocas etiquetas, para "entender la distribucion metropolitana" (Sec.2). ---------- */
+function drawAmbaGeneral(m){
+  var wrap = $('.amba-general-wrap');
+  var svg = $('[data-geo-svg-amba-general]');
+  var puntos = (m.puntos || []).filter(function(p){ return p.amba; });
+  svg.innerHTML = '';
+  var cw = wrap.clientWidth || 300, ch = wrap.clientHeight || 150;
+  svg.setAttribute('viewBox', '0 0 '+cw+' '+ch);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  _ambaGeneralZoomRectPx = null;
+  if(!puntos.length){
+    var msg = svgEl('text', {x:cw/2, y:ch/2, 'text-anchor':'middle', fill:'#A7B0C2', 'font-size':'11', 'font-family':'Poppins'});
+    msg.textContent = 'Sin estaciones AMBA con coordenada.';
+    svg.appendChild(msg);
+    return;
+  }
+  var lats = puntos.map(function(p){return p.lat;});
+  var lons = puntos.map(function(p){return p.lon;});
+  var rawBounds = {lat_min:Math.min.apply(null,lats), lat_max:Math.max.apply(null,lats), lon_min:Math.min.apply(null,lons), lon_max:Math.max.apply(null,lons)};
+  var bounds = padBounds(rawBounds, 0.14, 0.02);
+  var proj = buildProjection(bounds, cw, ch, 8, 8, 8, 8);
+  var projX = proj.x, projY = proj.y;
+
+  drawPoliticalLayers(svg, projX, projY, {partidoStrokeWidth:0.7, comunaStrokeWidth:0.6, cabaStrokeWidth:1.6});
+
+  /* Etiquetas: CABA (si tiene puntos) + hasta 3 partidos reales con mas
+     estaciones (nunca nombres de zona inventados: son los nombres oficiales
+     del partido, resueltos por el mismo cruce punto-en-poligono). */
+  var caba = window.CABA_COMUNAS_GEOJSON;
+  var cabaZN = m.caba_zona_norte || {};
+  if(cabaZN.n_caba>0 && caba && caba.features && caba.features.length){
+    var cxs=[], cys=[];
+    caba.features.forEach(function(f){ var c=geoRingCentroid(f.geometry); if(c){cxs.push(projX(c[0])); cys.push(projY(c[1]));} });
+    var lx = cxs.reduce(function(a,b){return a+b;},0)/cxs.length, ly = cys.reduce(function(a,b){return a+b;},0)/cys.length;
+    var lbl = svgEl('text', {x:lx, y:ly-4, 'text-anchor':'middle', class:'map-point-label'});
+    lbl.textContent = 'CABA';
+    svg.appendChild(lbl);
+  }
+  var partidoCounts = {};
+  puntos.forEach(function(p){ if(p.partido) partidoCounts[p.partido] = (partidoCounts[p.partido]||0)+1; });
+  var topPartidos = Object.keys(partidoCounts).sort(function(a,b){return partidoCounts[b]-partidoCounts[a];}).slice(0,3);
+  var partidosGeo = window.GBA_PARTIDOS_GEOJSON;
+  if(partidosGeo && partidosGeo.features){
+    partidosGeo.features.forEach(function(f){
+      if(topPartidos.indexOf(f.properties.nombre) === -1) return;
+      var c = geoRingCentroid(f.geometry);
+      if(!c) return;
+      var lbl = svgEl('text', {x:projX(c[0]), y:projY(c[1]), 'text-anchor':'middle', class:'map-point-label'});
+      lbl.textContent = f.properties.nombre;
+      svg.appendChild(lbl);
+    });
+  }
+
+  /* Burbujas chicas (Sec.2: "reducir el tamaño maximo... para que no
+     oculten los limites"); agregados reales si varias comparten posicion
+     (clusterPoints ya evita superponer sin desplazar coordenadas). */
+  drawPointsAndLabels(svg, puntos, projX, projY, {clusterPx:9, minR:2.2, maxR:7.5, maxLabels:0});
+
+  /* Rectangulo + linea hacia el zoom (Sec.3: "conectar el area ampliada
+     del mapa general con el zoom"). El recuadro se calcula con los MISMOS
+     bounds que usara drawAmbaZoom (CABA + Zona Norte), proyectados aca. */
+  var zn = (m.caba_zona_norte && m.caba_zona_norte.zona_norte_partidos) || [];
+  var zoomPuntos = puntos.filter(function(p){ return p.zona === 'CABA' || p.zona === 'Zona Norte'; });
+  if(zoomPuntos.length){
+    var zlats = zoomPuntos.map(function(p){return p.lat;}), zlons = zoomPuntos.map(function(p){return p.lon;});
+    var zBounds = padBounds({lat_min:Math.min.apply(null,zlats), lat_max:Math.max.apply(null,zlats), lon_min:Math.min.apply(null,zlons), lon_max:Math.max.apply(null,zlons)}, 0.12, 0.01);
+    var rx0 = projX(zBounds.lon_min), rx1 = projX(zBounds.lon_max);
+    var ry0 = projY(zBounds.lat_max), ry1 = projY(zBounds.lat_min);
+    svg.appendChild(svgEl('rect', {
+      x:Math.min(rx0,rx1), y:Math.min(ry0,ry1), width:Math.abs(rx1-rx0), height:Math.abs(ry1-ry0),
+      fill:'rgba(126,166,255,.08)', stroke:'rgba(126,166,255,.75)', 'stroke-width':'1.2', 'stroke-dasharray':'3 2'
+    }));
+    _ambaGeneralZoomRectPx = {x:Math.min(rx0,rx1), y:Math.min(ry0,ry1)+Math.abs(ry1-ry0)/2, cw:cw, ch:ch};
+  }
+}
+
+/* ---------- Zoom CABA + Zona Norte: mayor escala, foco comercial (Sec.3). ---------- */
+function drawAmbaZoom(m){
+  var wrap = $('.amba-zoom-wrap');
+  var svg = $('[data-geo-svg-amba-zoom]');
+  var cabaZN = m.caba_zona_norte || {};
+  $('[data-amba-badge-caba]').textContent = 'CABA · '+fmt(cabaZN.n_caba||0);
+  $('[data-amba-badge-zn]').textContent = 'Zona Norte · '+fmt(cabaZN.n_zona_norte||0);
+
+  var puntos = (m.puntos || []).filter(function(p){ return p.zona === 'CABA' || p.zona === 'Zona Norte'; });
+  svg.innerHTML = '';
+  var cw = wrap.clientWidth || 300, ch = wrap.clientHeight || 220;
+  svg.setAttribute('viewBox', '0 0 '+cw+' '+ch);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  if(!puntos.length){
+    var msg = svgEl('text', {x:cw/2, y:ch/2, 'text-anchor':'middle', fill:'#A7B0C2', 'font-size':'11', 'font-family':'Poppins'});
+    msg.textContent = 'Sin estaciones CABA/Zona Norte con coordenada.';
+    svg.appendChild(msg);
+    return;
+  }
+
+  var lats = puntos.map(function(p){return p.lat;});
+  var lons = puntos.map(function(p){return p.lon;});
+  var rawBounds = {lat_min:Math.min.apply(null,lats), lat_max:Math.max.apply(null,lats), lon_min:Math.min.apply(null,lons), lon_max:Math.max.apply(null,lons)};
+  var bounds = padBounds(rawBounds, 0.12, 0.01);
+  var proj = buildProjection(bounds, cw, ch, 10, 10, 10, 10);
+  var projX = proj.x, projY = proj.y;
+
+  drawPoliticalLayers(svg, projX, projY, {partidoStrokeWidth:1, comunaStrokeWidth:0.9, cabaStrokeWidth:2.2});
+  drawPointsAndLabels(svg, puntos, projX, projY, {clusterPx:11, minR:3, maxR:13, maxLabels:5});
+}
+
+/* ---------- Conector visual entre el marcador AMBA (mapa nacional) y el
+   recorte cuadrado, para que se lea como zoom de los mismos datos. ---------- */
+function drawConnector(m){
+  var overlay = $('[data-geo-connector]');
+  var dualWrap = $('.map-dual-wrap');
+  overlay.innerHTML = '';
+  if(!_ambaMarkerPx || !dualWrap) return;
+
+  var wrapRect = dualWrap.getBoundingClientRect();
+  var natWrap = $('.map-national-wrap'), ambaGeneralWrap = $('.amba-general-wrap');
+  var natRect = natWrap.getBoundingClientRect(), ambaRect = ambaGeneralWrap.getBoundingClientRect();
+  var W = wrapRect.width, H = wrapRect.height;
+  overlay.setAttribute('viewBox', '0 0 '+W+' '+H);
+  overlay.setAttribute('width', W); overlay.setAttribute('height', H);
+
+  var sx = natRect.width / _ambaMarkerPx.cw, sy = natRect.height / _ambaMarkerPx.ch;
+  var markerX = (natRect.left - wrapRect.left) + _ambaMarkerPx.x * sx;
+  var markerY = (natRect.top - wrapRect.top) + _ambaMarkerPx.y * sy;
+  var targetX = ambaRect.left - wrapRect.left;
+  var targetY = ambaRect.top - wrapRect.top + ambaRect.height/2;
+  var midX = targetX - 22;
+
+  var path = svgEl('path', {
+    d: 'M '+markerX.toFixed(1)+','+markerY.toFixed(1)+' C '+midX.toFixed(1)+','+markerY.toFixed(1)+' '+midX.toFixed(1)+','+targetY.toFixed(1)+' '+targetX.toFixed(1)+','+targetY.toFixed(1),
+    fill:'none', stroke:'rgba(126,166,255,.55)', 'stroke-width':'1.4', 'stroke-dasharray':'4 3'
+  });
+  overlay.appendChild(path);
+  overlay.appendChild(svgEl('circle', {cx:targetX, cy:targetY, r:3, fill:'rgba(126,166,255,.85)'}));
+}
+
+/* ---------- Conector dentro del panel AMBA: del recuadro del mapa general
+   al zoom CABA+Zona Norte, como en un mapa cartografico profesional
+   (Sec.3: "rectangulo y una linea fina"). ---------- */
+function drawAmbaConnector(m){
+  var overlay = $('[data-geo-connector-amba]');
+  var ambaWrap = $('.map-amba-wrap');
+  overlay.innerHTML = '';
+  if(!_ambaGeneralZoomRectPx || !ambaWrap) return;
+
+  var wrapRect = ambaWrap.getBoundingClientRect();
+  var generalWrap = $('.amba-general-wrap'), zoomWrap = $('.amba-zoom-wrap');
+  var generalRect = generalWrap.getBoundingClientRect(), zoomRect = zoomWrap.getBoundingClientRect();
+  overlay.setAttribute('viewBox', '0 0 '+wrapRect.width+' '+wrapRect.height);
+  overlay.setAttribute('width', wrapRect.width); overlay.setAttribute('height', wrapRect.height);
+
+  var sx = generalRect.width / _ambaGeneralZoomRectPx.cw, sy = generalRect.height / _ambaGeneralZoomRectPx.ch;
+  var fromX = (generalRect.left - wrapRect.left) + _ambaGeneralZoomRectPx.x * sx;
+  var fromY = (generalRect.top - wrapRect.top) + _ambaGeneralZoomRectPx.y * sy;
+  var toX = (zoomRect.left - wrapRect.left) + zoomRect.width/2;
+  var toY = zoomRect.top - wrapRect.top;
+
+  overlay.appendChild(svgEl('line', {
+    x1:fromX.toFixed(1), y1:fromY.toFixed(1), x2:toX.toFixed(1), y2:toY.toFixed(1),
+    stroke:'rgba(126,166,255,.65)', 'stroke-width':'1.3', 'stroke-dasharray':'3 2'
+  }));
+  overlay.appendChild(svgEl('circle', {cx:toX, cy:toY, r:2.6, fill:'rgba(126,166,255,.9)'}));
+}
+
+/* ---------- MODO SINGLE TV ---------- */
+function init(){
+  scaleStage(); tick(); stampUpdated();
+  setInterval(tick,15000);
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+});
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>
