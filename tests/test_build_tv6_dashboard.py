@@ -679,9 +679,14 @@ def test_template_has_triple_insight_footer_markup():
     assert "insight-col" in TEMPLATE_SOURCE
 
 
-def test_output_html_has_triple_insight_footer_rendered():
-    td.build_and_write(PRODUCTION_FILE)
-    html = td.DEFAULT_OUTPUT_HTML.read_text(encoding="utf-8")
+def test_output_html_has_triple_insight_footer_rendered(tmp_path_factory):
+    out_dir = tmp_path_factory.mktemp("tv6_render")
+    td.build_and_write(
+        PRODUCTION_FILE,
+        output_html=out_dir / "tv6.html",
+        output_json=out_dir / "tv6_data.json",
+    )
+    html = (out_dir / "tv6.html").read_text(encoding="utf-8")
     assert "Lectura</div>" in html
     assert "Punto positivo</div>" in html
     assert "A atender</div>" in html
@@ -720,6 +725,26 @@ def test_production_circuitos_snapshot(production_result):
     assert marcas["sin_circuito_valido"]["count"] == 0
 
 
+def test_production_per_marca_dicts_have_deterministic_order(production_result):
+    """primer_mes_por_marca y circuitos_por_marca se construyen iterando un
+    set[str] (hash de strings aleatorizado por proceso): sin sorted() el
+    orden de serializacion cambia entre corridas aunque el contenido sea
+    identico. Este test fija el orden alfabetico como contrato."""
+    marcas = production_result["data"]["marcas"]
+
+    primer_mes_keys = list(marcas["primer_mes_por_marca"].keys())
+    circuitos_keys = list(marcas["circuitos_por_marca"].keys())
+
+    assert primer_mes_keys == sorted(primer_mes_keys)
+    assert circuitos_keys == sorted(circuitos_keys)
+
+    marcas_activas_esperadas = set(
+        marcas["primera_aparicion"]["marcas"] + marcas["recurrentes"]["marcas"]
+    )
+    assert set(primer_mes_keys) == marcas_activas_esperadas
+    assert set(circuitos_keys) == marcas_activas_esperadas
+
+
 def test_production_matriz_totales_por_circuito(production_result):
     matriz = production_result["data"]["matriz"]
     assert dict(zip(matriz["columnas"], matriz["totales_por_circuito"])) == {
@@ -753,9 +778,14 @@ def test_payload_never_says_shoppings_fijo(production_json):
 # ---------------------------------------------------------------------------
 
 
-def test_output_html_has_no_legacy_ocu_data():
-    td.build_and_write(PRODUCTION_FILE)
-    html = td.DEFAULT_OUTPUT_HTML.read_text(encoding="utf-8")
+def test_output_html_has_no_legacy_ocu_data(tmp_path_factory):
+    out_dir = tmp_path_factory.mktemp("tv6_render")
+    td.build_and_write(
+        PRODUCTION_FILE,
+        output_html=out_dir / "tv6.html",
+        output_json=out_dir / "tv6_data.json",
+    )
+    html = (out_dir / "tv6.html").read_text(encoding="utf-8")
     assert "OCU_DATA" not in html
     assert "window.TV6_DATA" in html
     assert 'id="tv5"' not in html

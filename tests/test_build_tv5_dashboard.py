@@ -18,6 +18,7 @@ scripts/build_tv1..4/6_dashboard.py como subproceso: solo build_tvX_data()
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -689,6 +690,10 @@ def rendered_geometry(production_html, tmp_path_factory):
     real (Emulation.setDeviceMetricsOverride, no el tamano de ventana --
     evita el offset de chrome/DPI del SO) y devuelve los bounding rects
     reales de header/pregunta/KPIs/paneles/footer, mas flags de overflow."""
+    if os.environ.get("TV5_RUN_SELENIUM") != "1":
+        pytest.skip(
+            "Selenium desactivado por defecto; usar TV5_RUN_SELENIUM=1 para habilitarlo"
+        )
     binary = _find_chrome_binary()
     if binary is None:
         pytest.skip("No se encontro un binario de Chrome/Edge para renderizar TV5")

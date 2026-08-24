@@ -312,7 +312,7 @@ def compute_recurrencia(marcas_julio: set[str], presencia_mensual: dict[int, set
         return round(n / total * 100.0, 1) if total else None
 
     return {
-        "primer_mes_por_marca": {m: primer_mes[m] for m in marcas_julio if m in primer_mes},
+        "primer_mes_por_marca": {m: primer_mes[m] for m in sorted(marcas_julio) if m in primer_mes},
         "primera_aparicion": {
             "count": len(primera_aparicion), "pct": _pct(len(primera_aparicion)), "marcas": primera_aparicion,
         },
@@ -351,7 +351,7 @@ def compute_circuitos_por_marca(scope_julio: pd.DataFrame, marcas_julio: set[str
         return round(n / total * 100.0, 1) if total else None
 
     return {
-        "circuitos_por_marca": {m: int(circuitos_count.get(m, 0)) for m in marcas_julio},
+        "circuitos_por_marca": {m: int(circuitos_count.get(m, 0)) for m in sorted(marcas_julio)},
         "multicircuito": {"count": len(multicircuito), "pct": _pct(len(multicircuito)), "marcas": multicircuito},
         "un_solo_circuito": {
             "count": len(un_solo_circuito), "pct": _pct(len(un_solo_circuito)), "marcas": un_solo_circuito,

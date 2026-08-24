@@ -143,9 +143,14 @@ def production_json(production_result):
 
 
 @pytest.fixture(scope="module")
-def production_html():
-    td.build_and_write(PRODUCTION_FILE)
-    return (REPO_ROOT / "tv2.html").read_text(encoding="utf-8")
+def production_html(tmp_path_factory):
+    out_dir = tmp_path_factory.mktemp("tv2_render")
+    td.build_and_write(
+        PRODUCTION_FILE,
+        output_html=out_dir / "tv2.html",
+        output_json=out_dir / "tv2_data.json",
+    )
+    return (out_dir / "tv2.html").read_text(encoding="utf-8")
 
 
 @pytest.fixture(scope="module")

@@ -51,15 +51,29 @@ _PROTECTED_SHA256 = {
     "scripts/build_tv1_dashboard.py": "64b2567addcd3339a6bffd2deb7894f18a59aca8f03c72c8449d11c0c1e201fa",
     "scripts/build_tv2_dashboard.py": "f968a0b52395b755b15a8f4673ee2b6aed40eeb32554b6ee7f01a9f50066c14b",
     "scripts/build_tv3_dashboard.py": "32215a3dc5c2e6a59e1a7a83e32c6fd239f9fc5026f45de77e4960c87401e8a6",
-    "scripts/build_tv6_dashboard.py": "9d6fe5bd8006fe482edbd3e790ec2b0681de82b44ef8492df7da009c400cf2ed",
+    "scripts/build_tv6_dashboard.py": "ce2e36b92788d0ea26b2afeb58ca54911031368d90dc5ab7d1e5157a14756972",
     "scripts/templates/tv1_template.html": "71380f34d9618384728ab8da1882c8b8c05e69b52ebb76563c0bd0bc175076ba",
     "scripts/templates/tv2_template.html": "e501bfbf44699934c31a7e2e39d69cb00f2124c0485cd01f6fb4e7587c415782",
     "scripts/templates/tv3_template.html": "776dea93829887042281ed27089188e6ac5c6ee6baccd854d9084ce092381cd9",
-    "scripts/templates/tv6_template.html": "a70aac82adc8cc6fa6c1305658c701cec2d9227258a474deac0d758450d685af",
+    "scripts/templates/tv6_template.html": "9ccad1be73344736f4df81f47c73ece6ad464e8bd9f6ece6b3b4904a994e5a25",
     "tests/test_build_tv1_dashboard.py": "02bf1a7a8cbd78e330ce9566ae40f4cb8ad255c83751cb2908370c13afb471ea",
-    "tests/test_build_tv2_dashboard.py": "9fbb675f06445d016b5c3658e06acc2e6a4f91a310964d74d8457c70799246a6",
+    "tests/test_build_tv2_dashboard.py": "2a12464debe3051a4fdd5dabe171250bccc56fbb0b10838b07227ad4ee9b1c1e",
     "tests/test_build_tv3_dashboard.py": "9f68b4c356806a372a131b08e867ccd6c6c01fd4a0cb97bc5cd3d0f67c87866b",
-    "tests/test_build_tv6_dashboard.py": "a4e1e4fe54ad8880bd4c774767657a5bdce934fe23eabe87ce3516b9f2ee51db",
+    "tests/test_build_tv6_dashboard.py": "d58947dd3752a5a393fbf648b802d4731e170ccbcbc485af40e491120aeb288f",
+    # Baseline TV6 actualizado al cierre aceptado TV1-TV6, commit c4fc8d8
+    # (2026-08-23): reemplaza el hash "pre-TV4" de estos 3 archivos por el
+    # vigente tras la migracion de TV6 a marcas/demanda por circuito.
+    # scripts/build_tv6_dashboard.py y tests/test_build_tv6_dashboard.py
+    # actualizados nuevamente el 24/08/2026: parche determinista (sorted()
+    # en primer_mes_por_marca/circuitos_por_marca, ver compute_recurrencia y
+    # compute_circuitos_por_marca) + fixture hermetico (build_and_write ya
+    # no escribe tv6.html/output/tv6_data.json reales en los tests).
+    # Baseline tests/test_build_tv2_dashboard.py actualizado el 24/08/2026:
+    # refleja el parche autorizado de hermeticidad TV2 (fixture production_html
+    # ahora escribe en tmp_path_factory en vez de sobreescribir tv2.html real).
+    # tests/test_build_tv5_dashboard.py no forma parte de este guard (ver nota
+    # de exclusion TV5 mas abajo); el parche de Selenium opt-in TV5 del
+    # 24/08/2026 no requiere actualizar ningun hash aqui.
     # tv2.html / tv6.html: excluidos de este chequeo de hash exacto (2026-08-23).
     # Sus scripts/templates/tests fuente SI siguen protegidos arriba (byte-
     # identicos). Solo el .html generado cambia, y solo en el timestamp de
