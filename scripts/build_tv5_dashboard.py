@@ -40,7 +40,8 @@ Definicion de espacio comercial (pedido Sec.4-5):
 - Digital: cada campana activa en un ElementoID digital consume un slot de
   ese elemento -- IDCampaña x ElementoID, pares distintos (duplicados de un
   mismo par cuentan una sola vez). La capacidad confirmada por elemento
-  (ESPACIOS_POR_FORMATO_DIGITAL, identica a TV2) se usa solo para detectar
+  (regla central semantic_model.capacidad_espacio_digital, la misma de
+  TV1/TV2, Etapa 2A) se usa solo para detectar
   y declarar sobrecapacidad (mas campanas concurrentes que slots
   confirmados en un mismo elemento), nunca para capar el conteo real.
 - Estatico: un espacio ocupado es un ElementoID fisico distinto con al
@@ -81,14 +82,14 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_input as vi  # noqa: E402
 from semantic_model import filter_universe  # noqa: E402
-from metrics_engine import MetricsEngine  # noqa: E402
+import semantic_model as sm  # noqa: E402
+from metrics_engine import MetricsEngine, ocupacion_simultanea_por_estacion  # noqa: E402
 from export_data import load_pipeline  # noqa: E402
 from build_tv2_dashboard import (  # noqa: E402
     PANTALLAS_CIRCUITOS as _TV2_PANTALLAS_CIRCUITOS,
     SHOPPINGS_CIRCUITOS as _TV2_SHOPPINGS_CIRCUITOS,
     AA2000_CIRCUITOS as _TV2_AA2000_CIRCUITOS,
     TV2_CIRCUITOS as CORE_DIGITAL_CIRCUITOS,
-    ESPACIOS_POR_FORMATO_DIGITAL,
 )
 from build_tv3_dashboard import (  # noqa: E402
     OTROS_CIRCUITOS as _TV3_OTROS_CIRCUITOS,
@@ -187,29 +188,13 @@ def _grupo_comercial(circuito: str, medio: str) -> str:
     return "AA2000 / Pilar Frontlight"
 
 
-def _espacio_capacidad_digital_tv5(fmt: Any, circuito: Any, capacidad_slots_reel: Any) -> float | None:
+def _espacio_capacidad_digital_tv5(row: pd.Series) -> float | None:
     """Capacidad confirmada de UN elemento digital Core, solo para detectar
-    sobrecapacidad (pedido Sec.4: "aplicar las reglas de capacidad
-    confirmadas... y advertencias de sobrecapacidad ya definidas en TV2").
-    Usa la MISMA tabla publica ESPACIOS_POR_FORMATO_DIGITAL de TV2
-    (importada, no reimplementada); solo la envoltura de clasificacion se
-    duplica localmente para no depender de la funcion privada
-    (con guion bajo) de build_tv2_dashboard.py."""
-    if fmt == "PANTALLA_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"])
-    if fmt == "PUENTE_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"])
-    if fmt == "TOTEM" and circuito == "CENCOSUD":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"])
-    if fmt == "OTRO" and circuito == "REMEROS":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"])
-    if fmt in ("TOTEM", "TRIEDRO") and circuito == "AA2000":
-        legacy = capacidad_slots_reel
-        return float(legacy) if pd.notna(legacy) and legacy > 0 else None
-    if fmt == "TRIEDRO":
-        legacy = capacidad_slots_reel
-        return float(legacy) if pd.notna(legacy) and legacy > 0 else None
-    return None
+    sobrecapacidad (pedido Sec.4). Delegado en la regla central
+    (semantic_model.capacidad_espacio_digital, Etapa 2A), compartida con
+    TV1/TV2: nunca una tabla propia de este builder."""
+    capacidad, _categoria = sm.capacidad_espacio_digital(row)
+    return capacidad
 
 
 def build_tv5_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
@@ -235,7 +220,7 @@ def build_tv5_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
     grupo_map.update(dict(zip(static_maestro["ElementoID"], static_maestro["_grupo"])))
 
     capacidad_map: dict[Any, float | None] = {
-        row["ElementoID"]: _espacio_capacidad_digital_tv5(row["FormatoNegocio"], row["CircuitoNegocio"], row.get("CapacidadSlotsReel"))
+        row["ElementoID"]: _espacio_capacidad_digital_tv5(row)
         for _, row in digital_maestro.iterrows()
     }
 
@@ -294,13 +279,21 @@ def build_tv5_ypf_snapshot(semantic_result: dict[str, Any], cutoff: pd.Timestamp
     en_curso = scope[_en_curso_mask(scope, cutoff)]
     en_curso = en_curso[en_curso["IDCampaña"].notna() & (en_curso["IDCampaña"].astype(str).str.strip() != "")]
 
+    # Etapa 2A: ocupacion YPF por estacion con la MISMA funcion central que
+    # TV1/TV4 (maximo de campanas reales simultaneas, sin tope), evaluada en
+    # el dia de corte: en un solo dia, simultaneas = campanas vigentes.
     dig = en_curso[en_curso["ElementoID"].isin(digital_ids)].copy()
     if not dig.empty:
         dig["_apie"] = dig["ElementoID"].map(apie_map)
-        dig_espacios = dig.drop_duplicates(subset=["_apie", "IDCampaña"])
+        indefinida_ok = (dig["FechaIndefinida"] == "Si") & dig["FechaFin"].isna()
+        dig["_fin_corte"] = dig["FechaFin"].where(~indefinida_ok, cutoff)
+        por_estacion = ocupacion_simultanea_por_estacion(
+            dig, cutoff, cutoff, sm.espacios_base_por_estacion("YPF", config),
+            station_col="_apie", start_col="FechaInicio", end_col="_fin_corte",
+        )
+        n_dig = int(por_estacion["ocupacion"].sum()) if not por_estacion.empty else 0
     else:
-        dig_espacios = dig
-    n_dig = int(len(dig_espacios))
+        n_dig = 0
 
     stat = en_curso[en_curso["ElementoID"].isin(static_ids)]
     n_stat = int(stat["ElementoID"].nunique())

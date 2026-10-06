@@ -127,6 +127,31 @@ def _london_static(elemento_id: str, **overrides) -> dict:
     return _maestro_row(elemento_id, **row)
 
 
+@pytest.fixture(scope="module", autouse=True)
+def tv1_control_hermetico(tmp_path_factory):
+    """Etapa 2A: TV2 reconcilia su evolucion contra TV1. El control ya no es
+    el output/tv1_data.json productivo (generado con reglas anteriores), sino
+    un TV1 construido EN MEMORIA con las reglas vigentes y escrito en tmp:
+    los tests nunca leen ni escriben salidas productivas."""
+    import build_tv1_dashboard as t1
+    control = tmp_path_factory.mktemp("tv1_control") / "tv1_data.json"
+    control.write_text(json.dumps(t1.build_tv1_data(PRODUCTION_FILE)["data"], ensure_ascii=False), encoding="utf-8")
+    original = td.TV1_CONTROL_JSON
+    td.TV1_CONTROL_JSON = control
+    yield control
+    td.TV1_CONTROL_JSON = original
+
+
+def _capacidad_por_regla_config(row) -> int:
+    """Capacidad esperada leida DIRECTO de config (independiente del builder):
+    perfil por FormatoNegocio, o regla por circuito digital."""
+    dc = sm.load_config()["digital_capacity"]
+    perfil = dc["slots_profiles"].get(row["FormatoNegocio"])
+    if perfil is not None:
+        return int(perfil)
+    return int(dc["slots_por_circuito_digital"][row["CircuitoNegocio"]])
+
+
 @pytest.fixture(scope="module")
 def production_result():
     return td.build_tv2_data(PRODUCTION_FILE)
@@ -203,7 +228,11 @@ def test_no_ranking_activos_or_calendar_language(production_json):
 
 
 def test_no_legacy_reference_values_leak_into_payload(production_json):
-    for legacy_token in ("321", "1575", "1.575", "78,0", "71 activos", "\"activos\""):
+    # Etapa 2A: "321" (numerador legacy de fill slots de TV1) se retiro de la
+    # lista porque con las reglas vigentes coincide, por casualidad, con los
+    # slots ocupados reales de julio de TV2. El resto de los tokens legacy
+    # (denominador 1.575 de Gate3, "activos") sigue sin poder aparecer.
+    for legacy_token in ("1575", "1.575", "78,0", "71 activos", "\"activos\""):
         assert legacy_token not in production_json
 
 
@@ -219,26 +248,37 @@ def test_no_ranking_language_in_html(production_html):
 
 
 # ---------------------------------------------------------------------------
-# 7-10. Catalogo digital = 990 (570 + 220 + 200), correccion 2026-08-22
-# (Totems Remeros Shoppings Digital: 6 x 10 = 60 espacios, 510+60=570).
+# 7-10. Catalogo digital. Etapa 2A (2026-10-06): las cifras fijas 990/570/
+# 220/200 (reglas anteriores) se reemplazan por la suma de la regla central
+# por elemento, leida directo de config (sin depender del builder).
 # ---------------------------------------------------------------------------
 
 
-def test_catalogo_total_990(production_data):
-    cat = production_data["catalogo"]
-    assert cat["total"] == 990
+def test_catalogo_total_es_suma_de_reglas_centrales(production_data, production_maps):
+    cats = production_maps["cats"]
+    esperado = sum(_capacidad_por_regla_config(r) for _, r in cats.iterrows())
+    assert production_data["catalogo"]["total"] == esperado
 
 
-def test_catalogo_shoppings_570(production_data):
-    assert production_data["catalogo"]["shoppings"] == 570
+def test_catalogo_pantallas_es_20_por_pantalla(production_data, production_maps):
+    cats = production_maps["cats"]
+    n = int((cats["_familia"] == "Pantallas").sum())
+    assert n > 0
+    assert production_data["catalogo"]["pantallas"] == 20 * n
 
 
-def test_catalogo_pantallas_220(production_data):
-    assert production_data["catalogo"]["pantallas"] == 220
+def test_catalogo_aa2000_es_10_por_elemento_digital(production_data, production_maps):
+    cats = production_maps["cats"]
+    n = int((cats["_familia"] == "AA2000").sum())
+    assert n > 0
+    assert production_data["catalogo"]["aa2000"] == 10 * n
 
 
-def test_catalogo_aa2000_200(production_data):
-    assert production_data["catalogo"]["aa2000"] == 200
+def test_catalogo_shoppings_todos_sus_formatos_son_10(production_data, production_maps):
+    cats = production_maps["cats"]
+    n = int((cats["_familia"] == "Shoppings").sum())
+    assert n > 0
+    assert production_data["catalogo"]["shoppings"] == 10 * n
 
 
 def test_catalogo_families_sum_to_total(production_data):
@@ -247,23 +287,15 @@ def test_catalogo_families_sum_to_total(production_data):
 
 
 # ---------------------------------------------------------------------------
-# 11-13. Ocupados = 281 (Remeros aporta 0, nunca tuvo campanas) / Disponibles
-# = 709 / Disp = 71,6% (correccion 2026-08-22: capacidad +60, ocupados sin
-# cambios -> fill baja, disponibilidad sube; es el comportamiento correcto,
-# no un error de calculo).
+# 11-13. Ocupados / disponibles / fill. Etapa 2A: 281/709/28,4% eran valores
+# de las reglas anteriores; se reemplazan por identidades exactas.
 # ---------------------------------------------------------------------------
 
 
-def test_ocupados_281_fill_28_4(production_data):
+def test_fill_pct_consistente_con_ocupados_y_capacidad(production_data):
     core = production_data["cards"]["core"]
-    assert core["ocupados"] == 281
-    assert core["fill_pct"] == 28.4
-
-
-def test_disponibles_709_pct_71_6(production_data):
-    core = production_data["cards"]["core"]
-    assert core["disponibles"] == 709
-    assert core["disp_pct"] == 71.6
+    assert core["fill_pct"] == round(core["ocupados"] / core["capacidad"] * 100.0, 1)
+    assert core["disp_pct"] == round(core["disponibles"] / core["capacidad"] * 100.0, 1)
 
 
 def test_ocupados_mas_disponibles_igual_catalogo(production_data):
@@ -281,19 +313,17 @@ def test_fill_mas_disponibilidad_100_pct(production_data):
 # ---------------------------------------------------------------------------
 
 
-def test_junio_control_values(production_data):
+def test_junio_consistente(production_data):
+    """Etapa 2A: reemplaza los valores de control de junio (380/38,4/610)."""
     core = production_data["cards"]["core"]
-    assert core["ocupados_anterior"] == 380
-    assert core["fill_pct_anterior"] == 38.4
-    assert core["disponibles_anterior"] == 610
-    assert core["disp_pct_anterior"] == 61.6
+    assert core["ocupados_anterior"] + core["disponibles_anterior"] == core["capacidad_anterior"]
+    assert core["fill_pct_anterior"] == round(core["ocupados_anterior"] / core["capacidad_anterior"] * 100.0, 1)
 
 
 def test_delta_julio_vs_junio(production_data):
     core = production_data["cards"]["core"]
-    assert core["delta_ocupados"] == -99
-    assert core["delta_pp"] == -10.0
-    assert core["delta_disponibles"] == 99
+    assert core["delta_ocupados"] == core["ocupados"] - core["ocupados_anterior"]
+    assert core["delta_disponibles"] == -core["delta_ocupados"]
 
 
 def test_ytd_promedio_ponderado_present_and_consistent(production_data):
@@ -309,12 +339,13 @@ def test_ytd_promedio_ponderado_present_and_consistent(production_data):
 # ---------------------------------------------------------------------------
 
 
-def test_elementos_confirmados_and_sin_confirmar(production_data):
-    """Correccion 2026-08-22: los 6 totems Remeros pasan de sin_confirmar a
-    confirmados (72->78, 19->13)."""
+def test_elementos_confirmados_and_sin_confirmar(production_data, production_maps):
+    """Etapa 2A: con las reglas centrales confirmadas (Patio de Comidas,
+    UNI-PUENTELED-1 y EZEPAW005/011 = 10) no queda ningun elemento digital
+    TV2 sin capacidad: confirmados = universo completo, sin_confirmar = 0."""
     cat = production_data["catalogo"]
-    assert cat["elementos_confirmados"] == 78
-    assert cat["elementos_sin_confirmar"] == 13
+    assert cat["elementos_sin_confirmar"] == 0
+    assert cat["elementos_confirmados"] == int(production_maps["cats"]["ElementoID"].nunique())
 
 
 def test_formatos_composition_sums_100(production_data):
@@ -322,14 +353,16 @@ def test_formatos_composition_sums_100(production_data):
     suma = round(sum(f["pct"] for f in formatos), 1)
     assert abs(suma - 100.0) <= 0.15
     nombres = {f["nombre"] for f in formatos}
-    assert {"Pantallas LED", "Tótems", "Puentes LED", "Triedros"}.issubset(nombres)
+    assert {"Pantallas LED", "Tótems", "Puentes LED", "Triedros", "Patio de Comidas"}.issubset(nombres)
 
 
-def test_totem_counts_include_tripstore_aa2000_and_remeros_as_totem(production_data):
+def test_totem_counts_include_tripstore_aa2000_and_remeros_as_totem(production_data, production_maps):
+    """Totems = todo elemento TV2 con FormatoNegocio TOTEM (Cencosud +
+    Tripstore AA2000 + Remeros REM-DB-*), sin cifra fija."""
     formatos = {f["nombre"]: f["elementos"] for f in production_data["catalogo"]["formatos"]}
-    # 40 totems Cencosud + 10 Tripstore AA2000 + 6 totems Remeros (correccion
-    # 2026-08-22) = 56.
-    assert formatos["Tótems"] == 56
+    cats = production_maps["cats"]
+    assert formatos["Tótems"] == int((cats["FormatoNegocio"] == "TOTEM").sum())
+    assert set(cats.loc[cats["CircuitoNegocio"] == "REMEROS", "FormatoNegocio"]) == {"TOTEM"}
 
 
 def test_formatos_elements_sum_to_confirmados(production_data):
@@ -351,15 +384,19 @@ def test_tripstore_capacity_lives_in_aa2000_not_shoppings():
     semantic_result = _semantic(maestro_rows)
     universe = td.build_tv2_universe(semantic_result)
     maps = td.build_catalog_maps(universe)
-    assert maps["familia_capacidad"]["AA2000"] == 20.0
+    assert maps["familia_capacidad"]["AA2000"] == 10.0  # Etapa 2A: Totem = 10 (Excel trae 20)
     assert maps["familia_capacidad"]["Shoppings"] == 10.0
 
 
-def test_aa2000_aeroparque_ezeiza_composition(production_data):
+def test_aa2000_aeroparque_ezeiza_composition(production_data, production_maps):
+    """Etapa 2A: Ezeiza suma EZEPAW005/011 (AA2000 digital = 10 por regla de
+    circuito) a los 7 Tripstore; Aeroparque sigue con 3 Tripstore."""
     aa = production_data["cards"]["aa2000"]
     assert aa["aeroparque_elementos"] == 3
-    assert aa["ezeiza_elementos"] == 7
-    assert aa["aeroparque_elementos"] + aa["ezeiza_elementos"] == aa["elementos"] == 10
+    cats = production_maps["cats"]
+    aa_ids = set(cats.loc[cats["_familia"] == "AA2000", "ElementoID"])
+    assert {"EZEPAW005", "EZEPAW011"} <= aa_ids
+    assert aa["aeroparque_elementos"] + aa["ezeiza_elementos"] == aa["elementos"] == len(aa_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -374,10 +411,31 @@ def test_evolution_has_three_series(production_data):
     assert ev["meses"][-1] == "Jul"
 
 
-def test_evolution_monthly_totals_match_tv1_control_values(production_data):
+def test_evolution_monthly_totals_match_tv1_control_values(production_data, tv1_control_hermetico):
+    """Etapa 2A: reemplaza la serie fija [206, ..., 281] (reglas anteriores)
+    por la reconciliacion real contra TV1 construido con las reglas vigentes
+    y coherencia con las tarjetas de julio/junio."""
     ev = production_data["evolution"]
-    esperado = [206, 270, 311, 293, 346, 380, 281]
-    assert ev["total_ocupados"] == esperado
+    tv1 = json.loads(tv1_control_hermetico.read_text(encoding="utf-8"))["evolution_espacios"]
+    assert ev["total_ocupados"] == tv1["digital"]
+    core = production_data["cards"]["core"]
+    assert ev["total_ocupados"][-1] == core["ocupados"]
+    assert ev["total_ocupados"][-2] == core["ocupados_anterior"]
+
+
+def test_reconciliacion_omite_control_de_otra_version(tmp_path, capsys):
+    """Etapa 2A: un output/tv1_data.json generado con otra base o version de
+    reglas no bloquea el build ni se usa en silencio: se omite con aviso."""
+    viejo = tmp_path / "tv1_data.json"
+    viejo.write_text(json.dumps({"meta": {"reglas_version": "ANTERIOR"}, "evolution_espacios": {
+        "meses": ["Ene"], "digital": [999999]}}), encoding="utf-8")
+    original = td.TV1_CONTROL_JSON
+    td.TV1_CONTROL_JSON = viejo
+    try:
+        td._reconcile_evolution_with_tv1({"meses": ["Ene"], "total_ocupados": [1]}, [(2026, 1)], "abc")
+    finally:
+        td.TV1_CONTROL_JSON = original
+    assert "TV2_RECONCILE_SKIP" in capsys.readouterr().out
 
 
 def test_evolution_families_sum_to_total_every_month(production_data):
@@ -403,7 +461,7 @@ def test_matrix_shoppings_rows_and_last_month_reconciles(production_data):
     # confirmada con capacidad 60, ya no "pendiente"): 10 filas en total.
     assert len(m["filas"]) == 10
     ultimo = sum((f["celdas"][-1]["ocupados"] or 0) for f in m["filas"])
-    assert ultimo == production_data["cards"]["shoppings"]["ocupados"] == 196
+    assert ultimo == production_data["cards"]["shoppings"]["ocupados"]
 
 
 def test_matrix_pantallas_rows_and_last_month_reconciles(production_data):
@@ -501,29 +559,23 @@ def test_remeros_shoppings_totems_are_now_confirmed_capacity(production_data, pr
     assert (confirmed_remeros["_capacidad"] == 10.0).all()
     assert (confirmed_remeros["_categoria"] == "TOTEM_SHOPPING").all()
     assert confirmed_remeros["_capacidad"].sum() == 60.0
-    assert production_data["catalogo"]["elementos_sin_confirmar"] == 13  # 19 - 6
+    assert production_data["catalogo"]["elementos_sin_confirmar"] == 0  # Etapa 2A
 
 
 def test_shoppings_matrix_sum_reconciles_with_card(production_data):
     m = production_data["matrix_shoppings"]
     ultimo = sum((f["celdas"][-1]["ocupados"] or 0) for f in m["filas"])
-    assert ultimo == production_data["cards"]["shoppings"]["ocupados"] == 196
+    assert ultimo == production_data["cards"]["shoppings"]["ocupados"]
 
 
-def test_new_totals_after_remeros_totem_correction(production_data):
-    """Valores de control de la correccion definitiva 2026-08-22 (Sec.3,7):
-    Shoppings 510->570, Digital 930->990. Los ocupados NO cambian porque los
-    6 totems Remeros nunca tuvieron campanas (TieneActividadComercial=False
-    en la fuente): fill rate baja y disponibilidad sube, comportamiento
-    correcto (mas capacidad, misma demanda), nunca un error de calculo."""
-    cat = production_data["catalogo"]
-    core = production_data["cards"]["core"]
-    assert cat["total"] == 990
-    assert cat["shoppings"] == 570
-    assert core["ocupados"] == 281  # sin cambios: Remeros aporta 0 ocupados
-    assert core["disponibles"] == 709  # 649 + 60
-    assert production_data["cards"]["shoppings"]["ocupados"] == 196  # sin cambios
-    assert production_data["evolution"]["total_ocupados"] == [206, 270, 311, 293, 346, 380, 281]
+def test_remeros_aporta_60_de_capacidad_y_ocupacion_real(production_data):
+    """Reemplaza 'new_totals_after_remeros_totem_correction' (cifras
+    990/570/281/709 de las reglas anteriores): la fila Remeros de la matriz
+    Shoppings aporta 6 x 10 = 60 de capacidad confirmada y su ocupacion sale
+    de campañas reales, nunca asumida llena."""
+    fila = next(f for f in production_data["matrix_shoppings"]["filas"] if f["sitio"] == "Remeros")
+    assert fila["capacidad"] == 60
+    assert all(c["ocupados"] is not None and c["ocupados"] <= 60 for c in fila["celdas"])
 
 
 def test_remeros_occupancy_computed_from_campaigns_not_assumed_full(production_data):
@@ -536,19 +588,29 @@ def test_remeros_occupancy_computed_from_campaigns_not_assumed_full(production_d
     assert [c["ocupados"] for c in fila["celdas"]] == [0, 0, 0, 0, 0, 0, 0]
 
 
-def test_pending_sites_reduced_only_by_remeros_six(production_maps):
-    """Spec Sec.8: 'los soportes pendientes bajan solamente por estos 6
-    registros'. Los otros sitios pendientes (Cencosud Unicenter 'Patio de
-    Comidas'/'UNI-PUENTELED-1', AA2000 Descripcion vacia) deben seguir
-    exactamente igual: ni un elemento mas ni uno menos."""
-    sin_regla_ids = set(production_maps["sin_regla"]["ElementoID"].tolist())
-    remeros_ids = {"REM-DB-1", "REM-DB-3", "REM-DB-5", "REM-DB-6", "REM-DB-8", "REM-DB-10"}
-    assert not (sin_regla_ids & remeros_ids)
-    cencosud_pendientes = production_maps["sin_regla"][production_maps["sin_regla"]["CircuitoNegocio"] == "CENCOSUD"]
-    aa2000_pendientes = production_maps["sin_regla"][production_maps["sin_regla"]["CircuitoNegocio"] == "AA2000"]
-    assert int(cencosud_pendientes["ElementoID"].nunique()) == 11
-    assert int(aa2000_pendientes["ElementoID"].nunique()) == 2
-    assert len(sin_regla_ids) == 13 == 11 + 2
+def test_los_13_ex_pendientes_tienen_regla_confirmada_de_10(production_maps):
+    """Etapa 2A (reemplaza 'pending_sites_reduced_only_by_remeros_six'): los
+    13 soportes que antes quedaban SIN_REGLA (UNI-PUENTELED-1, Patio de
+    Comidas Unicenter x10, EZEPAW005/011 de AA2000) tienen ahora capacidad
+    confirmada de 10 cada uno y ya no hay sitios pendientes."""
+    assert production_maps["sin_regla"].empty
+    confirmed = production_maps["confirmed"].set_index("ElementoID")
+    ex_pendientes = ["UNI-PUENTELED-1", "EZEPAW005", "EZEPAW011"] + [f"UNI-PACO-3L-{i}" for i in range(1, 11)]
+    for eid in ex_pendientes:
+        assert confirmed.loc[eid, "_capacidad"] == 10.0, eid
+    assert confirmed.loc["UNI-PUENTELED-1", "_categoria"] == "PUENTE_LED"
+    assert confirmed.loc["UNI-PACO-3L-1", "_categoria"] == "PATIO_COMIDAS"
+    assert confirmed.loc["EZEPAW005", "_categoria"] == "OTRO_DIGITAL"
+    assert all(not ids for ids in production_maps["sitio_pendiente_ids"].values())
+
+
+def test_ningun_elemento_se_cuenta_dos_veces(production_maps):
+    """Etapa 2A: cada ElementoID aparece una sola vez en el catalogo TV2 y en
+    una sola familia/sitio."""
+    cats = production_maps["cats"]
+    assert not cats["ElementoID"].duplicated().any()
+    todos = [eid for fam in production_maps["sitio_ids"].values() for ids in fam.values() for eid in ids]
+    assert len(todos) == len(set(todos)) == int(production_maps["confirmed"]["ElementoID"].nunique())
 
 
 # ---------------------------------------------------------------------------
@@ -672,89 +734,91 @@ def test_input_excel_sha_unchanged(production_result):
 # ---------------------------------------------------------------------------
 
 
+def _row_semantica(maestro_row: dict) -> pd.Series:
+    """Fila del maestro ya resuelta por semantic_model (SlotsComerciales de la
+    regla central): las pruebas de unidad ya no construyen filas a mano."""
+    return _semantic([maestro_row])["maestro"].iloc[0]
+
+
 def test_pantalla_led_capacity_is_20():
-    row = pd.Series({"FormatoNegocio": "PANTALLA_LED", "CircuitoNegocio": "PANTALLAS_LED", "CapacidadSlotsReel": 0})
-    cap, cat = td._espacio_capacidad_digital(row)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(_pantalla_led("P1", CapacidadSlotsReel=40)))
     assert cap == 20.0 and cat == "PANTALLA_LED"
 
 
 def test_totem_cencosud_capacity_is_10():
-    row = pd.Series({"FormatoNegocio": "TOTEM", "CircuitoNegocio": "CENCOSUD", "CapacidadSlotsReel": 0})
-    cap, cat = td._espacio_capacidad_digital(row)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(_cencosud_totem("T1", CapacidadSlotsReel=20)))
     assert cap == 10.0 and cat == "TOTEM_SHOPPING"
 
 
-def test_totem_aa2000_capacity_is_registered_not_10():
-    row = pd.Series({"FormatoNegocio": "TOTEM", "CircuitoNegocio": "AA2000", "CapacidadSlotsReel": 20})
-    cap, cat = td._espacio_capacidad_digital(row)
-    assert cap == 20.0 and cat == "TRIPSTORE_AA2000"
+def test_totem_aa2000_capacity_is_10_regla_central():
+    """Etapa 2A (reemplaza 'capacity_is_registered_not_10'): Tripstore = 10."""
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(_aa2000_totem("AEP-TS-9", CapacidadSlotsReel=20)))
+    assert cap == 10.0 and cat == "TRIPSTORE_AA2000"
 
 
-def test_totem_aa2000_zero_capacity_stays_sin_regla():
-    """Los 2 registros AA2000 con Descripcion vacia (spec Sec.4.C): formato
-    OTRO, CapacidadSlotsReel=0 -> SIN_REGLA, nunca capacidad inventada."""
-    row = pd.Series({"FormatoNegocio": "OTRO", "CircuitoNegocio": "AA2000", "CapacidadSlotsReel": 0})
-    cap, cat = td._espacio_capacidad_digital(row)
-    assert cap is None and cat == "SIN_REGLA"
+def test_aa2000_digital_sin_descripcion_capacity_10():
+    """Etapa 2A (reemplaza 'zero_capacity_stays_sin_regla'): EZEPAW005/011,
+    AA2000 digital sin Descripcion ni capacidad en el Excel, = 10 por regla
+    de circuito confirmada."""
+    row = _aa2000_totem("EZEPAW005", Descripcion=None, CapacidadSlotsReel=0)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
+    assert cap == 10.0 and cat == "OTRO_DIGITAL"
 
 
 def test_puente_led_capacity_is_10_any_circuit():
-    row = pd.Series({"FormatoNegocio": "PUENTE_LED", "CircuitoNegocio": "REMEROS", "CapacidadSlotsReel": 0})
-    cap, cat = td._espacio_capacidad_digital(row)
+    row = _remeros_digital("R-PUENTE", Descripcion="Puente Led 9", CapacidadSlotsReel=13)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
     assert cap == 10.0 and cat == "PUENTE_LED"
 
 
-def test_triedro_uses_registered_capacity():
-    row = pd.Series({"FormatoNegocio": "TRIEDRO", "CircuitoNegocio": "CENCOSUD", "CapacidadSlotsReel": 15})
-    cap, cat = td._espacio_capacidad_digital(row)
-    assert cap == 15.0 and cat == "TRIEDRO"
+def test_uni_puenteled_1_es_puente_led_10():
+    row = _cencosud_totem("UNI-PUENTELED-1", Descripcion=None, CapacidadSlotsReel=10)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
+    assert cap == 10.0 and cat == "PUENTE_LED"
 
 
-def test_remeros_totem_literal_format_has_no_confirmed_rule():
-    """Un elemento con FormatoNegocio literal 'TOTEM' (no 'OTRO') en Remeros
-    sigue sin regla: la tasa de Totem de Shopping (10) via fmt=='TOTEM' es
-    exclusiva de CENCOSUD. La regla nueva de Remeros (correccion 2026-08-22,
-    ver test_remeros_otro_format_in_remeros_gets_totem_capacity) solo cubre
-    fmt=='OTRO', que es como semantic_model resuelve los 6 elementos reales
-    ('TV Led' no matchea ningun keyword rule de Totem)."""
-    row = pd.Series({"FormatoNegocio": "TOTEM", "CircuitoNegocio": "REMEROS", "CapacidadSlotsReel": 20})
-    cap, cat = td._espacio_capacidad_digital(row)
-    assert cap is None and cat == "SIN_REGLA"
+def test_triedro_capacity_is_10_regla_central():
+    """Etapa 2A (reemplaza 'uses_registered_capacity'): Triedro = 10 aunque
+    el Excel traiga 15."""
+    row = _cencosud_totem("TR-1", Descripcion="Triedro Digital - Test", CapacidadSlotsReel=15)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
+    assert cap == 10.0 and cat == "TRIEDRO"
 
 
-def test_remeros_otro_format_gets_totem_capacity():
-    """Correccion 2026-08-22 (regla de negocio confirmada por el usuario):
-    los elementos Digital de CircuitoNegocio=REMEROS con FormatoNegocio=OTRO
-    (resuelto asi porque su Descripcion 'TV Led' no matchea ningun keyword
-    rule) son comercialmente totems de 10 slots."""
-    row = pd.Series({"FormatoNegocio": "OTRO", "CircuitoNegocio": "REMEROS", "CapacidadSlotsReel": 10})
-    cap, cat = td._espacio_capacidad_digital(row)
+def test_patio_de_comidas_capacity_is_10():
+    row = _cencosud_totem("UNI-PACO-3L-1", Descripcion="Patio de Comidas - Nivel 3", CapacidadSlotsReel=10)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
+    assert cap == 10.0 and cat == "PATIO_COMIDAS"
+
+
+def test_remeros_digital_capacity_is_10():
+    """Remeros digital = 10 por elemento: REM-DB-* via override de formato
+    (TOTEM) y cualquier otro digital Remeros via regla de circuito."""
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(_remeros_digital("REM-DB-1", Descripcion="TV Led", CapacidadSlotsReel=20)))
     assert cap == 10.0 and cat == "TOTEM_SHOPPING"
+    cap2, _cat2 = td._espacio_capacidad_digital(_row_semantica(_remeros_digital("REM-NUEVO-1", Descripcion="TV Led", CapacidadSlotsReel=20)))
+    assert cap2 == 10.0
 
 
 def test_otro_format_outside_remeros_still_sin_regla():
-    """La regla nueva esta acotada a CircuitoNegocio=REMEROS (spec Sec.1
-    scope): un OTRO en Cencosud (p.ej. 'Patio de Comidas') sigue SIN_REGLA,
-    no se contagia la excepcion de Remeros a otros circuitos."""
-    row = pd.Series({"FormatoNegocio": "OTRO", "CircuitoNegocio": "CENCOSUD", "CapacidadSlotsReel": 10})
-    cap, cat = td._espacio_capacidad_digital(row)
+    """Un digital de formato desconocido en Cencosud (sin keyword, sin
+    override) sigue SIN_REGLA aunque el Excel traiga capacidad: el valor
+    historico del Excel no se usa como regla (Etapa 2A)."""
+    row = _cencosud_totem("UNI-X-1", Descripcion="Pantalla experimental", CapacidadSlotsReel=10)
+    cap, cat = td._espacio_capacidad_digital(_row_semantica(row))
     assert cap is None and cat == "SIN_REGLA"
 
 
-def test_remeros_totem_count_validation_raises_if_not_exactly_six():
-    """Spec Sec.1: 'agregar una validacion que confirme que se encontraron
-    exactamente 6 elementos. Si la cantidad cambia en la base, informar la
-    variacion'. Fixture sintetico con 5 (no 6) totems Remeros debe frenar el
-    build con un mensaje explicito, nunca aplicar la regla en silencio."""
+def test_remeros_sin_excepcion_dispersa_en_tv2():
+    """Etapa 2A (reemplaza 'remeros_totem_count_validation_raises_if_not_
+    exactly_six'): la excepcion OTRO+REMEROS y su validacion de "exactamente
+    6" se retiraron del builder; la regla vive en config y cada elemento
+    digital Remeros vale 10 sin importar cuantos haya."""
+    src = (REPO_ROOT / "scripts" / "build_tv2_dashboard.py").read_text(encoding="utf-8")
+    assert "REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO" not in src
     maestro_rows = [_pantalla_led("P1")] + [
-        _maestro_row(
-            f"REM-DB-{i}", CircuitoDashboard="Shoppings Digital", Subcircuito="REMEROS", Ubicacion="REMEROS",
-            Medio="Digital", TipoCatalogo="Cerrado", TipoInventario="Digital",
-            Descripcion="TV Led", CapacidadSlotsReel=10, SegundosDia=50400,
-        )
-        for i in range(1, 6)  # 5 elementos, no 6
+        _remeros_digital(f"REM-DB-{i}", Descripcion="TV Led", CapacidadSlotsReel=10) for i in (1, 3, 5, 6, 8)
     ]
-    semantic_result = _semantic(maestro_rows)
-    universe = td.build_tv2_universe(semantic_result)
-    with pytest.raises(td.BuildError, match="Totems Remeros"):
-        td.build_catalog_maps(universe)
+    universe = td.build_tv2_universe(_semantic(maestro_rows))
+    maps = td.build_catalog_maps(universe)
+    assert maps["familia_capacidad"]["Shoppings"] == 50.0

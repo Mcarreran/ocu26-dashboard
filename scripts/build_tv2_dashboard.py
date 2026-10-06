@@ -3,13 +3,10 @@
 Rediseno completo 2026-08-22 (spec "TV2 - ESPACIOS/SLOTS", reemplaza el
 diseno anterior basado en "elementos activos"/"ocupacion por calendario"/
 rankings). Unidad de negocio unica: ESPACIO/SLOT digital, misma logica
-canonica de capacidad que TV1 (Marco Rector CM3 2026-08-19,
-build_tv1_dashboard.py compute_espacios): TOTEM en Shopping=10,
-PUENTE_LED=10, PANTALLA_LED=20, TRIEDRO/Tripstore AA2000=capacidad
-registrada (CapacidadSlotsReel). Las tasas y la formula NO se reimportan de
-build_tv1_dashboard.py (builders independientes por diseno, ver docstring
-original mas abajo) pero SI se duplican identicas a proposito: mismo Excel +
-misma formula = mismos numeros, verificado contra output/tv1_data.json.
+canonica de capacidad que TV1. Desde Etapa 2A (2026-10-06) la capacidad
+sale de la regla central (config/business_semantics.json -> semantic_model.
+capacidad_espacio_digital), compartida con TV1/TV5: mismo Excel + misma
+regla = mismos numeros, verificado contra output/tv1_data.json cuando existe.
 
 Se ejecuta DESPUES de scripts/semantic_model.py y scripts/metrics_engine.py
 (Gate 3B). Reutiliza export_data.load_pipeline (Gate 4A), mismo patron que
@@ -44,6 +41,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_input as vi  # noqa: E402
+import semantic_model as sm  # noqa: E402
 from semantic_model import filter_universe  # noqa: E402
 from metrics_engine import MetricsEngine  # noqa: E402
 from export_data import load_pipeline  # noqa: E402
@@ -88,29 +86,16 @@ FAMILY_MAP = {
 }
 FAMILIAS = ["Pantallas", "Shoppings", "AA2000"]
 
-# Tasas de conversion a ESPACIOS/SLOTS (Marco Rector CM3 2026-08-19, identicas
-# a build_tv1_dashboard.py ESPACIOS_POR_FORMATO_DIGITAL: TOTEM de Shopping=10,
-# PUENTE_LED=10, PANTALLA_LED=20). Deliberadamente distintas del perfil legacy
-# de config/business_semantics.json (Gate3 slots_profiles): esas cifras NO se
-# reutilizan aqui, por instruccion explicita del usuario (ver TV1 Sec.
-# ESPACIOS_POR_FORMATO_DIGITAL).
-ESPACIOS_POR_FORMATO_DIGITAL: dict[str, int] = {
-    "PANTALLA_LED": 20,
-    "TOTEM": 10,
-    "PUENTE_LED": 10,
-}
-
-# Categorias de composicion fisica (tarjeta 1, spec Sec.9): Tripstore AA2000
-# se clasifica FISICAMENTE como Totem (mismo formato de catalogo, "Totem
-# Simple") aunque comercialmente pertenezca a AA2000, no a Shoppings.
-_CATEGORIA_A_ETIQUETA: dict[str, str] = {
-    "PANTALLA_LED": "Pantallas LED",
-    "TOTEM_SHOPPING": "Tótems",
-    "TRIPSTORE_AA2000": "Tótems",
-    "PUENTE_LED": "Puentes LED",
-    "TRIEDRO": "Triedros",
-}
-_ETIQUETA_ORDEN = ["Pantallas LED", "Tótems", "Puentes LED", "Triedros"]
+# Capacidad en ESPACIOS/SLOTS (Etapa 2A, 2026-10-06): la regla vive SOLO en
+# config/business_semantics.json (digital_capacity) y se resuelve en
+# semantic_model (SlotsComerciales + capacidad_espacio_digital). Este builder
+# ya no define tasas propias ni excepciones por circuito: Pantalla LED 20,
+# Totem 10 (Shopping, Remeros y Tripstore AA2000), Triedro 10, Puente LED 10,
+# Patio de Comidas 10, AA2000 digital sin formato propio 10.
+# Composicion fisica (tarjeta 1, spec Sec.9): etiquetas centrales; Tripstore
+# AA2000 se muestra FISICAMENTE como Totem aunque comercialmente sea AA2000.
+_CATEGORIA_A_ETIQUETA: dict[str, str] = dict(sm.ETIQUETA_CATEGORIA_ESPACIO_DIGITAL)
+_ETIQUETA_ORDEN = list(sm.ORDEN_ETIQUETAS_ESPACIO_DIGITAL)
 
 
 class BuildError(Exception):
@@ -171,53 +156,11 @@ def build_tv2_universe(semantic_result: dict[str, Any]) -> dict[str, Any]:
 
 
 def _espacio_capacidad_digital(row: pd.Series) -> tuple[float | None, str]:
-    """Capacidad en espacios de UN elemento digital TV2, y su categoria de
-    reporting (identico a build_tv1_dashboard._espacio_capacidad_digital,
-    duplicado a proposito: ver docstring del modulo).
-
-    - PANTALLA_LED: 20 (regla confirmada).
-    - TOTEM en CENCOSUD (Totem de Shopping): 10.
-    - TOTEM (formato OTRO, Descripcion "TV Led") en REMEROS: 10 (correccion
-      2026-08-22, regla de negocio confirmada por el usuario: los 6
-      elementos digitales de Remeros Shoppings son totems comerciales de 10
-      slots cada uno, aunque semantic_model los resuelve como
-      FormatoNegocio=OTRO -- la Descripcion "TV Led" no matchea ningun
-      keyword rule de business_semantics.json. Nunca se confunde con el
-      elemento Remeros de Pantallas LED: ese tiene CircuitoNegocio
-      PANTALLAS_LED, no REMEROS, y su propia regla PANTALLA_LED=20 sigue
-      intacta.
-    - TOTEM en AA2000 ("Tripstore"): capacidad REGISTRADA (CapacidadSlotsReel),
-      nunca la tasa de 10 de Shopping.
-    - PUENTE_LED: 10.
-    - TRIEDRO: capacidad registrada (CapacidadSlotsReel).
-    - Cualquier otro formato (p.ej. 'OTRO' fuera de Remeros): sin regla ->
-      (None, 'SIN_REGLA'), nunca se inventa una cifra (quedan en
-      REQUIERE_CONFIRMACION, spec Sec.4.C y Sec.9)."""
-    fmt = row["FormatoNegocio"]
-    circuito = row["CircuitoNegocio"]
-    if fmt == "PANTALLA_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"]), "PANTALLA_LED"
-    if fmt == "PUENTE_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"]), "PUENTE_LED"
-    if fmt == "TOTEM" and circuito == "CENCOSUD":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
-    if fmt == "OTRO" and circuito == "REMEROS":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
-    if fmt == "TOTEM" and circuito == "AA2000":
-        legacy = row["CapacidadSlotsReel"]
-        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIPSTORE_AA2000"
-    if fmt == "TRIEDRO":
-        legacy = row["CapacidadSlotsReel"]
-        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIEDRO"
-    return None, "SIN_REGLA"
-
-
-# Elementos exactos cubiertos por la regla "OTRO+REMEROS=Totem" (correccion
-# 2026-08-22): usado unicamente para la validacion de cantidad en
-# build_catalog_maps, nunca para filtrar/clasificar (la clasificacion real
-# sale de _espacio_capacidad_digital, dinamica sobre CircuitoNegocio/
-# FormatoNegocio).
-REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO = 6
+    """Capacidad en espacios de UN elemento digital TV2 y su categoria de
+    reporting: delegado 1:1 en la API central (semantic_model.
+    capacidad_espacio_digital), la misma que usan TV1 y TV5. Sin capacidad
+    confirmada -> (None, 'SIN_REGLA'), nunca se inventa una cifra."""
+    return sm.capacidad_espacio_digital(row)
 
 
 def _con_capacidad_digital(digital: pd.DataFrame) -> pd.DataFrame:
@@ -246,22 +189,10 @@ def build_catalog_maps(universe: dict[str, Any]) -> dict[str, Any]:
     confirmed = cats[cats["_capacidad"].notna()].copy()
     sin_regla = cats[cats["_capacidad"].isna()].copy()
 
-    # Validacion de cantidad (spec correccion Remeros 2026-08-22 Sec.1): SI el
-    # universo incluye elementos Remeros con esta regla, deben ser EXACTAMENTE
-    # 6. Un universo sintetico/de test SIN ningun elemento Remeros (0) es un
-    # caso distinto y valido (no es "la cantidad cambio", es que este universo
-    # no incluye Remeros); solo se bloquea una cantidad PARCIAL/inesperada
-    # (1-5 o 7+), que si indicaria que la base cambio y hay que revisar antes
-    # de seguir aplicando la regla en silencio.
-    remeros_totems = confirmed[(confirmed["CircuitoNegocio"] == "REMEROS") & (confirmed["_categoria"] == "TOTEM_SHOPPING")]
-    n_remeros_totems = int(remeros_totems["ElementoID"].nunique())
-    if n_remeros_totems != 0 and n_remeros_totems != REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO:
-        raise BuildError(
-            f"Regla 'Totems Remeros Shoppings Digital' esperaba "
-            f"{REMEROS_TOTEM_ELEMENT_COUNT_ESPERADO} elementos, se encontraron "
-            f"{n_remeros_totems}: {sorted(remeros_totems['ElementoID'].unique().tolist())}. "
-            f"Revisar si cambio el universo de REMEROS antes de continuar."
-        )
+    # Etapa 2A: la validacion "exactamente 6 totems Remeros" se retiro junto
+    # con la excepcion OTRO+REMEROS de este builder; la clasificacion de los
+    # 6 elementos REM-DB-* como TOTEM vive ahora en config (formato_negocio.
+    # elemento_formato_overrides) y se prueba en tests/test_reglas_capacidad.py.
 
     familia_ids = {fam: confirmed.loc[confirmed["_familia"] == fam, "ElementoID"].tolist() for fam in FAMILIAS}
     familia_capacidad = {fam: float(confirmed.loc[confirmed["_familia"] == fam, "_capacidad"].sum()) for fam in FAMILIAS}
@@ -525,17 +456,33 @@ def compute_evolution(catalogo: dict[str, Any], monthly: dict[tuple[int, int], d
     }
 
 
-def _reconcile_evolution_with_tv1(evolution: dict[str, Any], months: list[tuple[int, int]]) -> None:
+def _reconcile_evolution_with_tv1(
+    evolution: dict[str, Any], months: list[tuple[int, int]], input_sha256: str | None = None,
+) -> None:
     """Reconciliacion obligatoria (spec Sec.15,20.F) contra la fuente
     READ-ONLY output/tv1_data.json: la suma mensual de las 3 familias TV2
     debe coincidir exacto con evolution_espacios.digital de TV1 (misma
     formula, mismo Excel). Si el archivo de control no existe todavia (TV1
     nunca se construyo en este checkout) se omite con un aviso: TV2 nunca
-    escribe ni depende en tiempo de ejecucion de que TV1 se reconstruya."""
+    escribe ni depende en tiempo de ejecucion de que TV1 se reconstruya.
+    Etapa 2A: tambien se omite (con aviso, nunca en silencio) si el control
+    fue generado con OTRA base u OTRA version de reglas (meta.input_sha256 /
+    meta.reglas_version de TV1): comparar contra un control desactualizado
+    no prueba nada y bloqueaba builds validos."""
     if not TV1_CONTROL_JSON.exists():
         print(f"TV2_RECONCILE_SKIP: no existe {TV1_CONTROL_JSON}, no se pudo reconciliar contra TV1")
         return
     tv1_data = json.loads(TV1_CONTROL_JSON.read_text(encoding="utf-8"))
+    meta1 = tv1_data.get("meta", {})
+    if meta1.get("reglas_version") != sm.reglas_version() or (
+        input_sha256 is not None and meta1.get("input_sha256") != input_sha256
+    ):
+        print(
+            f"TV2_RECONCILE_SKIP: {TV1_CONTROL_JSON} fue generado con otra base o version de reglas "
+            f"(control: reglas={meta1.get('reglas_version')!r}, sha={str(meta1.get('input_sha256'))[:12]!r}; "
+            f"actual: reglas={sm.reglas_version()!r}, sha={str(input_sha256)[:12]!r}); reconstruir TV1 primero"
+        )
+        return
     ev1 = tv1_data.get("evolution_espacios")
     if not ev1:
         return
@@ -699,7 +646,7 @@ def build_tv2_data(path: str | Path | None = None) -> dict[str, Any]:
     catalogo = compute_catalogo(maps)
     cards = compute_cards(catalogo, monthly, ytd_months, report_key, prev_key)
     evolution = compute_evolution(catalogo, monthly, ytd_months)
-    _reconcile_evolution_with_tv1(evolution, ytd_months)
+    _reconcile_evolution_with_tv1(evolution, ytd_months, sha_before)
     matrix_shoppings = compute_matrix("Shoppings", maps, monthly, ytd_months)
     matrix_pantallas = compute_matrix("Pantallas", maps, monthly, ytd_months)
     insights = compute_insights(catalogo, cards, MESES_ES[REPORT_MONTH - 1], MESES_ES[prev_month - 1])

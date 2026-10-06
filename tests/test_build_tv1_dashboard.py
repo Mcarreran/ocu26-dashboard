@@ -28,6 +28,7 @@ import semantic_model as sm  # noqa: E402
 import validate_input as vi  # noqa: E402
 import build_tv1_dashboard as td  # noqa: E402
 from metrics_engine import MetricsEngine  # noqa: E402
+from export_data import load_pipeline  # noqa: E402
 from test_semantic_model import _maestro_row, _campana_row, _transform_result  # noqa: E402
 
 PRODUCTION_FILE = REPO_ROOT / "input" / "OCU26_BASE_DATOS.xlsx"
@@ -39,11 +40,14 @@ def _semantic(maestro_rows: list[dict], campanas_rows: list[dict] | None = None)
 
 
 def _digital_aa2000_unknown_capacity(elemento_id: str, **overrides) -> dict:
-    """Elemento digital sin perfil de FormatoNegocio confirmado y sin
-    capacidad legacy (CapacidadSlotsReel=0): fuerza SlotsComerciales=
-    REQUIERE_CONFIRMACION (nunca 0)."""
+    """Elemento digital sin perfil de FormatoNegocio confirmado, sin regla de
+    circuito y sin capacidad legacy (CapacidadSlotsReel=0): fuerza
+    SlotsComerciales=REQUIERE_CONFIRMACION (nunca 0). Etapa 2A: ya no puede
+    ser AA2000 (AA2000 digital tiene regla central de 10 por elemento), por
+    eso el fixture usa un digital desconocido de CENCOSUD; se conserva el
+    nombre para no perder la trazabilidad del test original."""
     row = dict(
-        CircuitoDashboard="AA2000", Subcircuito="X", Ubicacion="EZE",
+        CircuitoDashboard="Shoppings Digital", Subcircuito="CENCOSUD", Ubicacion="UNICENTER",
         Medio="Digital", TipoCatalogo="Cerrado", TipoInventario="Digital",
         Descripcion="", CapacidadSlotsReel=0, SegundosDia=0,
     )
@@ -719,8 +723,8 @@ def _triedro_cencosud(elemento_id: str, **overrides) -> dict:
 
 
 def _tripstore_aa2000(elemento_id: str, **overrides) -> dict:
-    """AA2000 "Totem Simple" (confirmado con el usuario 21/08/2026 = Tripstore):
-    capacidad REGISTRADA (CapacidadSlotsReel), nunca la tasa de 10 de Shopping."""
+    """AA2000 "Totem Simple" (Tripstore). Etapa 2A (2026-10-06): regla central
+    Totem = 10 por elemento; CapacidadSlotsReel del Excel ya NO gobierna."""
     row = dict(
         CircuitoDashboard="AA2000", Subcircuito="EZE", Ubicacion="EZE",
         Medio="Digital", TipoCatalogo="Cerrado", TipoInventario="Digital",
@@ -741,14 +745,14 @@ def _static_aa2000(elemento_id: str, **overrides) -> dict:
 
 
 def _otro_digital_sin_regla(elemento_id: str, **overrides) -> dict:
-    """OTRO fuera de REMEROS (p.ej. Cencosud): sigue sin regla de conversion.
-    Nunca usar Subcircuito=REMEROS aqui -- desde la correccion 22/08/2026 ese
-    circuito especifico SI tiene una regla confirmada (ver
-    _remeros_totem_otro / test_espacios_remeros_otro_totem_capacidad_10)."""
+    """Digital de formato desconocido (sin keyword, sin override) en CENCOSUD:
+    sigue sin regla confirmada aunque el Excel traiga CapacidadSlotsReel>0
+    (Etapa 2A: el valor historico del Excel no se usa como regla). "Patio de
+    Comidas" ya NO sirve como ejemplo: desde Etapa 2A tiene regla (10)."""
     row = dict(
         CircuitoDashboard="Shoppings Digital", Subcircuito="CENCOSUD", Ubicacion="UNICENTER",
         Medio="Digital", TipoCatalogo="Cerrado", TipoInventario="Digital",
-        Descripcion="Patio de Comidas", CapacidadSlotsReel=10, SegundosDia=50400,
+        Descripcion="Pantalla experimental sin regla", CapacidadSlotsReel=10, SegundosDia=50400,
     )
     row.update(overrides)
     return _maestro_row(elemento_id, **row)
@@ -812,21 +816,23 @@ def test_espacios_puente_led_uses_10_not_legacy_13():
     assert detalle["totales"] == 10
 
 
-def test_espacios_tripstore_aa2000_uses_registered_capacity_not_shopping_rate():
-    """Confirmado con el usuario 21/08/2026: Tripstore (AA2000, Totem Simple)
-    usa la capacidad REGISTRADA (CapacidadSlotsReel=20 en este fixture),
-    nunca la tasa de 10 de Tótem de Shopping."""
+def test_espacios_tripstore_aa2000_totem_10_por_regla_central():
+    """Etapa 2A (reemplaza 'uses_registered_capacity', regla de negocio
+    confirmada 2026-10-06): Tripstore (AA2000, Totem Simple) = Totem = 10 por
+    elemento, aunque el Excel traiga CapacidadSlotsReel=20."""
     maestro_rows = [_tripstore_aa2000("TS1", CapacidadSlotsReel=20)]
     semantic_result = _semantic(maestro_rows)
     engine = MetricsEngine(semantic_result)
     universe = td.build_tv1_universe(semantic_result)
     espacios = td.compute_espacios(engine, universe, ("2026-07-01", "2026-07-31"), ("2026-06-01", "2026-06-30"))
     assert espacios["aa2000_tripstore"]["elementos"] == 1
-    assert espacios["aa2000_tripstore"]["totales"] == 20  # NUNCA 10
+    assert espacios["aa2000_tripstore"]["totales"] == 10  # regla central, nunca el 20 del Excel
 
 
-def test_espacios_triedro_uses_registered_capacity():
-    maestro_rows = [_triedro_cencosud("TR1", CapacidadSlotsReel=10)]
+def test_espacios_triedro_10_por_regla_central():
+    """Etapa 2A: Triedro = 10 por regla central, independiente de
+    CapacidadSlotsReel (fixture con 20 en el Excel)."""
+    maestro_rows = [_triedro_cencosud("TR1", CapacidadSlotsReel=20)]
     semantic_result = _semantic(maestro_rows)
     engine = MetricsEngine(semantic_result)
     universe = td.build_tv1_universe(semantic_result)
@@ -851,10 +857,10 @@ def test_espacios_estatico_es_1_a_1():
 
 
 def test_espacios_sin_regla_confirmada_no_se_incluye_en_totales():
-    """Un formato digital sin regla ('Patio de Comidas', FormatoNegocio=OTRO,
-    circuito Cencosud) no debe sumar espacios ni aparecer en ninguna
-    categoria con regla. No usa Remeros: ese circuito tiene su propia
-    excepcion confirmada desde el 22/08/2026 (ver test siguiente)."""
+    """Un formato digital sin regla confirmada (FormatoNegocio=OTRO en
+    Cencosud, sin override ni regla de circuito) no debe sumar espacios ni
+    aparecer en ninguna categoria con regla, aunque el Excel traiga
+    CapacidadSlotsReel>0."""
     maestro_rows = [_otro_digital_sin_regla("O1")]
     semantic_result = _semantic(maestro_rows)
     engine = MetricsEngine(semantic_result)
@@ -865,9 +871,9 @@ def test_espacios_sin_regla_confirmada_no_se_incluye_en_totales():
 
 
 def test_espacios_remeros_otro_totem_capacidad_10():
-    """Correccion 22/08/2026: un elemento Digital OTRO ('TV Led') en
-    CircuitoNegocio=REMEROS SI tiene regla confirmada (Totem, 10 slots),
-    a diferencia de un OTRO identico en cualquier otro circuito."""
+    """Remeros digital = 10 por elemento (regla confirmada 22/08/2026,
+    centralizada en Etapa 2A: REM-DB-* -> TOTEM via
+    formato_negocio.elemento_formato_overrides en config)."""
     maestro_rows = [_remeros_totem_otro("REM-DB-1")]
     semantic_result = _semantic(maestro_rows)
     engine = MetricsEngine(semantic_result)
@@ -881,12 +887,25 @@ def test_espacios_remeros_otro_totem_capacidad_10():
 # --- Tarjeta 1: Soportes físicos (corrección 21/08/2026) ------------------
 
 
-def test_espacios_totales_valor_de_referencia_actual(production_result):
-    """Valor de referencia de control (correccion 22/08/2026: 3.898 -> 3.958,
-    +60 espacios por los 6 totems Remeros Shoppings Digital confirmados como
-    capacidad comercial), calculado dinámicamente (compute_espacios no
-    depende de compute_soportes_fisicos: son capas independientes)."""
-    assert production_result["data"]["espacios"]["totales"] == 3958
+def test_espacios_totales_reconcilian_con_sus_componentes(production_result):
+    """Etapa 2A: reemplaza la cifra fija 3.958 (regla anterior). Espacios
+    Totales = Estatico + Digital + YPF, exacto, sin cifras historicas."""
+    e = production_result["data"]["espacios"]
+    assert e["totales"] == e["estatico"]["totales"] + e["digital"]["totales"] + e["ypf"]["totales"]
+    assert e["disponibles"] == e["totales"] - e["ocupados"]
+
+
+def test_espacios_digital_totales_igual_a_reglas_centrales_por_elemento(production_result):
+    """Etapa 2A: el catalogo Digital no-YPF de TV1 es exactamente la suma de
+    la capacidad por regla central de cada elemento del universo TV1 (sin
+    cifras fijas) y no queda ningun elemento sin regla confirmada."""
+    _transform, semantic_result, _engine = load_pipeline(PRODUCTION_FILE)
+    m = td.build_tv1_universe(semantic_result)["maestro"]
+    digital = m[(m["CircuitoNegocio"] != "YPF") & (m["Medio"] == "Digital")]
+    esperado = sum(sm.capacidad_espacio_digital(row)[0] or 0 for _, row in digital.iterrows())
+    e = production_result["data"]["espacios"]
+    assert e["digital"]["totales"] == int(esperado)
+    assert e["sin_regla_confirmada"]["elementos"] == 0
 
 
 def test_soportes_fisicos_no_altera_espacios_totales():
@@ -1057,11 +1076,10 @@ def test_ypf_catalogo_suma_digital_y_estatico():
 
 
 def test_ypf_ocupado_es_concurrencia_real_no_estacion_activa_x5():
-    """Aclaración prioritaria 21/08/2026: la ocupación digital YPF NUNCA es
-    'estación activa x5' (eso sobreestima). Es mín(5, campañas REALMENTE
-    concurrentes). En este fixture 3 campañas distintas (CY1/CY2/CY3) están
-    todas activas en la misma estación Y se solapan exactamente en fechas
-    (05-10/jul): concurrentes=3, ocupados=min(5,3)=3, NUNCA 5."""
+    """La ocupación digital YPF NUNCA es 'estación activa x5'. Es el máximo
+    de campañas REALMENTE simultáneas (Etapa 2A: sin tope de 5). En este
+    fixture 3 campañas distintas (CY1/CY2/CY3) se solapan en la misma
+    estación (05-10/jul): ocupados = 3, NUNCA 5."""
     maestro_rows, campana_rows = _one_station_three_elements()  # 1 estacion, 3 ElementoID (2 TT + 1 MB), todos Digital
     semantic_result = _semantic(maestro_rows, campana_rows)
     engine = MetricsEngine(semantic_result)
@@ -1133,20 +1151,18 @@ def test_espacios_estatico_excluye_ypf():
 
 def test_espacios_digital_excluye_ypf_pero_incluye_tripstore(production_result):
     """Auditoría del denominador 21/08/2026: la tarjeta 5 (Digital) excluye
-    YPF, pero SÍ incluye Tripstore AA2000 (200 espacios) -- de lo contrario
-    quedaba fuera del total general y de la apertura por circuito a la vez
-    que fuera del denominador Digital, rompiendo la reconciliación. Su total
-    debe ser estrictamente menor al Espacios Totales global (YPF/Estático
-    siguen afuera) y debe reconciliar exactamente con sus 5 categorías,
-    Tripstore incluido."""
+    YPF, pero SÍ incluye Tripstore AA2000 -- de lo contrario quedaba fuera
+    del total general y de la apertura por circuito a la vez que fuera del
+    denominador Digital. Etapa 2A: reconcilia con TODAS sus categorías
+    centrales (incluye Patio de Comidas y Otros digitales) y Tripstore =
+    elementos x 10 (regla Totem), sin cifra fija."""
     d = production_result["data"]
     assert d["espacios"]["digital"]["totales"] < d["espacios"]["totales"]
     cat = d["espacios"]["digital"]["por_categoria"]
-    assert d["espacios"]["digital"]["totales"] == (
-        cat["PANTALLA_LED"]["totales"] + cat["TOTEM_SHOPPING"]["totales"]
-        + cat["PUENTE_LED"]["totales"] + cat["TRIEDRO"]["totales"] + cat["TRIPSTORE_AA2000"]["totales"]
-    )
-    assert cat["TRIPSTORE_AA2000"]["totales"] == d["espacios"]["aa2000_tripstore"]["totales"] == 200
+    assert set(cat) == set(sm.CATEGORIAS_ESPACIO_DIGITAL)
+    assert d["espacios"]["digital"]["totales"] == sum(c["totales"] for c in cat.values())
+    trip = d["espacios"]["aa2000_tripstore"]
+    assert cat["TRIPSTORE_AA2000"]["totales"] == trip["totales"] == trip["elementos"] * 10
 
 
 def test_espacios_digital_totales_no_deja_afuera_los_200_de_tripstore():
@@ -1158,8 +1174,8 @@ def test_espacios_digital_totales_no_deja_afuera_los_200_de_tripstore():
     engine = MetricsEngine(semantic_result)
     universe = td.build_tv1_universe(semantic_result)
     espacios = td.compute_espacios(engine, universe, ("2026-07-01", "2026-07-31"), ("2026-06-01", "2026-06-30"))
-    assert espacios["digital"]["totales"] == 20  # Tripstore SI cuenta en el denominador Digital
-    assert espacios["totales"] == 20
+    assert espacios["digital"]["totales"] == 10  # Tripstore SI cuenta (regla Totem = 10)
+    assert espacios["totales"] == 10
 
 
 # --- Evolucion mensual de espacios ocupados (no elementos) ----------------
@@ -1189,8 +1205,8 @@ def test_evolution_espacios_tres_series_sin_doble_conteo(production_result):
 
 
 def test_evolution_espacios_ypf_usa_concurrencia_real_no_estacion_x5():
-    """La serie mensual YPF debe usar la misma fórmula corregida que la
-    tarjeta (mín(5, concurrentes)), nunca estaciones activas × 5."""
+    """La serie mensual YPF debe usar la misma fórmula que la tarjeta
+    (máximo de campañas simultáneas, sin tope), nunca estaciones activas × 5."""
     ubic = "500 - TESTVILLE - Calle Falsa 123"
     maestro_rows = [
         _maestro_row(
@@ -1227,7 +1243,11 @@ def test_apertura_circuito_porcentajes_suman_100_con_tolerancia(production_resul
 def test_apertura_circuito_tripstore_dentro_de_aa2000_sin_duplicar(production_result):
     barras = {b["nombre"]: b for b in production_result["data"]["apertura_circuito"]["barras"]}
     tripstore = production_result["data"]["espacios"]["aa2000_tripstore"]
-    assert barras["AA2000"]["digital"] == tripstore["totales"]
+    # Etapa 2A: la barra AA2000 digital = Tripstore + otros digitales AA2000
+    # con regla de circuito (EZEPAW005/011, categoria OTRO_DIGITAL, que en el
+    # universo TV1 vigente solo existe en AA2000).
+    otros = production_result["data"]["espacios"]["digital"]["por_categoria"]["OTRO_DIGITAL"]["totales"]
+    assert barras["AA2000"]["digital"] == tripstore["totales"] + otros
     # Tripstore no debe aparecer duplicado dentro de Shoppings.
     shoppings_totem = production_result["data"]["espacios"]["digital"]["por_categoria"]["TOTEM_SHOPPING"]["totales"]
     assert shoppings_totem <= barras["Shoppings"]["digital"]
@@ -1331,10 +1351,11 @@ def test_identidad_cencomedia_apsa_london_excluidos_de_todo(production_result):
 
 
 # ---------------------------------------------------------------------------
-# Sobrecarga YPF (agregado de diseño futuro, 21/08/2026): capacidad_slots,
-# campanas_concurrentes (solapamiento real), slots_ocupados, excedentes,
-# indice_presion, estado -- funciones puras _max_overlap_count /
-# _estacion_ocupacion_ypf, testeables sin pasar por el Excel.
+# Sobrecarga YPF: capacidad_slots, campanas_concurrentes (solapamiento
+# real), slots_ocupados, excedentes, indice_presion, estado. Etapa 2A
+# (2026-10-06): regla definitiva SIN tope (slots_ocupados = concurrentes);
+# la simultaneidad la calcula la funcion central
+# metrics_engine.max_campanas_simultaneas.
 # ---------------------------------------------------------------------------
 
 
@@ -1385,16 +1406,14 @@ def test_sobrecarga_ypf_5_campanas_completa():
 
 
 def test_sobrecarga_ypf_7_campanas_sobrecapacidad():
-    """Ejemplo obligatorio del prompt: capacidad 5, 7 campañas concurrentes
-    -> catalogo 5, ocupados 5, ocupacion 100%, concurrentes 7, excedentes 2,
-    indice de presion 140%, estado SOBRECAPACIDAD. Las 7 campañas se
-    conservan/contabilizan (campanas_concurrentes=7) pero NUNCA se
-    convierten en 7 espacios de catalogo ni 7 ocupados."""
+    """Regla definitiva Etapa 2A (reemplaza el tope anterior de 5):
+    capacidad base 5, 7 campañas simultáneas -> catálogo 5, ocupados 7,
+    ocupación 140%, excedentes 2, estado SOBRECAPACIDAD. NO se trunca."""
     intervals = [_iv("2026-07-01", "2026-07-10")] * 7
     r = td._estacion_ocupacion_ypf(intervals)
     assert r["capacidad_slots"] == 5
-    assert r["slots_ocupados"] == 5
-    assert r["porcentaje_ocupacion"] == 100.0
+    assert r["slots_ocupados"] == 7
+    assert r["porcentaje_ocupacion"] == 140.0
     assert r["campanas_concurrentes"] == 7
     assert r["campanas_excedentes"] == 2
     assert r["indice_presion"] == 140.0
@@ -1531,9 +1550,11 @@ def test_apertura_nota_categorias_texto_corto(production_result):
     acorta para que la leyenda inferior del panel no quede recortada en
     1920x1080 (ajuste 22/08/2026)."""
     nota = production_result["data"]["apertura_circuito"]["nota"]
+    # Etapa 2A: la nota suma Patio de Comidas (Shoppings) y los otros
+    # digitales de AA2000 (EZEPAW005/011), manteniendose corta.
     assert nota == (
-        "Shoppings incluye Tótems, Puentes y Triedros; AA2000 incluye Tripstore; YPF incluye "
-        "Estático; Otros incluye Pilar y MAB."
+        "Shoppings: Tótems, Puentes, Triedros y Patio de Comidas; AA2000: Tripstore y otros digitales; "
+        "YPF incluye Estático; Otros: Pilar y MAB."
     )
     assert len(nota) < 150  # sensiblemente mas corta que la version anterior (~230 caracteres)
 

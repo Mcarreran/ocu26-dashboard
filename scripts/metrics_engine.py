@@ -294,6 +294,157 @@ def _explode_days(scope: pd.DataFrame, extra_cols: list[str] | None = None) -> p
     return exploded.rename(columns={"_days": "_day"})
 
 
+# ---------------------------------------------------------------------------
+# Ocupacion por SIMULTANEIDAD REAL (Etapa 2A, 2026-10-06): funcion central
+# reutilizada por TV1, TV4 y TV5 para YPF. Regla de negocio:
+#   - catalogo = espacios_base por estacion (YPF: 5, config);
+#   - ocupacion = maximo de campanas reales SIMULTANEAS de la estacion en el
+#     periodo, SIN tope (7 simultaneas -> 7);
+#   - nunca "campanas distintas del mes" como sustituto (3 en la primera
+#     quincena + 3 no simultaneas en la segunda -> 3, no 6).
+# ---------------------------------------------------------------------------
+
+OCUPACION_SIMULTANEA_COLUMNS = [
+    "campanas_periodo",
+    "max_simultaneas",
+    "espacios_base",
+    "ocupacion",
+    "exceso",
+    "porcentaje_ocupacion",
+    "estado",
+]
+
+
+def max_campanas_simultaneas(intervals: Any) -> int:
+    """Maxima cantidad de intervalos [inicio, fin] (dias calendario, ambos
+    inclusive) activos el mismo dia. Barrido de eventos: +1 en el inicio, -1
+    el dia siguiente al fin. Dos campanas que comparten aunque sea un dia son
+    simultaneas; dos consecutivas sin dia compartido no. Intervalos con
+    fechas vacias o fin < inicio se ignoran."""
+    one_day = pd.Timedelta(days=1)
+    events: list[tuple[pd.Timestamp, int]] = []
+    for start, end in intervals:
+        start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
+        if pd.isna(start_ts) or pd.isna(end_ts):
+            continue
+        start_ts, end_ts = start_ts.normalize(), end_ts.normalize()
+        if end_ts < start_ts:
+            continue
+        events.append((start_ts, 1))
+        events.append((end_ts + one_day, -1))
+    events.sort(key=lambda ev: (ev[0], ev[1]))
+    current = best = 0
+    for _day, delta in events:
+        current += delta
+        best = max(best, current)
+    return best
+
+
+def _merge_intervals(intervals: list[tuple[pd.Timestamp, pd.Timestamp]]) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """Une intervalos de UNA misma campana que se solapan o son contiguos,
+    para que una campana presente en varios elementos/filas de la estacion
+    cuente como una sola en cada dia (sin rellenar huecos reales)."""
+    merged: list[tuple[pd.Timestamp, pd.Timestamp]] = []
+    for start, end in sorted(intervals):
+        if merged and start <= merged[-1][1] + pd.Timedelta(days=1):
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def ocupacion_simultanea_por_estacion(
+    asignaciones: pd.DataFrame,
+    period_start: Any,
+    period_end: Any,
+    espacios_base: int,
+    *,
+    station_col: str = "Estacion",
+    campaign_col: str = "IDCampaña",
+    start_col: str = "FechaInicio",
+    end_col: str = "FechaFin",
+) -> pd.DataFrame:
+    """Ocupacion por estacion = maximo de campanas reales simultaneas dentro
+    de [period_start, period_end] (ambos inclusive), sin tope.
+
+    `asignaciones`: una fila por (estacion, campana, intervalo) -- puede
+    traer varias filas de la misma campana (varios elementos de la estacion);
+    se unen por campana antes de medir la simultaneidad. Filas sin estacion,
+    sin campana, o con inicio/fin vacios se descartan (las fechas abiertas
+    deben resolverse antes, como hace MetricsEngine._campanas_overlap).
+
+    Devuelve un DataFrame indexado por estacion con: campanas_periodo
+    (campanas distintas con algun dia en el periodo, solo informativo),
+    max_simultaneas, espacios_base, ocupacion (= max_simultaneas, SIN tope),
+    exceso (= max(0, ocupacion - espacios_base)), porcentaje_ocupacion y
+    estado (SOBRECAPACIDAD / COMPLETA / DISPONIBLE)."""
+    if not isinstance(espacios_base, int) or isinstance(espacios_base, bool) or espacios_base <= 0:
+        raise MetricsEngineError(f"espacios_base debe ser un entero positivo, encontrado {espacios_base!r}")
+    period_start_ts = pd.Timestamp(period_start).normalize()
+    period_end_ts = pd.Timestamp(period_end).normalize()
+    if period_end_ts < period_start_ts:
+        raise MetricsEngineError("period_end debe ser >= period_start")
+
+    empty = pd.DataFrame(columns=OCUPACION_SIMULTANEA_COLUMNS)
+    empty.index.name = station_col
+    if asignaciones is None or asignaciones.empty:
+        return empty
+
+    df = asignaciones[[station_col, campaign_col, start_col, end_col]].copy()
+    df = df[df[station_col].notna() & df[campaign_col].notna()]
+    df = df[df[campaign_col].astype(str).str.strip() != ""]
+    start = pd.to_datetime(df[start_col], errors="coerce").dt.normalize().clip(lower=period_start_ts)
+    end = pd.to_datetime(df[end_col], errors="coerce").dt.normalize().clip(upper=period_end_ts)
+    valid = start.notna() & end.notna() & (start <= end)
+    df = df.loc[valid].assign(_ini=start[valid], _fin=end[valid])
+    if df.empty:
+        return empty
+
+    rows: dict[Any, dict[str, Any]] = {}
+    for station, station_rows in df.groupby(station_col, sort=True):
+        intervals: list[tuple[pd.Timestamp, pd.Timestamp]] = []
+        for _campaign, campaign_rows in station_rows.groupby(campaign_col):
+            intervals.extend(_merge_intervals(list(zip(campaign_rows["_ini"], campaign_rows["_fin"]))))
+        max_sim = max_campanas_simultaneas(intervals)
+        if max_sim > espacios_base:
+            estado = "SOBRECAPACIDAD"
+        elif max_sim == espacios_base:
+            estado = "COMPLETA"
+        else:
+            estado = "DISPONIBLE"
+        rows[station] = {
+            "campanas_periodo": int(station_rows[campaign_col].nunique()),
+            "max_simultaneas": int(max_sim),
+            "espacios_base": espacios_base,
+            "ocupacion": int(max_sim),
+            "exceso": int(max(0, max_sim - espacios_base)),
+            "porcentaje_ocupacion": round(max_sim / espacios_base * 100.0, 1),
+            "estado": estado,
+        }
+    result = pd.DataFrame.from_dict(rows, orient="index")[OCUPACION_SIMULTANEA_COLUMNS]
+    result.index.name = station_col
+    return result
+
+
+def resumen_ocupacion_simultanea(por_estacion: pd.DataFrame) -> dict[str, Any]:
+    """Agregado a nivel red de ocupacion_simultanea_por_estacion()."""
+    if por_estacion is None or por_estacion.empty:
+        return {
+            "ocupados": 0, "estaciones_activas": 0, "estaciones_completa": 0,
+            "estaciones_sobrecapacidad": 0, "exceso_total": 0, "max_simultaneas": 0,
+            "max_pct_estacion": None,
+        }
+    return {
+        "ocupados": int(por_estacion["ocupacion"].sum()),
+        "estaciones_activas": int((por_estacion["max_simultaneas"] > 0).sum()),
+        "estaciones_completa": int((por_estacion["estado"] == "COMPLETA").sum()),
+        "estaciones_sobrecapacidad": int((por_estacion["estado"] == "SOBRECAPACIDAD").sum()),
+        "exceso_total": int(por_estacion["exceso"].sum()),
+        "max_simultaneas": int(por_estacion["max_simultaneas"].max()),
+        "max_pct_estacion": float(por_estacion["porcentaje_ocupacion"].max()),
+    }
+
+
 class MetricsEngine:
     """Motor generico resolver(metric, group_by, filters, universe, periodo).
 

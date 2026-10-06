@@ -46,18 +46,17 @@ PREVIOUS = ("2026-06-01", "2026-06-30")
 # ---------------------------------------------------------------------------
 
 _PROTECTED_SHA256 = {
+    # Etapa 2A (2026-10-06): se retiraron de este guard los builders TV1/TV2/
+    # TV3/TV6 y los tests TV1/TV2, modificados A PROPOSITO por la
+    # centralizacion de reglas (capacidad en config/semantic_model, YPF por
+    # simultaneidad, input configurable). El guard sigue protegiendo lo que
+    # esta etapa NO debe tocar: HTML productivos generados y templates.
     "tv1.html": "1727aead4de580b455a8b346ad6428b736c2e58ec8364fe663944a1a988c3d98",
     "tv3.html": "71578ae7ef4b739454084fc47776ccaa9e6ebde15425671e494a5d58a492fe17",
-    "scripts/build_tv1_dashboard.py": "64b2567addcd3339a6bffd2deb7894f18a59aca8f03c72c8449d11c0c1e201fa",
-    "scripts/build_tv2_dashboard.py": "f968a0b52395b755b15a8f4673ee2b6aed40eeb32554b6ee7f01a9f50066c14b",
-    "scripts/build_tv3_dashboard.py": "32215a3dc5c2e6a59e1a7a83e32c6fd239f9fc5026f45de77e4960c87401e8a6",
-    "scripts/build_tv6_dashboard.py": "ce2e36b92788d0ea26b2afeb58ca54911031368d90dc5ab7d1e5157a14756972",
     "scripts/templates/tv1_template.html": "71380f34d9618384728ab8da1882c8b8c05e69b52ebb76563c0bd0bc175076ba",
     "scripts/templates/tv2_template.html": "e501bfbf44699934c31a7e2e39d69cb00f2124c0485cd01f6fb4e7587c415782",
     "scripts/templates/tv3_template.html": "776dea93829887042281ed27089188e6ac5c6ee6baccd854d9084ce092381cd9",
     "scripts/templates/tv6_template.html": "9ccad1be73344736f4df81f47c73ece6ad464e8bd9f6ece6b3b4904a994e5a25",
-    "tests/test_build_tv1_dashboard.py": "02bf1a7a8cbd78e330ce9566ae40f4cb8ad255c83751cb2908370c13afb471ea",
-    "tests/test_build_tv2_dashboard.py": "2a12464debe3051a4fdd5dabe171250bccc56fbb0b10838b07227ad4ee9b1c1e",
     "tests/test_build_tv3_dashboard.py": "9f68b4c356806a372a131b08e867ccd6c6c01fd4a0cb97bc5cd3d0f67c87866b",
     "tests/test_build_tv6_dashboard.py": "d58947dd3752a5a393fbf648b802d4731e170ccbcbc485af40e491120aeb288f",
     # Baseline TV6 actualizado al cierre aceptado TV1-TV6, commit c4fc8d8
@@ -361,6 +360,32 @@ def test_seis_campanas_digitales_producen_120_pct_y_exceso():
     assert ocupacion["estaciones_sobre_capacidad"] == 1
     assert ocupacion["exceso_sobre_capacidad"] == 1
     assert ocupacion["max_pct_estacion"] == 120.0
+
+
+def test_campanas_no_simultaneas_no_se_suman_en_la_estacion():
+    """Etapa 2A (regla definitiva YPF): 3 campañas en la primera quincena y
+    otras 3, NO simultaneas, en la segunda -> ocupacion 3, nunca 6 (no se
+    usa 'campañas distintas del mes')."""
+    rows = [_digital("500", i, "TT") for i in range(1, 7)]
+    campanas = [
+        _camp(f"C{i}", f"500 - TT - {i}", f"Q1-{i}", "2026-07-01", "2026-07-15") for i in range(1, 4)
+    ] + [
+        _camp(f"C{i}", f"500 - TT - {i}", f"Q2-{i}", "2026-07-16", "2026-07-31") for i in range(4, 7)
+    ]
+    _, engine, universe = _build(rows, campanas)
+    ocupacion = td._ocupacion_periodo(engine, universe, *PERIOD)
+    assert ocupacion["ocupados_digitales"] == 3
+    assert ocupacion["estaciones_sobre_capacidad"] == 0
+
+
+def test_siete_campanas_simultaneas_ocupan_siete_sin_tope():
+    rows = [_digital("500", i, "TT") for i in range(1, 8)]
+    campanas = [_camp(f"C{i}", f"500 - TT - {i}", f"CAMP{i}", "2026-07-05", "2026-07-10") for i in range(1, 8)]
+    _, engine, universe = _build(rows, campanas)
+    ocupacion = td._ocupacion_periodo(engine, universe, *PERIOD)
+    assert ocupacion["ocupados_digitales"] == 7
+    assert ocupacion["exceso_sobre_capacidad"] == 2
+    assert ocupacion["max_pct_estacion"] == 140.0
 
 
 def test_produccion_reporta_estaciones_sobre_capacidad_y_exceso(production_result):
@@ -710,12 +735,13 @@ def test_insight_compacto_frases_generadas_desde_payload(production_result):
     assert "ocA.ocupacion_pct" in render_fn
     assert "oc.delta_pp" in render_fn
     assert "ocA.estaciones_sobre_capacidad" in render_fn
-    # sanity: los valores reales de produccion son los que se documentaron
-    assert oc["actual"]["ocupados_totales"] == 1294
-    assert oc["espacios_totales_catalogo"] == 2443
-    assert oc["actual"]["ocupacion_pct"] == 53.0
-    assert oc["delta_pp"] == 24.5
-    assert oc["actual"]["estaciones_sobre_capacidad"] == 107
+    # Etapa 2A: las cifras fijas (1.294 / 2.443 / 53,0% / 24,5 pp / 107)
+    # correspondian a la regla anterior (campañas distintas del mes). Se
+    # reemplazan por identidades exactas del payload.
+    cat = production_result["data"]["kpis"]["catalogo"]
+    assert oc["espacios_totales_catalogo"] == cat["espacios"] == cat["espacios_digitales"] + cat["espacios_estaticos"]
+    assert oc["actual"]["ocupacion_pct"] == round(oc["actual"]["ocupados_totales"] / oc["espacios_totales_catalogo"] * 100.0, 1)
+    assert oc["delta_abs"] == oc["actual"]["ocupados_totales"] - oc["anterior"]["ocupados_totales"]
 
 
 def test_mapa_proyeccion_preserva_aspect_ratio_geografico():

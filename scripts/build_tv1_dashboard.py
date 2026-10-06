@@ -32,8 +32,14 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_input as vi  # noqa: E402
+import semantic_model as sm  # noqa: E402
 from semantic_model import filter_universe  # noqa: E402
-from metrics_engine import MetricsEngine  # noqa: E402
+from metrics_engine import (  # noqa: E402
+    MetricsEngine,
+    max_campanas_simultaneas,
+    ocupacion_simultanea_por_estacion,
+    resumen_ocupacion_simultanea,
+)
 from export_data import load_pipeline  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -86,17 +92,12 @@ FAMILY_ORDER = ["Shoppings", "Pantallas", "YPF", "AA2000", "Otros"]
 # Espacios publicitarios (Marco Rector CM3 2026-08-19): capa nueva sobre el
 # grano fisico existente (ElementoID/estacion). No reemplaza los KPIs de
 # arriba (elementos/estaciones activos): esos se preservan intactos y se
-# reusan como equivalencia fisica secundaria (MR.8 punto 2). Conversion
-# NUEVA, deliberadamente distinta del perfil legacy de
-# config/business_semantics.json ("digital_capacity.slots_profiles", Gate3:
-# TOTEM=20, PUENTE_LED=13): por instruccion explicita del usuario esas cifras
-# de Gate3 NO se reutilizan aqui. Vive solo en este builder, scope TV1.
-ESPACIOS_POR_FORMATO_DIGITAL: dict[str, int] = {
-    "PANTALLA_LED": 20,
-    "TOTEM": 10,
-    "PUENTE_LED": 10,
-}
-ESPACIOS_YPF_POR_ESTACION = 5
+# reusan como equivalencia fisica secundaria (MR.8 punto 2).
+# Etapa 2A (2026-10-06): las tasas de conversion YA NO viven en este builder.
+# Unica fuente: config/business_semantics.json (digital_capacity), resuelta
+# por semantic_model (SlotsComerciales + capacidad_espacio_digital) y la
+# capacidad base YPF por estacion (espacios_base_por_estacion).
+ESPACIOS_YPF_POR_ESTACION = sm.espacios_base_por_estacion("YPF")
 
 # Soportes físicos YPF (Tarjeta 1, correccion 21/08/2026): mapeo
 # FormatoNegocio -> etiqueta de reporte, mismos 4 formatos ya resueltos por
@@ -581,45 +582,13 @@ def compute_kpi6_digital_fill(
 
 
 def _espacio_capacidad_digital(row: pd.Series) -> tuple[float | None, str]:
-    """Capacidad en espacios de un elemento Digital no-YPF, y su categoria
-    para reporting. Nunca reutiliza config/business_semantics.json
-    (Gate3/slots_profiles): tasas nuevas definidas en este builder.
-
-    - PANTALLA_LED: 20 (regla confirmada).
-    - TOTEM en CENCOSUD (Totem de Shopping): 10 (regla confirmada).
-    - TOTEM (formato OTRO, Descripcion "TV Led") en REMEROS: 10 (correccion
-      22/08/2026, regla de negocio confirmada por el usuario: los 6
-      elementos digitales de Remeros Shoppings son totems comerciales de 10
-      slots cada uno -> 60 espacios. semantic_model los resuelve como
-      FormatoNegocio=OTRO porque su Descripcion "TV Led" no matchea ningun
-      keyword rule de business_semantics.json; no se confunde con el
-      elemento Remeros de Pantallas LED, que es CircuitoNegocio
-      PANTALLAS_LED y conserva su propia regla PANTALLA_LED=20).
-    - TOTEM en AA2000 ("Tripstore", confirmado con el usuario 21/08/2026):
-      capacidad REGISTRADA (CapacidadSlotsReel), NUNCA la tasa de 10 de
-      Shopping ni un valor inventado.
-    - PUENTE_LED: 10 (regla confirmada).
-    - TRIEDRO: capacidad registrada (CapacidadSlotsReel); no hay tasa
-      generica confirmada por el usuario, se usa el valor fuente tal cual.
-    - Cualquier otro formato ('Otro' fuera de Remeros, etc.): sin regla ->
-      (None, 'SIN_REGLA'), nunca se inventa una cifra."""
-    fmt = row["FormatoNegocio"]
-    circuito = row["CircuitoNegocio"]
-    if fmt == "PANTALLA_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"]), "PANTALLA_LED"
-    if fmt == "PUENTE_LED":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"]), "PUENTE_LED"
-    if fmt == "TOTEM" and circuito == "CENCOSUD":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
-    if fmt == "OTRO" and circuito == "REMEROS":
-        return float(ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]), "TOTEM_SHOPPING"
-    if fmt == "TOTEM" and circuito == "AA2000":
-        legacy = row["CapacidadSlotsReel"]
-        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIPSTORE_AA2000"
-    if fmt == "TRIEDRO":
-        legacy = row["CapacidadSlotsReel"]
-        return (float(legacy) if pd.notna(legacy) and legacy > 0 else None), "TRIEDRO"
-    return None, "SIN_REGLA"
+    """Capacidad en espacios de un elemento Digital no-YPF y su categoria de
+    reporting. Delegado 1:1 en la API central (semantic_model.
+    capacidad_espacio_digital, Etapa 2A): Pantalla LED 20, Totem 10 (Shopping,
+    Remeros y Tripstore AA2000), Triedro 10, Puente LED 10, Patio de Comidas
+    10, AA2000 digital sin formato propio 10. Sin capacidad confirmada ->
+    (None, 'SIN_REGLA'), nunca se inventa una cifra."""
+    return sm.capacidad_espacio_digital(row)
 
 
 def _con_capacidad_digital(digital: pd.DataFrame) -> pd.DataFrame:
@@ -643,50 +612,26 @@ def _con_capacidad_digital(digital: pd.DataFrame) -> pd.DataFrame:
     return digital
 
 
-_ESPACIOS_DIGITAL_NUCLEO_CATEGORIAS = ["PANTALLA_LED", "TOTEM_SHOPPING", "PUENTE_LED", "TRIEDRO"]
-_ESPACIOS_DIGITAL_TODAS_CATEGORIAS = _ESPACIOS_DIGITAL_NUCLEO_CATEGORIAS + ["TRIPSTORE_AA2000"]
-
-
-def _max_overlap_count(intervals: list[tuple[Any, Any]]) -> int:
-    """Maxima cantidad de intervalos [inicio,fin] (dias, ambos inclusive)
-    simultaneamente activos en algun punto. Barrido de eventos (+1 en el
-    inicio, -1 el dia siguiente al fin, porque el fin es inclusive): dos
-    campañas que comparten aunque sea 1 dia cuentan como concurrentes; dos
-    campañas consecutivas sin dia compartido no."""
-    if not intervals:
-        return 0
-    events: list[tuple[Any, int]] = []
-    one_day = pd.Timedelta(days=1)
-    for s, e in intervals:
-        events.append((s, 1))
-        events.append((e + one_day, -1))
-    events.sort(key=lambda ev: (ev[0], ev[1]))
-    cur = 0
-    best = 0
-    for _t, delta in events:
-        cur += delta
-        best = max(best, cur)
-    return best
+# Todas las categorias digitales con capacidad confirmada, desde la API
+# central (Etapa 2A agrega PATIO_COMIDAS y OTRO_DIGITAL -- EZEPAW005/011 de
+# AA2000 --, que antes quedaban SIN_REGLA).
+_ESPACIOS_DIGITAL_TODAS_CATEGORIAS = list(sm.CATEGORIAS_ESPACIO_DIGITAL)
 
 
 def _estacion_ocupacion_ypf(
     intervals: list[tuple[Any, Any]], capacidad_slots: int = ESPACIOS_YPF_POR_ESTACION,
 ) -> dict[str, Any]:
-    """Ocupacion de UNA estacion YPF digital (prompt "AGREGADO DE DISEÑO
-    FUTURO — SOBRECARGA YPF", 21/08/2026): capacidad_slots = capacidad
-    confirmada de la estacion si existiera una fuente (hoy no existe en la
-    base -> siempre cae al default de 5, nunca se infla el catalogo segun
-    la demanda); campanas_concurrentes = maximo de IDCampaña distintas
-    activas SIMULTANEAMENTE (solapamiento real de fechas, no "activas en
-    algun momento del periodo"); slots_ocupados = min(capacidad,
-    concurrentes) (nunca > capacidad); campanas_excedentes = concurrentes
-    por encima de la capacidad, se conservan/contabilizan como actividad
-    pero NUNCA se convierten en mas espacios de catalogo/ocupados."""
-    concurrentes = _max_overlap_count(intervals)
-    slots_ocupados = min(capacidad_slots, concurrentes)
+    """Ocupacion de UNA estacion YPF digital (regla definitiva Etapa 2A,
+    2026-10-06): capacidad_slots = catalogo base de la estacion (5, config);
+    campanas_concurrentes = maximo de campañas reales SIMULTANEAS
+    (metrics_engine.max_campanas_simultaneas, funcion central compartida con
+    TV4/TV5); slots_ocupados = campanas_concurrentes, SIN tope (7
+    simultaneas -> 7); campanas_excedentes = concurrentes por encima de la
+    capacidad base (sobrecapacidad informada, tambien es ocupacion real)."""
+    concurrentes = max_campanas_simultaneas(intervals)
+    slots_ocupados = concurrentes
     excedentes = max(0, concurrentes - capacidad_slots)
     pct = _round1(slots_ocupados / capacidad_slots * 100.0) if capacidad_slots else None
-    presion = _round1(concurrentes / capacidad_slots * 100.0) if capacidad_slots else None
     if concurrentes > capacidad_slots:
         estado = "SOBRECAPACIDAD"
     elif concurrentes == capacidad_slots and capacidad_slots > 0:
@@ -699,7 +644,7 @@ def _estacion_ocupacion_ypf(
         "slots_ocupados": slots_ocupados,
         "campanas_excedentes": excedentes,
         "porcentaje_ocupacion": pct,
-        "indice_presion": presion,
+        "indice_presion": pct,
         "estado": estado,
     }
 
@@ -707,20 +652,16 @@ def _estacion_ocupacion_ypf(
 def _ypf_digital_ocupados_por_estacion(
     engine: MetricsEngine, ypf_dig: pd.DataFrame, start: str, end: str,
 ) -> dict[str, Any]:
-    """Ocupacion YPF Digital, estacion por estacion, agregada a nivel red
-    (corrección prioritaria + agregado de diseño futuro, 21/08/2026;
-    reemplaza 'estacion activa x5'). Por estacion: capacidad 5 (default,
-    sin fuente de capacidad confirmada por estacion todavia);
-    campanas_concurrentes = maximo solapamiento REAL de fechas (no distinct
-    en el periodo); slots_ocupados = min(5, concurrentes), nunca invade el
-    catalogo. Deduplicacion por StationKey+IDCampaña: una misma campaña en
-    varios ElementoID/filas de la misma estacion se une a UN solo intervalo
-    [min(inicio), max(fin)] antes de barrer solapamientos (nunca cuenta
-    filas/activaciones/ElementoID como slots separados). Elementos con
-    fechas no resolubles (sin FechaInicio, o sin FechaFin/FechaIndefinida)
-    ya quedan fuera de `_campanas_overlap`: se reportan aparte como
-    'estaciones_requiere_confirmacion' (agregado, nunca se inventa un
-    resultado para ellas)."""
+    """Ocupacion YPF Digital, estacion por estacion (StationKey de TV1),
+    agregada a nivel red. Regla definitiva Etapa 2A: por estacion, maximo de
+    campañas reales SIMULTANEAS en el periodo, SIN tope de 5
+    (metrics_engine.ocupacion_simultanea_por_estacion, misma funcion que
+    TV4/TV5). Una misma campaña en varios ElementoID/filas de la estacion
+    cuenta una sola vez por dia. Elementos con fechas no resolubles (sin
+    FechaInicio, o sin FechaFin/FechaIndefinida) ya quedan fuera de
+    `_campanas_overlap`: se reportan como 'estaciones_requiere_confirmacion'.
+    El universo/llave de estacion de TV1 NO cambia en esta etapa (anomalias
+    APIE 819 / 311177 / RevisionMaestro pendientes de decision)."""
     element_ids = ypf_dig["ElementoID"].tolist()
     vacio = {
         "ocupados": 0, "estaciones_activas": 0, "estaciones_completa": 0,
@@ -737,47 +678,22 @@ def _ypf_digital_ocupados_por_estacion(
         requiere_confirmacion = len({station_map_all[e] for e in incompletos if e in station_map_all})
 
     overlap = engine._campanas_overlap(element_ids, start, end)
-    overlap = overlap[overlap["IDCampaña"].notna() & (overlap["IDCampaña"].astype(str).str.strip() != "")]
     if overlap.empty:
         return {**vacio, "estaciones_requiere_confirmacion": requiere_confirmacion}
-
-    station_map = dict(zip(ypf_dig["ElementoID"], ypf_dig["StationKey"]))
     overlap = overlap.copy()
-    overlap["StationKey"] = overlap["ElementoID"].map(station_map)
-    overlap = overlap.dropna(subset=["StationKey"])
-    if overlap.empty:
-        return {**vacio, "estaciones_requiere_confirmacion": requiere_confirmacion}
+    overlap["StationKey"] = overlap["ElementoID"].map(dict(zip(ypf_dig["ElementoID"], ypf_dig["StationKey"])))
 
-    # Union por (estacion, campaña): si la misma campaña aparece en varios
-    # ElementoID/filas de la estacion, se funde en UN intervalo antes de
-    # barrer solapamientos (nunca cuenta cada fila por separado).
-    union = overlap.groupby(["StationKey", "IDCampaña"]).agg(
-        _eff_start=("_eff_start", "min"), _eff_end=("_eff_end", "max"),
-    ).reset_index()
-
-    ocupados_total = 0
-    estaciones_activas = 0
-    estaciones_completa = 0
-    estaciones_sobrecapacidad = 0
-    excedentes_total = 0
-    for _station, g in union.groupby("StationKey"):
-        intervals = list(zip(g["_eff_start"], g["_eff_end"]))
-        r = _estacion_ocupacion_ypf(intervals, ESPACIOS_YPF_POR_ESTACION)
-        ocupados_total += r["slots_ocupados"]
-        excedentes_total += r["campanas_excedentes"]
-        if r["campanas_concurrentes"] > 0:
-            estaciones_activas += 1
-        if r["estado"] == "COMPLETA":
-            estaciones_completa += 1
-        elif r["estado"] == "SOBRECAPACIDAD":
-            estaciones_sobrecapacidad += 1
-
+    por_estacion = ocupacion_simultanea_por_estacion(
+        overlap, start, end, ESPACIOS_YPF_POR_ESTACION,
+        station_col="StationKey", start_col="_eff_start", end_col="_eff_end",
+    )
+    r = resumen_ocupacion_simultanea(por_estacion)
     return {
-        "ocupados": int(ocupados_total),
-        "estaciones_activas": estaciones_activas,
-        "estaciones_completa": estaciones_completa,
-        "estaciones_sobrecapacidad": estaciones_sobrecapacidad,
-        "campanas_excedentes_total": int(excedentes_total),
+        "ocupados": r["ocupados"],
+        "estaciones_activas": r["estaciones_activas"],
+        "estaciones_completa": r["estaciones_completa"],
+        "estaciones_sobrecapacidad": r["estaciones_sobrecapacidad"],
+        "campanas_excedentes_total": r["exceso_total"],
         "estaciones_requiere_confirmacion": requiere_confirmacion,
     }
 
@@ -946,13 +862,20 @@ def compute_espacios(
             "totales": dig_tot, "ocupados": dig_ocup_i, "ocupados_anterior": dig_ocup_a_i,
             "pct_ocupacion": dig_pct, "pct_ocupacion_anterior": dig_pct_a, "delta_pp": dig_delta,
             "participacion_ocupado_pct": part_dig,
+            # capacidad_por_unidad se deriva del propio catalogo (totales /
+            # elementos de la categoria, regla central de config), nunca de
+            # una tabla local del builder.
             "por_categoria": {
-                "PANTALLA_LED": {**actual["digital"]["PANTALLA_LED"], "capacidad_por_unidad": ESPACIOS_POR_FORMATO_DIGITAL["PANTALLA_LED"]},
-                "TOTEM_SHOPPING": {**actual["digital"]["TOTEM_SHOPPING"], "capacidad_por_unidad": ESPACIOS_POR_FORMATO_DIGITAL["TOTEM"]},
-                "PUENTE_LED": {**actual["digital"]["PUENTE_LED"], "capacidad_por_unidad": ESPACIOS_POR_FORMATO_DIGITAL["PUENTE_LED"]},
-                "TRIEDRO": {**actual["digital"]["TRIEDRO"], "capacidad_por_unidad": "registrada (CapacidadSlotsReel)"},
-                "TRIPSTORE_AA2000": {**actual["digital"]["TRIPSTORE_AA2000"], "capacidad_por_unidad": "registrada (CapacidadSlotsReel)"},
+                cat: {
+                    **actual["digital"][cat],
+                    "capacidad_por_unidad": (
+                        _round1(actual["digital"][cat]["totales"] / actual["digital"][cat]["elementos"])
+                        if actual["digital"][cat]["elementos"] else None
+                    ),
+                }
+                for cat in _ESPACIOS_DIGITAL_TODAS_CATEGORIAS
             },
+            "reglas_version": sm.reglas_version(),
         },
         "ypf": {
             "totales": ypf_tot, "ocupados": ypf_ocup_i, "ocupados_anterior": int(round(ypf_ocup_a)),
@@ -961,26 +884,25 @@ def compute_espacios(
             "digital": actual["ypf_digital"], "estatico": actual["ypf_estatico"],
             "espacios_por_estacion": ESPACIOS_YPF_POR_ESTACION,
             "nota": (
-                "Corrección 21/08/2026: la ocupación digital YPF se calcula estación por estación como "
-                "mín(5, máximo de IDCampaña distintas realmente CONCURRENTES —solapamiento de fechas, no "
-                "solo activas alguna vez en el período— en esa estación) — NUNCA estaciones activas × 5, "
-                "que sobreestimaba la ocupación. Estaciones con más de 5 campañas concurrentes quedan en "
-                "5 ocupados y se registran como sobrecapacidad (excedentes ≠ espacios ocupados). YPF "
-                "Estático (fotobox) no registra ninguna campaña en la base a la fecha (0 ocupados)."
+                "Regla definitiva (Etapa 2A, 06/10/2026): catálogo = 5 espacios base por estación; la "
+                "ocupación digital YPF de cada estación es el máximo de campañas reales SIMULTÁNEAS "
+                "(solapamiento de fechas) en el período, SIN tope de 5. Estaciones con más de 5 campañas "
+                "simultáneas cuentan todas y se informan como sobrecapacidad. YPF Estático (fotobox) no "
+                "registra ninguna campaña en la base a la fecha (0 ocupados)."
             ),
         },
         "aa2000_tripstore": {
             "elementos": tripstore["elementos"], "totales": tripstore["totales"],
             "ocupados": int(round(tripstore["ocupados"])), "ocupados_anterior": int(round(tripstore_a["ocupados"])),
-            "capacidad_fuente": "CapacidadSlotsReel (capacidad registrada; NO la tasa de 10 de Tótem de Shopping)",
+            "capacidad_fuente": "Regla central Tótem = 10 por elemento (config/business_semantics.json)",
             "nota": "Pertenece a AA2000 (barra 'AA2000' en la apertura por circuito); no se duplica en Shoppings.",
         },
         "sin_regla_confirmada": {
             "elementos": actual["digital_sin_regla_elementos"],
             "motivo": (
-                "Formatos digitales sin conversión de espacios confirmada (fuera de Pantalla LED / Tótem de "
-                "Shopping / Puente LED / Tríedro / Tripstore AA2000): no se incluyen en Espacios Totales ni en "
-                "ninguna barra, para no inventar una capacidad."
+                "Elementos digitales sin capacidad comercial confirmada en la regla central "
+                "(config/business_semantics.json): no se incluyen en Espacios Totales ni en ninguna barra, "
+                "para no inventar una capacidad."
             ),
         },
     }
@@ -1029,9 +951,9 @@ def compute_evolution_espacios(
     elementos/estaciones. Estático/Digital usan el mismo universo que las
     tarjetas 4/5 (Digital incluye Tripstore AA2000, igual que la tarjeta
     desde la auditoría del denominador 21/08/2026). YPF = ocupación estación
-    por estación (mín(5, IDCampaña distintas) por estación, corrección
-    prioritaria 21/08/2026 — NUNCA estaciones activas × 5) + elementos YPF
-    estáticos con campaña del mes × 1, en una sola serie."""
+    por estación (máximo de campañas reales simultáneas, SIN tope, regla
+    definitiva Etapa 2A) + elementos YPF estáticos con campaña del mes × 1,
+    en una sola serie."""
     maestro = universe["maestro"]
     non_ypf = maestro[maestro["CircuitoNegocio"] != "YPF"]
     estatico_ids = non_ypf.loc[non_ypf["Medio"] == "Estático", "ElementoID"].tolist()
@@ -1081,9 +1003,13 @@ def compute_apertura_circuito(universe: dict[str, Any], espacios: dict[str, Any]
     non_ypf = maestro[maestro["CircuitoNegocio"] != "YPF"]
     digital_all = _con_capacidad_digital(non_ypf[non_ypf["Medio"] == "Digital"])
 
-    def _digital_espacios(circuitos: list[str], categorias: list[str]) -> int:
+    def _digital_espacios(circuitos: list[str]) -> int:
+        # Etapa 2A: toda categoria con capacidad confirmada por la regla
+        # central suma en la barra de su circuito (incluye Patio de Comidas
+        # en Shoppings y EZEPAW005/011 en AA2000); SIN_REGLA nunca suma.
         sub = digital_all[
-            digital_all["CircuitoNegocio"].isin(circuitos) & digital_all["_categoria"].isin(categorias)
+            digital_all["CircuitoNegocio"].isin(circuitos)
+            & digital_all["_categoria"].isin(_ESPACIOS_DIGITAL_TODAS_CATEGORIAS)
         ]
         return int(sub["_capacidad"].sum())
 
@@ -1092,15 +1018,13 @@ def compute_apertura_circuito(universe: dict[str, Any], espacios: dict[str, Any]
         return len(sub)
 
     shoppings_est = _estatico_espacios(["CENCOSUD", "REMEROS"])
-    # Correccion 22/08/2026: REMEROS se suma junto con CENCOSUD (antes solo
-    # CENCOSUD) porque sus 6 totems ya tienen capacidad confirmada
-    # (TOTEM_SHOPPING); si no se incluyera aca, la barra "Shoppings" quedaria
-    # 60 espacios por debajo de Espacios Totales y compute_apertura_circuito
-    # fallaria con BuildError de reconciliacion.
-    shoppings_dig = _digital_espacios(["CENCOSUD", "REMEROS"], ["TOTEM_SHOPPING", "PUENTE_LED", "TRIEDRO"])
-    pantallas_dig = _digital_espacios(["PANTALLAS_LED"], ["PANTALLA_LED"])
+    # REMEROS se suma junto con CENCOSUD (correccion 22/08/2026): sus 6
+    # totems tienen capacidad confirmada; si no, la barra "Shoppings" no
+    # reconciliaria con Espacios Totales.
+    shoppings_dig = _digital_espacios(["CENCOSUD", "REMEROS"])
+    pantallas_dig = _digital_espacios(["PANTALLAS_LED"])
     aa2000_est = _estatico_espacios(["AA2000"])
-    aa2000_tripstore = _digital_espacios(["AA2000"], ["TRIPSTORE_AA2000"])
+    aa2000_tripstore = _digital_espacios(["AA2000"])
     otros_est = _estatico_espacios(["PILAR_FRONTLIGHT", "MAB"])
     ypf_est = espacios["ypf"]["estatico"]["totales"]
     ypf_dig = espacios["ypf"]["digital"]["totales"]
@@ -1131,8 +1055,8 @@ def compute_apertura_circuito(universe: dict[str, Any], espacios: dict[str, Any]
         "denominador": grand_total,
         "barras": barras,
         "nota": (
-            "Shoppings incluye Tótems, Puentes y Triedros; AA2000 incluye Tripstore; YPF incluye "
-            "Estático; Otros incluye Pilar y MAB."
+            "Shoppings: Tótems, Puentes, Triedros y Patio de Comidas; AA2000: Tripstore y otros digitales; "
+            "YPF incluye Estático; Otros: Pilar y MAB."
         ),
     }
 
@@ -1386,6 +1310,10 @@ def build_tv1_data(path: str | Path | None = None) -> dict[str, Any]:
             "period_end": period[1],
             "ytd_start": ytd[0],
             "fuente": "OCU26 · Base maestra + base campañas",
+            # Trazabilidad (Etapa 2A): permite a TV2 verificar que su control
+            # de reconciliacion sale de la misma base y las mismas reglas.
+            "input_sha256": sha_after,
+            "reglas_version": sm.reglas_version(),
         },
         "kpis": {
             "core_comercial": kpi1,

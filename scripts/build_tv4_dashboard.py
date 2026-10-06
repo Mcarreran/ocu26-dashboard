@@ -57,8 +57,13 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_input as vi  # noqa: E402
+import semantic_model as sm  # noqa: E402
 from semantic_model import filter_universe  # noqa: E402
-from metrics_engine import MetricsEngine  # noqa: E402
+from metrics_engine import (  # noqa: E402
+    MetricsEngine,
+    ocupacion_simultanea_por_estacion,
+    resumen_ocupacion_simultanea,
+)
 from export_data import load_pipeline  # noqa: E402
 from build_tv5_dashboard import (  # noqa: E402
     load_geo_aux,
@@ -83,7 +88,9 @@ REPORT_YEAR = 2026
 REPORT_MONTH = 7
 
 # Capacidad canonica de espacios digitales por estacion (Sec.4 del pedido).
-DIGITAL_CAPACITY_PER_STATION = 5
+# Etapa 2A: valor unico en config/business_semantics.json
+# (digital_capacity.capacidad_por_estacion.YPF), no hardcodeado aqui.
+DIGITAL_CAPACITY_PER_STATION = sm.espacios_base_por_estacion("YPF")
 
 # Recuadro geografico AMBA (CABA + Gran Buenos Aires + La Plata/Ensenada),
 # usado solo para el recorte "Detalle AMBA" del mapa (ajuste 2026-08-23).
@@ -455,19 +462,29 @@ def compute_catalogo(universe: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ocupacion_periodo(engine: MetricsEngine, universe: dict[str, Any], start: str, end: str) -> dict[str, Any]:
+    """Ocupacion YPF del periodo. Digital (regla definitiva Etapa 2A): por
+    estacion (APIE), maximo de campanas reales SIMULTANEAS en el periodo, SIN
+    tope de 5 (metrics_engine.ocupacion_simultanea_por_estacion, misma
+    funcion que TV1/TV5); ya NO "campanas distintas del mes". Estatico: 1
+    espacio por ElementoID FB con campana en el periodo. El universo
+    (RevisionMaestro / APIE) no cambia en esta etapa."""
     apie_map = universe["apie_map"]
 
     overlap_dig = _campanas_overlap_validas(engine, universe["digital_ids"], start, end)
     if overlap_dig.empty:
-        pares_digitales = overlap_dig.assign(_apie=[])
         counts_por_apie = pd.Series(dtype="int64")
+        resumen = resumen_ocupacion_simultanea(None)
     else:
-        pares_digitales = overlap_dig.copy()
-        pares_digitales["_apie"] = pares_digitales["ElementoID"].map(apie_map)
-        pares_digitales = pares_digitales.drop_duplicates(subset=["_apie", "IDCampaña"])
-        counts_por_apie = pares_digitales.groupby("_apie").size()
+        asignaciones = overlap_dig.copy()
+        asignaciones["_apie"] = asignaciones["ElementoID"].map(apie_map)
+        por_estacion = ocupacion_simultanea_por_estacion(
+            asignaciones, start, end, DIGITAL_CAPACITY_PER_STATION,
+            station_col="_apie", start_col="_eff_start", end_col="_eff_end",
+        )
+        counts_por_apie = por_estacion["ocupacion"].astype("int64")
+        resumen = resumen_ocupacion_simultanea(por_estacion)
 
-    ocupados_digitales = int(len(pares_digitales))
+    ocupados_digitales = int(resumen["ocupados"])
 
     overlap_static = _campanas_overlap_validas(engine, universe["static_ids"], start, end)
     ocupados_estaticos = int(overlap_static["ElementoID"].nunique()) if not overlap_static.empty else 0
@@ -476,19 +493,14 @@ def _ocupacion_periodo(engine: MetricsEngine, universe: dict[str, Any], start: s
     espacios_totales = universe["espacios_totales_catalogo"]
     ocupacion_pct = _round1(ocupados_totales / espacios_totales * 100.0) if espacios_totales else None
 
-    sobre_capacidad = counts_por_apie[counts_por_apie > DIGITAL_CAPACITY_PER_STATION]
-    estaciones_sobre_capacidad = int(len(sobre_capacidad))
-    exceso_sobre_capacidad = int((sobre_capacidad - DIGITAL_CAPACITY_PER_STATION).sum()) if len(sobre_capacidad) else 0
-    max_pct_estacion = _round1(float(counts_por_apie.max()) / DIGITAL_CAPACITY_PER_STATION * 100.0) if len(counts_por_apie) else None
-
     return {
         "ocupados_digitales": ocupados_digitales,
         "ocupados_estaticos": ocupados_estaticos,
         "ocupados_totales": ocupados_totales,
         "ocupacion_pct": ocupacion_pct,
-        "estaciones_sobre_capacidad": estaciones_sobre_capacidad,
-        "exceso_sobre_capacidad": exceso_sobre_capacidad,
-        "max_pct_estacion": max_pct_estacion,
+        "estaciones_sobre_capacidad": int(resumen["estaciones_sobrecapacidad"]),
+        "exceso_sobre_capacidad": int(resumen["exceso_total"]),
+        "max_pct_estacion": _round1(resumen["max_pct_estacion"]) if resumen["max_pct_estacion"] is not None else None,
         "conteo_por_estacion": counts_por_apie,
     }
 
@@ -990,11 +1002,12 @@ def compute_insights(
 
     if oc_actual["estaciones_sobre_capacidad"] > 0:
         a_atender = (
-            f"<b>{_fmt_es_int(oc_actual['estaciones_sobre_capacidad'])} estaciones</b> superan la capacidad de "
-            f"5 espacios digitales en {report_month_label.lower()} (exceso total: "
+            f"<b>{_fmt_es_int(oc_actual['estaciones_sobre_capacidad'])} estaciones</b> superan con campañas "
+            f"simultáneas la capacidad base de {DIGITAL_CAPACITY_PER_STATION} espacios digitales en "
+            f"{report_month_label.lower()} (exceso total: "
             f"{_fmt_es_int(oc_actual['exceso_sobre_capacidad'])} espacios; máximo observado: "
             f"{_fmt_es_pct(oc_actual['max_pct_estacion'])}% en una estación): esas estaciones concentran más "
-            "campañas digitales que espacios físicos disponibles."
+            "campañas digitales simultáneas que espacios base disponibles."
         )
     elif mapa["pct_cobertura_geo"] is not None and mapa["pct_cobertura_geo"] < 70:
         a_atender = (
