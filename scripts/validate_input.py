@@ -10,6 +10,11 @@ Uso:
     python scripts/validate_input.py
     python scripts/validate_input.py --file ruta/al/archivo.xlsx
     python scripts/validate_input.py --json
+
+Resolucion del archivo de entrada (Etapa 2, comun a todo el pipeline, ver
+resolve_input_path): 1) argumento explicito (--file / parametro `path`);
+2) variable de entorno OCU26_INPUT_PATH; 3) input/OCU26_BASE_DATOS.xlsx
+dentro del repositorio.
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import sys
 import zipfile
@@ -32,7 +38,25 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.table import Table
 from openpyxl.worksheet.worksheet import Worksheet
 
-DEFAULT_INPUT_PATH = Path("input/OCU26_BASE_DATOS.xlsx")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+INPUT_PATH_ENV_VAR = "OCU26_INPUT_PATH"
+# Fallback anclado al repositorio (antes era relativo al directorio de
+# ejecucion). Nunca se versionan rutas personales: la ubicacion real de una
+# base distinta se pasa por --file o por OCU26_INPUT_PATH.
+DEFAULT_INPUT_PATH = REPO_ROOT / "input" / "OCU26_BASE_DATOS.xlsx"
+
+
+def resolve_input_path(explicit: str | Path | None = None) -> Path:
+    """Ruta del Excel de entrada, en este orden: 1) `explicit` (argumento
+    --file o parametro de funcion); 2) variable de entorno OCU26_INPUT_PATH;
+    3) DEFAULT_INPUT_PATH (input/OCU26_BASE_DATOS.xlsx del repo). Valores
+    vacios o solo espacios se tratan como no informados."""
+    if explicit is not None and str(explicit).strip():
+        return Path(explicit)
+    env_value = os.environ.get(INPUT_PATH_ENV_VAR, "").strip()
+    if env_value:
+        return Path(env_value)
+    return DEFAULT_INPUT_PATH
 
 EXPECTED_SHEETS = ["MAESTRO_ELEMENTOS", "CAMPANAS", "PARAMETROS"]
 
@@ -848,13 +872,13 @@ def _finalize(path: Path, file_info: dict[str, Any], ctx: ValidationContext) -> 
     }
 
 
-def validate_input(path: str | Path) -> dict[str, Any]:
+def validate_input(path: str | Path | None = None) -> dict[str, Any]:
     """Punto de entrada reutilizable: valida `path` y devuelve un dict con
     result / file / sha256 / errors / warnings / stats.
 
     100% read-only: nunca escribe, corrige ni recalcula el Excel.
     """
-    path = Path(path)
+    path = resolve_input_path(path)
     ctx = ValidationContext()
     file_info: dict[str, Any] = {"path": str(path), "name": path.name, "size_bytes": None, "sha256": None}
 
@@ -972,7 +996,7 @@ def print_human_report(result: dict[str, Any]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Valida input/OCU26_BASE_DATOS.xlsx antes de transformarlo.")
-    parser.add_argument("--file", default=str(DEFAULT_INPUT_PATH), help="Ruta al archivo .xlsx a validar")
+    parser.add_argument("--file", default=None, help=f"Ruta al .xlsx a validar (si se omite: ${INPUT_PATH_ENV_VAR} o input/OCU26_BASE_DATOS.xlsx)")
     parser.add_argument("--json", action="store_true", help="Imprime el resultado como JSON en stdout")
     args = parser.parse_args(argv)
 

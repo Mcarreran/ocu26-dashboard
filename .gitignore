@@ -194,3 +194,21 @@ output/
 .env
 *.pem
 *.key
+
+# Etapa 2 (2026-10-06): datos de negocio SOLO locales. Bases actualizadas,
+# cortes y datos auxiliares nunca se versionan (el repo es publico). Los
+# archivos que ya estaban versionados en audit_sources/ quedan como estan
+# hasta una decision explicita (no se purga historial).
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.db
+*.sqlite
+*.sqlite3
+*.pkl
+*.pickle
+input/
+input_aux/
+.env.*
+!.env.example

@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -327,3 +328,76 @@ def test_read_excel_table_uses_real_table_range_not_hardcoded_size(tmp_path):
     campanas = td.read_excel_table(path, "CAMPANAS", "tblCampanas")
     assert len(maestro) == 1
     assert len(campanas) == 1
+
+
+# ---------------------------------------------------------------------------
+# Fix Gate 2 (integración YPF, 2026-08-18): la validación de passthrough de
+# CAMPANAS.FilaOrigen usaba list(...) != list(...), que compara NaN con NaN
+# vía `==` de Python y siempre da False -> falso positivo de "cambio" en
+# columnas con blancos legítimos (FilaOrigen es opcional; ElementoID/CargaID
+# no lo son y ya están bloqueados por Gate 1 si vinieran vacíos, por eso no
+# comparten el mismo riesgo y no se tocaron). Ahora usa
+# Series.reset_index(drop=True).equals(...), NaN-seguro. Estas pruebas fijan
+# el comportamiento exacto de esa comparación.
+#
+# Restauradas en Etapa 2A (2026-10-06) desde la rama
+# cierre-tv1-tv6-2026-08-23: el PR de cierre limpio las había quitado junto
+# con las pruebas 6-7, que dependen de archivos locales de Pendientes/ y NO
+# se restauran. Las 1-5 son autónomas (tmp_path / series en memoria).
+# ---------------------------------------------------------------------------
+
+
+def test_filaorigen_nan_en_mismas_posiciones_no_bloquea(tmp_path):
+    """1. Passthrough real con NaN en la misma posición: no debe lanzar
+    TransformError (regresión directa del bug list(...) != list(...))."""
+    path = tmp_path / "filaorigen_nan_passthrough.xlsx"
+    _write_workbook(
+        path,
+        maestro_rows=[_base_maestro_row("ELEM-0001")],
+        campanas_rows=[
+            _campana_row("HIST-0001", FilaOrigen=1),
+            _campana_row("HIST-0002", FilaOrigen=None),
+            _campana_row("HIST-0003", FilaOrigen=3),
+        ],
+    )
+    result = td.transform_data(path)  # no debe lanzar TransformError
+    filaorigen = result["campanas"]["FilaOrigen"]
+    assert len(filaorigen) == 3
+    assert filaorigen.isna().sum() == 1
+
+
+def test_filaorigen_equals_semantics_valor_distinto_bloquea():
+    """2. Un valor distinto en la misma posición se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([1, 99, 3])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_nan_en_mismas_posiciones_no_bloquea():
+    """(complemento de 1, a nivel de la primitiva) NaN en la misma posición
+    en ambas series no se considera un cambio."""
+    a = pd.Series([1, None, 3])
+    b = pd.Series([1, None, 3])
+    assert a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_nan_vs_valor_real_bloquea():
+    """3. NaN en una serie frente a un valor real en la otra, misma
+    posición, se detecta como cambio."""
+    a = pd.Series([1, None, 3])
+    b = pd.Series([1, 2, 3])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_cambio_de_orden_bloquea():
+    """4. Mismos valores, orden distinto: se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([3, 2, 1])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))
+
+
+def test_filaorigen_equals_semantics_diferencia_de_filas_bloquea():
+    """5. Distinta cantidad de filas: se detecta como cambio."""
+    a = pd.Series([1, 2, 3])
+    b = pd.Series([1, 2, 3, 4])
+    assert not a.reset_index(drop=True).equals(b.reset_index(drop=True))

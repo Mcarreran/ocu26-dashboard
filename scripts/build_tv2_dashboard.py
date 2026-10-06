@@ -680,8 +680,8 @@ def extract_logo_img_tag(reference_path: Path) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_tv2_data(path: str | Path = vi.DEFAULT_INPUT_PATH) -> dict[str, Any]:
-    path = Path(path)
+def build_tv2_data(path: str | Path | None = None) -> dict[str, Any]:
+    path = vi.resolve_input_path(path)
     sha_before = vi.calculate_sha256(path)
 
     _transform_result, semantic_result, engine = load_pipeline(path)
@@ -772,7 +772,7 @@ def render_html(data: dict[str, Any]) -> str:
 
 
 def build_and_write(
-    path: str | Path = vi.DEFAULT_INPUT_PATH,
+    path: str | Path | None = None,
     output_html: str | Path = DEFAULT_OUTPUT_HTML,
     output_json: str | Path = DEFAULT_OUTPUT_JSON,
 ) -> dict[str, Any]:
@@ -792,7 +792,7 @@ def build_and_write(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Construye tv2.html (dashboard TV2 OCU26) con datos reales.")
-    parser.add_argument("--file", default=str(vi.DEFAULT_INPUT_PATH), help="Ruta al archivo .xlsx a leer")
+    parser.add_argument("--file", default=None, help="Ruta al .xlsx (si se omite: $OCU26_INPUT_PATH o input/OCU26_BASE_DATOS.xlsx)")
     parser.add_argument("--output-html", default=str(DEFAULT_OUTPUT_HTML), help="Ruta del HTML productivo generado")
     parser.add_argument("--output-json", default=str(DEFAULT_OUTPUT_JSON), help="Ruta del snapshot JSON generado")
     args = parser.parse_args(argv)

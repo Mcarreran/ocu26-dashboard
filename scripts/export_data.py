@@ -85,13 +85,13 @@ def _sanear_columnas_texto_mixto(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-def load_pipeline(path: str | Path = DEFAULT_INPUT_PATH) -> tuple[dict[str, Any], dict[str, Any], MetricsEngine]:
+def load_pipeline(path: str | Path | None = None) -> tuple[dict[str, Any], dict[str, Any], MetricsEngine]:
     """Ejecuta transform_data() + build_semantic_model() y arma el MetricsEngine.
 
     No reimplementa nada de Gate 1/2/3: es exactamente la misma cadena de
     llamadas que ya usan los tests de Gate 3B.
     """
-    transform_result = transform_data(path)
+    transform_result = transform_data(vi.resolve_input_path(path))
     semantic_result = sm.build_semantic_model(transform_result)
     engine = MetricsEngine(semantic_result)
     return transform_result, semantic_result, engine
@@ -440,10 +440,10 @@ def write_outputs(tablas: dict[str, pd.DataFrame], manifest: dict[str, Any], out
 # ---------------------------------------------------------------------------
 
 
-def export_data(path: str | Path = DEFAULT_INPUT_PATH, output_dir: str | Path = DEFAULT_OUTPUT_DIR) -> dict[str, Any]:
+def export_data(path: str | Path | None = None, output_dir: str | Path = DEFAULT_OUTPUT_DIR) -> dict[str, Any]:
     """Punto de entrada de Gate 4A. Read-only sobre el Excel fuente (verifica
     SHA-256 antes/despues). No reabre ni reinterpreta Gate 1/2/3."""
-    path = Path(path)
+    path = vi.resolve_input_path(path)
     output_dir = Path(output_dir)
 
     sha_before = vi.calculate_sha256(path)
@@ -481,7 +481,7 @@ def export_data(path: str | Path = DEFAULT_INPUT_PATH, output_dir: str | Path = 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Gate 4A - exporta la capa de salida Parquet para Power BI.")
-    parser.add_argument("--file", default=str(DEFAULT_INPUT_PATH), help="Ruta al archivo .xlsx a exportar")
+    parser.add_argument("--file", default=None, help="Ruta al .xlsx (si se omite: $OCU26_INPUT_PATH o input/OCU26_BASE_DATOS.xlsx)")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Carpeta de salida de los Parquet")
     args = parser.parse_args(argv)
 

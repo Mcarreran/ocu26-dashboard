@@ -219,7 +219,7 @@ def _assert_dataframe_equivalent(raw: pd.DataFrame, transformed: pd.DataFrame, l
         raise TransformError(f"{label}: se detectó una modificación de datos (debe ser passthrough)")
 
 
-def transform_data(path: str | Path = DEFAULT_INPUT_PATH) -> dict[str, Any]:
+def transform_data(path: str | Path | None = None) -> dict[str, Any]:
     """Punto de entrada reutilizable del pipeline OCU26 - Gate 2.
 
     1. Ejecuta validate_input(path) (Gate 1). Aborta con TransformError si INVALID.
@@ -232,7 +232,7 @@ def transform_data(path: str | Path = DEFAULT_INPUT_PATH) -> dict[str, Any]:
 
     Devuelve dict con: validation, maestro, campanas, parametros, stats, warnings.
     """
-    path = Path(path)
+    path = vi.resolve_input_path(path)
 
     validation = vi.validate_input(path)
     if validation["result"] == "INVALID":
@@ -458,7 +458,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Transforma input/OCU26_BASE_DATOS.xlsx en memoria tras pasar el gate de validación."
     )
-    parser.add_argument("--file", default=str(DEFAULT_INPUT_PATH), help="Ruta al archivo .xlsx a transformar")
+    parser.add_argument("--file", default=None, help="Ruta al .xlsx (si se omite: $OCU26_INPUT_PATH o input/OCU26_BASE_DATOS.xlsx)")
     parser.add_argument("--json", action="store_true", help="Imprime un resumen JSON en stdout")
     args = parser.parse_args(argv)
 
