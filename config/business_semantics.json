@@ -272,7 +272,7 @@
       "_comment": "Circuitos cuya capacidad comercial digital NO se resuelve por elemento sino por estacion (SlotsComerciales = vacio). Ocupacion = maximo de campanas reales simultaneas por estacion en el periodo, SIN tope (metrics_engine.ocupacion_simultanea_por_estacion).",
       "YPF": {"espacios_base_por_estacion": 5}
     },
-    "_comment_fallback": "Circuitos sin perfil de FormatoNegocio confirmado: usar CapacidadSlotsReel legacy si es > 0; si es 0, marcar REQUIERE_CONFIRMACION en vez de asumir 0 (Gate3A Sec.21, prompt Sec.21 London Supply Digital)",
+    "_comment_fallback": "Etapa 2A: CapacidadSlotsReel del Excel solo se usa como capacidad para los circuitos listados en use_legacy_source_if_positive_for_circuitos (London Supply, fuera de los tableros) y si es > 0. Cualquier otro formato digital sin regla confirmada queda REQUIERE_CONFIRMACION (nunca 0 ni el valor historico del Excel).",
     "use_legacy_source_if_positive_for_circuitos": ["LONDON_SUPPLY"],
     "requiere_confirmacion_sentinel": "REQUIERE_CONFIRMACION"
   },
