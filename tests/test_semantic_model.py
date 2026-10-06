@@ -516,20 +516,24 @@ def test_circuitos_cerrados_confirmado_con_cero_campanas(semantic_result):
 # ---------------------------------------------------------------------------
 
 
-def test_puente_led_capacidad_comercial_13_legacy_10(semantic_result):
+def test_puente_led_capacidad_comercial_10(semantic_result):
+    """Etapa 2A (reemplaza 'capacidad_comercial_13_legacy_10'): Puente LED =
+    10 por regla central; incluye UNI-PUENTELED-1 (sin Descripcion)."""
     m = semantic_result["maestro"]
     puente = m[m["FormatoNegocio"] == "PUENTE_LED"]
     assert len(puente) > 0
-    assert (puente["SlotsComerciales"] == 13).all()
-    assert (puente["CapacidadSlotsReel"] == 10).all()
+    assert (puente["SlotsComerciales"] == 10).all()
+    assert "UNI-PUENTELED-1" in set(puente["ElementoID"])
 
 
-def test_pantalla_led_capacidad_comercial_20_legacy_40(semantic_result):
+def test_pantalla_led_capacidad_comercial_20_independiente_del_excel(semantic_result):
+    """Etapa 2A (reemplaza 'capacidad_comercial_20_legacy_40'): la base
+    canonica 23-sep trae CapacidadSlotsReel=20 (la de agosto traia 40); la
+    capacidad comercial es 20 por regla central en cualquier caso."""
     m = semantic_result["maestro"]
     pled = m[m["FormatoNegocio"] == "PANTALLA_LED"]
     assert len(pled) > 0
     assert (pled["SlotsComerciales"] == 20).all()
-    assert (pled["CapacidadSlotsReel"] == 40).all()
 
 
 def test_segundos_comerciales_default_72000_no_existe_en_legacy(semantic_result):
@@ -540,11 +544,19 @@ def test_segundos_comerciales_default_72000_no_existe_en_legacy(semantic_result)
 
 
 def test_capacidad_fuente_cero_marca_requiere_confirmacion(semantic_result):
+    """Capacidad 0 en el Excel y sin regla confirmada -> REQUIERE_CONFIRMACION
+    (nunca 0). Etapa 2A: los digitales AA2000 con capacidad 0 en el Excel
+    (EZEPAW005/011) SI tienen regla confirmada por circuito (10)."""
     m = semantic_result["maestro"]
     zero_cap = m[(m["Medio"] == "Digital") & (m["CapacidadSlotsReel"] == 0)]
     assert len(zero_cap) > 0
     sentinel = semantic_result["config"]["digital_capacity"]["requiere_confirmacion_sentinel"]
-    assert (zero_cap["SlotsComerciales"] == sentinel).all()
+    sin_regla = zero_cap[zero_cap["CircuitoNegocio"] != "AA2000"]
+    assert len(sin_regla) > 0
+    assert (sin_regla["SlotsComerciales"] == sentinel).all()
+    aa2000 = zero_cap[zero_cap["CircuitoNegocio"] == "AA2000"]
+    assert set(aa2000["ElementoID"]) == {"EZEPAW005", "EZEPAW011"}
+    assert (aa2000["SlotsComerciales"] == 10).all()
 
 
 # ---------------------------------------------------------------------------

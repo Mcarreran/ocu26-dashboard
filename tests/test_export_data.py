@@ -232,9 +232,20 @@ def test_slotscomercialesvalor_nunca_mezcla_texto(production_pipeline):
     assert str(dim_elementos["SegundosComercialesValor"].dtype) == "Float64"
 
 
-def test_8_elementos_con_capacidad_desconocida_en_produccion(production_pipeline):
+def test_capacidad_desconocida_en_produccion_solo_london_sin_regla(production_pipeline):
+    """Etapa 2A (reemplaza 'test_8_elementos_...'): con las reglas centrales
+    confirmadas, EZEPAW005/011 (AA2000) tienen 10 por regla de circuito; la
+    unica capacidad desconocida que queda son las pantallas London USH sin
+    capacidad en la fuente (London esta fuera de los tableros). YPF no
+    cuenta como desconocida: su capacidad es por estacion (SlotsComerciales
+    vacio, no REQUIERE_CONFIRMACION)."""
     dim_elementos = production_pipeline["dim_elementos"]
-    assert int(dim_elementos["CapacidadSlotsDesconocida"].sum()) == 8
+    desconocidas = dim_elementos[dim_elementos["CapacidadSlotsDesconocida"]]
+    assert len(desconocidas) > 0
+    assert set(desconocidas["CircuitoNegocio"]) == {"LONDON_SUPPLY"}
+    ypf_digital = dim_elementos[(dim_elementos["CircuitoNegocio"] == "YPF") & (dim_elementos["Medio"] == "Digital")]
+    assert not ypf_digital["CapacidadSlotsDesconocida"].any()
+    assert ypf_digital["SlotsComercialesValor"].isna().all()
 
 
 # ---------------------------------------------------------------------------

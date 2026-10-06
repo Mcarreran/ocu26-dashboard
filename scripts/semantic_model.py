@@ -114,6 +114,11 @@ class SemanticConfigError(SemanticModelError):
     """config/business_semantics.json invalido o inconsistente."""
 
 
+def _public_items(mapping: dict[str, Any]) -> list[tuple[str, Any]]:
+    """Items de un objeto de config ignorando claves de documentacion ('_...')."""
+    return [(k, v) for k, v in mapping.items() if not str(k).startswith("_")]
+
+
 def _is_blank(value: Any) -> bool:
     if value is None:
         return True
@@ -395,6 +400,27 @@ def _validate_digital_capacity(config: dict[str, Any], errors: list[str]) -> Non
         errors.append("digital_capacity.requiere_confirmacion_sentinel: requerido (string)")
     if not isinstance(dc.get("use_legacy_source_if_positive_for_circuitos"), list):
         errors.append("digital_capacity.use_legacy_source_if_positive_for_circuitos: debe ser una lista")
+    # Etapa 2A: claves opcionales (configs anteriores/sinteticas siguen siendo validas).
+    por_circuito = dc.get("slots_por_circuito_digital", {})
+    if not isinstance(por_circuito, dict):
+        errors.append("digital_capacity.slots_por_circuito_digital: debe ser un objeto")
+    else:
+        for circuito, slots in _public_items(por_circuito):
+            if not isinstance(slots, int) or isinstance(slots, bool) or slots <= 0:
+                errors.append(
+                    f"digital_capacity.slots_por_circuito_digital.{circuito}: debe ser un entero positivo, encontrado {slots!r}"
+                )
+    por_estacion = dc.get("capacidad_por_estacion", {})
+    if not isinstance(por_estacion, dict):
+        errors.append("digital_capacity.capacidad_por_estacion: debe ser un objeto")
+    else:
+        for circuito, spec in _public_items(por_estacion):
+            base = spec.get("espacios_base_por_estacion") if isinstance(spec, dict) else None
+            if not isinstance(base, int) or isinstance(base, bool) or base <= 0:
+                errors.append(
+                    f"digital_capacity.capacidad_por_estacion.{circuito}.espacios_base_por_estacion: "
+                    f"debe ser un entero positivo, encontrado {base!r}"
+                )
 
 
 def _validate_sitio_negocio(sn: Any, errors: list[str]) -> None:
@@ -424,8 +450,17 @@ def _validate_formato_negocio(fn: Any, errors: list[str]) -> None:
         for i, rule in enumerate(rules):
             if not isinstance(rule, dict) or "contains" not in rule or "formato" not in rule:
                 errors.append(f"formato_negocio.descripcion_keyword_rules[{i}]: requiere 'contains' y 'formato'")
+            elif "medio" in rule and not isinstance(rule["medio"], str):
+                errors.append(f"formato_negocio.descripcion_keyword_rules[{i}].medio: debe ser un string")
     if not isinstance(fn.get("default"), str):
         errors.append("formato_negocio.default: requerido (string)")
+    overrides = fn.get("elemento_formato_overrides", {})
+    if not isinstance(overrides, dict):
+        errors.append("formato_negocio.elemento_formato_overrides: debe ser un objeto ElementoID -> formato")
+    else:
+        for eid, formato in _public_items(overrides):
+            if not isinstance(formato, str) or not formato.strip():
+                errors.append(f"formato_negocio.elemento_formato_overrides.{eid}: debe ser un string no vacio")
 
 
 _KNOWN_UNIVERSE_FLAGS = {"IncluyeConteoGeneral", "IncluyePerformanceCore", "VisiblePorDefecto", None}
@@ -586,6 +621,15 @@ def _resolve_circuit_bundle(
 def _resolve_formato_negocio(row: pd.Series, circuito_negocio: str, config: dict[str, Any], warnings: list[str]) -> str:
     fmt_cfg = config["formato_negocio"]
 
+    # (0) Override explicito por ElementoID (Etapa 2A): clasificaciones
+    # confirmadas por negocio cuando la Descripcion no permite resolverlas
+    # (p.ej. UNI-PUENTELED-1 sin Descripcion, totems Remeros "TV Led").
+    eid_raw = row.get("ElementoID")
+    if not _is_blank(eid_raw):
+        override = dict(_public_items(fmt_cfg.get("elemento_formato_overrides", {}))).get(str(eid_raw))
+        if override:
+            return override
+
     if circuito_negocio == "YPF":
         eid = "" if _is_blank(row["ElementoID"]) else str(row["ElementoID"])
         parts = eid.split(" - ")
@@ -606,6 +650,8 @@ def _resolve_formato_negocio(row: pd.Series, circuito_negocio: str, config: dict
     desc = "" if _is_blank(row["Descripcion"]) else str(row["Descripcion"])
     desc_lower = desc.lower()
     for rule in fmt_cfg["descripcion_keyword_rules"]:
+        if "medio" in rule and row.get("Medio") != rule["medio"]:
+            continue
         if rule["contains"].lower() in desc_lower:
             return rule["formato"]
 
@@ -655,11 +701,14 @@ def _resolve_digital_capacity(
     """Devuelve (SlotsComerciales, SegundosComerciales). Solo aplica a Medio=Digital;
     para elementos estaticos ambos son pd.NA (no aplica capacidad de reel).
 
-    Precedencia de slots (Gate3B.1 Sec.7): override ElementoID > perfil
-    FormatoNegocio > fallback legacy permitido > REQUIERE_CONFIRMACION.
-    Precedencia de segundos: override ElementoID > default comercial.
-    CapacidadSlotsReel/SegundosDia originales nunca se leen ni se modifican
-    fuera de este fallback de lectura."""
+    Precedencia de slots (Gate3B.1 Sec.7, extendida en Etapa 2A): override
+    ElementoID > capacidad por estacion (YPF: SlotsComerciales vacio, la
+    capacidad es 5 por estacion y la ocupacion se mide por simultaneidad) >
+    perfil FormatoNegocio > slots por circuito digital > fallback legacy
+    permitido > REQUIERE_CONFIRMACION.
+    Precedencia de segundos: override ElementoID > default comercial
+    (72.000). CapacidadSlotsReel/SegundosDia originales nunca se modifican y
+    solo se leen en el fallback legacy."""
     if row["Medio"] != "Digital":
         return pd.NA, pd.NA
 
@@ -669,23 +718,35 @@ def _resolve_digital_capacity(
 
     eid = row["ElementoID"]
     override = elemento_override_map.get(eid) if not _is_blank(eid) else None
+    por_estacion = dict(_public_items(dc_cfg.get("capacidad_por_estacion", {})))
+    por_circuito = dict(_public_items(dc_cfg.get("slots_por_circuito_digital", {})))
 
     if override is not None and "slots_comerciales" in override:
         slots = override["slots_comerciales"]
+    elif circuito_negocio in por_estacion:
+        slots = pd.NA
     else:
         profile_slots = dc_cfg["slots_profiles"].get(formato_negocio)
         if profile_slots is not None:
             slots = profile_slots
+        elif circuito_negocio in por_circuito:
+            slots = por_circuito[circuito_negocio]
         else:
             legacy = row["CapacidadSlotsReel"]
             legacy_val = None if pd.isna(legacy) else int(legacy)
-            if legacy_val and legacy_val > 0:
-                if circuito_negocio not in dc_cfg["use_legacy_source_if_positive_for_circuitos"]:
-                    warnings.append(
-                        f"ElementoID={eid!r} ({circuito_negocio}/{formato_negocio}): sin perfil "
-                        f"comercial de slots confirmado; se usa capacidad fuente legacy ({legacy_val}) como fallback"
-                    )
+            # Etapa 2A: el valor del Excel (CapacidadSlotsReel) solo se usa
+            # para los circuitos listados explicitamente; cualquier otro
+            # formato digital sin regla confirmada queda REQUIERE_CONFIRMACION
+            # (nunca se toma una capacidad historica del Excel como regla).
+            if legacy_val and legacy_val > 0 and circuito_negocio in dc_cfg["use_legacy_source_if_positive_for_circuitos"]:
                 slots = legacy_val
+            elif legacy_val and legacy_val > 0:
+                warnings.append(
+                    f"ElementoID={eid!r} ({circuito_negocio}/{formato_negocio}): sin regla comercial de slots "
+                    f"confirmada; la capacidad historica del Excel ({legacy_val}) NO se usa como regla; "
+                    f"SlotsComerciales={sentinel}"
+                )
+                slots = sentinel
             else:
                 warnings.append(
                     f"ElementoID={eid!r} ({circuito_negocio}/{formato_negocio}): capacidad fuente no "
@@ -699,6 +760,105 @@ def _resolve_digital_capacity(
         segundos = default_segundos
 
     return slots, segundos
+
+
+# ---------------------------------------------------------------------------
+# API central de capacidad (Etapa 2A, 2026-10-06). Unica fuente de verdad que
+# consumen los builders (TV1/TV2/TV5): los numeros viven en
+# config/business_semantics.json (digital_capacity) y se resuelven una sola
+# vez en SlotsComerciales; los builders ya no definen tasas propias.
+# ---------------------------------------------------------------------------
+
+CATEGORIA_SIN_REGLA = "SIN_REGLA"
+CATEGORIAS_ESPACIO_DIGITAL = [
+    "PANTALLA_LED",
+    "TOTEM_SHOPPING",
+    "PUENTE_LED",
+    "TRIEDRO",
+    "PATIO_COMIDAS",
+    "TRIPSTORE_AA2000",
+    "OTRO_DIGITAL",
+]
+ETIQUETA_CATEGORIA_ESPACIO_DIGITAL = {
+    "PANTALLA_LED": "Pantallas LED",
+    "TOTEM_SHOPPING": "Tótems",
+    "TRIPSTORE_AA2000": "Tótems",
+    "PUENTE_LED": "Puentes LED",
+    "TRIEDRO": "Triedros",
+    "PATIO_COMIDAS": "Patio de Comidas",
+    "OTRO_DIGITAL": "Otros digitales",
+}
+ORDEN_ETIQUETAS_ESPACIO_DIGITAL = [
+    "Pantallas LED", "Tótems", "Puentes LED", "Triedros", "Patio de Comidas", "Otros digitales",
+]
+_FORMATO_A_CATEGORIA = {
+    "PANTALLA_LED": "PANTALLA_LED",
+    "PUENTE_LED": "PUENTE_LED",
+    "TRIEDRO": "TRIEDRO",
+    "PATIO_COMIDAS": "PATIO_COMIDAS",
+}
+
+
+def categoria_espacio_digital(formato_negocio: Any, circuito_negocio: Any) -> str:
+    """Categoria de reporte de un elemento digital no-YPF con capacidad
+    confirmada. TOTEM se separa solo para reporting (Tripstore = AA2000);
+    la capacidad es la misma regla (perfil TOTEM). Cualquier formato sin
+    categoria propia cuya capacidad viene de una regla de circuito (p.ej.
+    EZEPAW005/011 en AA2000) queda como OTRO_DIGITAL, nunca oculto."""
+    if formato_negocio == "TOTEM":
+        return "TRIPSTORE_AA2000" if circuito_negocio == "AA2000" else "TOTEM_SHOPPING"
+    return _FORMATO_A_CATEGORIA.get(formato_negocio, "OTRO_DIGITAL")
+
+
+def capacidad_slots_numerica(value: Any) -> float | None:
+    """SlotsComerciales -> float positivo, o None si no hay capacidad
+    confirmada (vacio, sentinel REQUIERE_CONFIRMACION, texto o <= 0)."""
+    if value is None or value is pd.NA or isinstance(value, (str, bool)):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(number) or number <= 0:
+        return None
+    return number
+
+
+def capacidad_espacio_digital(row: pd.Series) -> tuple[float | None, str]:
+    """(capacidad_en_espacios, categoria) de UN elemento Digital no-YPF, a
+    partir de SlotsComerciales ya resuelto por build_semantic_model (unica
+    fuente). Sin capacidad confirmada -> (None, 'SIN_REGLA'): nunca se
+    inventa una cifra."""
+    capacidad = capacidad_slots_numerica(row["SlotsComerciales"])
+    if capacidad is None:
+        return None, CATEGORIA_SIN_REGLA
+    return capacidad, categoria_espacio_digital(row["FormatoNegocio"], row["CircuitoNegocio"])
+
+
+def slots_por_formato(formato_negocio: str, config: dict[str, Any] | None = None) -> int | None:
+    """Capacidad por elemento del perfil de FormatoNegocio (config), o None."""
+    config = load_config() if config is None else config
+    value = config["digital_capacity"]["slots_profiles"].get(formato_negocio)
+    return int(value) if value is not None else None
+
+
+def espacios_base_por_estacion(circuito_negocio: str = "YPF", config: dict[str, Any] | None = None) -> int:
+    """Capacidad comercial base por estacion (YPF = 5) desde
+    digital_capacity.capacidad_por_estacion. La ocupacion NO se trunca a este
+    valor: ver metrics_engine.ocupacion_simultanea_por_estacion."""
+    config = load_config() if config is None else config
+    spec = dict(_public_items(config["digital_capacity"].get("capacidad_por_estacion", {}))).get(circuito_negocio)
+    if not spec:
+        raise SemanticConfigError(
+            f"digital_capacity.capacidad_por_estacion no define '{circuito_negocio}' (espacios_base_por_estacion)"
+        )
+    return int(spec["espacios_base_por_estacion"])
+
+
+def reglas_version(config: dict[str, Any] | None = None) -> str:
+    """Version declarada de las reglas de capacidad (trazabilidad de cortes)."""
+    config = load_config() if config is None else config
+    return str(config["digital_capacity"].get("reglas_version", "SIN_VERSION"))
 
 
 # ---------------------------------------------------------------------------

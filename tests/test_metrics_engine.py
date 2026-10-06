@@ -222,24 +222,27 @@ def test_fill_rate_slots_y_segundos():
 # ---------------------------------------------------------------------------
 
 
-def test_slots_comerciales_puente_led_13_vs_legacy_10():
+def test_slots_comerciales_puente_led_10():
+    """Etapa 2A: regla central Puente LED = 10 (antes perfil Gate3 = 13)."""
     puente = _maestro_row(
         "E1", CircuitoDashboard="Shoppings Digital", Subcircuito="CENCOSUD", Ubicacion="UNICENTER",
         Medio="Digital", Descripcion="Puente Led 2", CapacidadSlotsReel=10, SegundosDia=50400,
     )
     engine = _engine([puente])
     result = engine.query("slots_comerciales", start_date="2026-01-01", end_date="2026-01-31")
-    assert result.iloc[0]["Value"] == 13
+    assert result.iloc[0]["Value"] == 10
 
 
-def test_slots_comerciales_totem_20():
+def test_slots_comerciales_totem_10():
+    """Etapa 2A: regla central Totem = 10 (antes perfil Gate3 = 20), aunque
+    el Excel traiga CapacidadSlotsReel=20."""
     totem = _maestro_row(
         "E1", CircuitoDashboard="Shoppings Digital", Subcircuito="CENCOSUD", Ubicacion="UNICENTER",
         Medio="Digital", Descripcion="Totem 1", CapacidadSlotsReel=20, SegundosDia=100800,
     )
     engine = _engine([totem])
     result = engine.query("slots_comerciales", start_date="2026-01-01", end_date="2026-01-31")
-    assert result.iloc[0]["Value"] == 20
+    assert result.iloc[0]["Value"] == 10
 
 
 def test_slots_comerciales_pantalla_led_20_aunque_legacy_sea_40():

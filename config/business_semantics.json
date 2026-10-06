@@ -214,7 +214,17 @@
   },
 
   "formato_negocio": {
-    "_description": "Resolucion en orden: (1) YPF por token de ElementoID, (2) CircuitoDashboard con formato fijo, (3) palabra clave en Descripcion (case-insensitive, primera coincidencia), (4) default OTRO.",
+    "_description": "Resolucion en orden: (0) override explicito por ElementoID (elemento_formato_overrides), (1) YPF por token de ElementoID, (2) CircuitoDashboard con formato fijo, (3) palabra clave en Descripcion (case-insensitive, primera coincidencia; 'medio' opcional restringe la regla a un Medio), (4) default OTRO.",
+    "elemento_formato_overrides": {
+      "_comment": "Etapa 2A (2026-10-06): clasificaciones confirmadas por negocio para elementos cuya Descripcion no permite resolver el formato real. No reemplaza CircuitoNegocio ni ninguna otra dimension.",
+      "UNI-PUENTELED-1": "PUENTE_LED",
+      "REM-DB-1": "TOTEM",
+      "REM-DB-3": "TOTEM",
+      "REM-DB-5": "TOTEM",
+      "REM-DB-6": "TOTEM",
+      "REM-DB-8": "TOTEM",
+      "REM-DB-10": "TOTEM"
+    },
     "ypf_elemento_id_token_map": {
       "MB": "YPF_MENU_BOARD",
       "TT": "YPF_TORRE",
@@ -233,24 +243,34 @@
       {"contains": "Cubre alarmas", "formato": "CUBRE_ALARMAS"},
       {"contains": "Stoppers", "formato": "STOPPER"},
       {"contains": "Floorgraphics", "formato": "FLOORGRAPHIC"},
-      {"contains": "Carros", "formato": "CARRO"}
+      {"contains": "Carros", "formato": "CARRO"},
+      {"contains": "Patio de Comidas", "formato": "PATIO_COMIDAS", "medio": "Digital", "_comment": "Etapa 2A: pantallas digitales del Patio de Comidas (Unicenter)"}
     ],
     "default": "OTRO"
   },
 
   "digital_capacity": {
-    "_description": "Separacion estricta valor-legacy (CapacidadSlotsReel/SegundosDia del Excel, nunca sobrescrito) vs capacidad comercial efectiva (SlotsComerciales/SegundosComerciales, resuelta aqui). Solo aplica a Medio=Digital.",
+    "_description": "FUENTE UNICA DE VERDAD de capacidad digital (Etapa 2A, 2026-10-06). Separacion estricta valor-legacy (CapacidadSlotsReel/SegundosDia del Excel, nunca sobrescrito ni usado como regla) vs capacidad comercial efectiva (SlotsComerciales/SegundosComerciales, resuelta aqui por semantic_model). Precedencia de slots: override por ElementoID > capacidad por estacion (YPF: no aplica por elemento) > perfil por FormatoNegocio > slots por circuito digital > fallback legacy permitido > REQUIERE_CONFIRMACION. Solo aplica a Medio=Digital.",
+    "reglas_version": "ETAPA2A-2026-10-06",
     "default_segundos_comerciales": 72000,
+    "_comment_segundos": "72.000 s/dia para toda la capacidad digital. Los valores historicos de SegundosDia del Excel (100.800 / 75.000 / 50.400) NO gobiernan el calculo.",
     "spot_duracion_base_seg": 10,
     "spot_segundos_por_salida": 1800,
     "slots_profiles": {
-      "TOTEM": 20,
-      "PUENTE_LED": 13,
-      "TRIEDRO": 20,
       "PANTALLA_LED": 20,
-      "YPF_TORRE": 20,
-      "YPF_PUNTERA": 20,
-      "YPF_MENU_BOARD": 20
+      "TOTEM": 10,
+      "TRIEDRO": 10,
+      "PUENTE_LED": 10,
+      "PATIO_COMIDAS": 10
+    },
+    "slots_por_circuito_digital": {
+      "_comment": "Capacidad por elemento digital del circuito cuando el FormatoNegocio no tiene perfil propio (p.ej. EZEPAW005/EZEPAW011 de AA2000 sin Descripcion).",
+      "AA2000": 10,
+      "REMEROS": 10
+    },
+    "capacidad_por_estacion": {
+      "_comment": "Circuitos cuya capacidad comercial digital NO se resuelve por elemento sino por estacion (SlotsComerciales = vacio). Ocupacion = maximo de campanas reales simultaneas por estacion en el periodo, SIN tope (metrics_engine.ocupacion_simultanea_por_estacion).",
+      "YPF": {"espacios_base_por_estacion": 5}
     },
     "_comment_fallback": "Circuitos sin perfil de FormatoNegocio confirmado: usar CapacidadSlotsReel legacy si es > 0; si es 0, marcar REQUIERE_CONFIRMACION en vez de asumir 0 (Gate3A Sec.21, prompt Sec.21 London Supply Digital)",
     "use_legacy_source_if_positive_for_circuitos": ["LONDON_SUPPLY"],
