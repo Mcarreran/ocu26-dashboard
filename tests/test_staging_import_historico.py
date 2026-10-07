@@ -78,6 +78,7 @@ MAESTRO = _maestro([
     ["C5 - OLA", "Pantalla Led", "PLED", "OLAZABAL", "PTRI-3600seg", "Digital"],
     ["REM-DB-1", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
     ["REM-DB-3", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
+    ["REM-DB-5", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
     ["REM-CH-1D", "Shoppings Estático", "REMEROS", "REMEROS", "Chupete", "Estático"],
     ["Pantalla 4", "London Supply", "LS", "CALAFATE", "Pantalla", "Digital"],
 ])
@@ -196,15 +197,34 @@ class TestFechas:
         p = st.reconstruir_periodos(occ, VENTANA).periodos[0]
         assert any(d.startswith("MESES_SIN_PRESENCIA") for d in p.dudas)
 
+    def test_mes_intermedio_sin_presencia_se_acepta(self):
+        occ = [_occ(D(2026, m, 1), D(2026, 3, 1), D(2026, 6, 30)) for m in (3, 5, 6)]  # abril vacio
+        p = st.reconstruir_periodos(occ, VENTANA).periodos[0]
+        assert p.dudas == [] and p.info == ["MESES_INTERMEDIOS_SIN_PRESENCIA_ACEPTADOS:2026-04"]
+
+    def test_mes_final_sin_presencia_sigue_en_duda(self):
+        occ = [_occ(D(2026, m, 1), D(2026, 3, 1), D(2026, 6, 30)) for m in (3, 4, 5)]  # junio vacio
+        p = st.reconstruir_periodos(occ, VENTANA).periodos[0]
+        assert p.dudas == ["MESES_SIN_PRESENCIA:2026-06"]
+
     def test_celda_compartida_no_aporta_fechas(self):
         occ = [_occ(D(2026, 7, 1), D(2026, 3, 1), D(2026, 12, 31), n_tokens=2)]
         r = st.reconstruir_periodos(occ, VENTANA)
         assert r.periodos == [] and "FECHAS_SOLO_EN_CELDA_COMPARTIDA" in r.problemas
 
-    def test_celda_compartida_cuenta_como_presencia(self):
+    def test_fin_solo_en_celda_compartida_no_es_atribuible(self):
+        # Caso 4381/4729: junio dice FIN 31/07, julio es una celda "4381 / 4729" (traspaso).
         occ = [_occ(D(2026, 6, 1), D(2026, 6, 1), D(2026, 7, 31)), _occ(D(2026, 7, 1), D(2026, 1, 1), D(2026, 12, 31), n_tokens=2)]
         r = st.reconstruir_periodos(occ, VENTANA)
-        assert [(p.ini, p.fin, p.dudas) for p in r.periodos] == [(D(2026, 6, 1), D(2026, 7, 31), [])]
+        assert [(p.ini, p.fin, p.dudas) for p in r.periodos] == [
+            (D(2026, 6, 1), D(2026, 7, 31), ["FIN_EN_MES_SOLO_CELDA_COMPARTIDA:2026-07"])]
+
+    def test_inicio_en_celda_compartida_si_es_atribuible(self):
+        # El traspaso en el mes de INICIO es normal: las fechas salen de bloques posteriores propios.
+        occ = [_occ(D(2026, 3, 1), D(2026, 1, 1), D(2026, 12, 31), n_tokens=2),
+               _occ(D(2026, 4, 1), D(2026, 3, 15), D(2026, 5, 31)), _occ(D(2026, 5, 1), D(2026, 3, 15), D(2026, 5, 31))]
+        r = st.reconstruir_periodos(occ, VENTANA)
+        assert [(p.ini, p.fin, p.dudas) for p in r.periodos] == [(D(2026, 3, 15), D(2026, 5, 31), [])] and not r.problemas
 
     def test_indeterminada_y_no_interpretable(self):
         r = st.reconstruir_periodos([_occ(D(2026, 1, 1), D(2025, 2, 15), None, tipo_fin="INDET")], VENTANA)
@@ -224,7 +244,7 @@ class TestFechas:
 
 def _xw(hoja, codigo, ubic, desc, clas="CENCOSUD"):
     o = _occ(D(2026, 3, 1), D(2026, 3, 1), D(2026, 3, 31))
-    o.hoja, o.codigo, o.attrs = hoja, codigo, {"Ubic": ubic, "Descripcion": desc, "Clas": clas}
+    o.hoja, o.codigo, o.attrs = hoja, codigo, {"Ubic": ubic, "Descripcion": desc, "Clas": clas, "Codigo": codigo}
     o.alcance = st.alcance_fila(hoja, o.attrs)
     return o
 
@@ -264,9 +284,24 @@ class TestCrosswalk:
                 "UNI-TOTEMD-1G-5", "ALTA", "HERENCIA_SLOTS_HERMANOS"), cod
 
     def test_sin_hermano_alta_no_hereda(self):
-        xw = self._run([_xw("REM-PIL", "REM-TS 1-V1", "REMEROS", "TV Led / x", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS 1-V2", "REMEROS", "TV Led / x", clas="REMEROS")])
-        assert set(xw["Confianza"]) == {"MEDIA"} and set(xw["ElementoID_OCU26"]) == {""}
+        xw = self._run([_xw("REM-PIL", "REM-TS 2-V1", "REMEROS", "TV Led / x", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS 2-V2", "REMEROS", "TV Led / x", clas="REMEROS")])
+        assert set(xw["Confianza"]) == {"BAJA"} and set(xw["ElementoID_OCU26"]) == {""}
+
+    def test_rem_ts_a_rem_db_conserva_numero(self):
+        xw = self._run([_xw("REM-PIL", "REM-TS 1-V1", "REM", "TV Led / lado derecho", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS 1", "REM", "TV Led / lado derecho", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS -5-V3", "REM", "TV Led / izq", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS 3 -V2", "REM", "TV Led / x", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS 4-V1", "REM", "TV Led / x", clas="REMEROS")])
+        for cod, eid in (("REM-TS 1-V1", "REM-DB-1"), ("REM-TS 1", "REM-DB-1"), ("REM-TS -5-V3", "REM-DB-5"),
+                         ("REM-TS 3 -V2", "REM-DB-3")):
+            assert (xw.loc[cod, "ElementoID_OCU26"], xw.loc[cod, "Confianza"], xw.loc[cod, "MetodoMatch"]) == (
+                eid, "ALTA", "REGLA_REM_TS_A_REM_DB"), cod
+        # REM-DB-4 no existe en el maestro: no se inventa ni se aproxima a otro numero.
+        r = xw.loc["REM-TS 4-V1"]
+        assert (r["ElementoID_OCU26"], r["Confianza"], r["MetodoMatch"]) == ("", "BAJA", "REM_TS_DESTINO_INEXISTENTE")
+        assert st.destino_rem_ts("REM-TS 12-V3") == "REM-DB-12" and st.destino_rem_ts("REM-DB-1") is None
 
     def test_un_uni_no_es_replace_global(self):
         # UN-LONAER3x5-K2 -> UNI-LONAER3x5-K2 no existe: no se inventa ni se toma K1.
@@ -275,18 +310,19 @@ class TestCrosswalk:
         assert r["ElementoID_OCU26"] == "" and r["Confianza"] != "ALTA"
         assert "no existe en maestro" in r["Observacion"]
 
-    def test_pled_sin_descripcion_en_maestro_no_matchea(self):
-        xw = self._run([_xw("PLED", "PALS-3600seg-V1", "ALS", "PLED")])
-        assert xw.loc["PALS-3600seg-V1", "Confianza"] == "BAJA"
-        assert xw.loc["PALS-3600seg-V1", "ElementoID_OCU26"] == ""
+    def test_pals_dado_de_baja_no_se_mapea(self):
+        o = _xw("PLED", "PALS-3600seg-V1", "ALS", "PLED")
+        assert o.alcance == "ELEMENTO_DADO_DE_BAJA_ALSINA"
+        assert st.alcance_fila("PLED", {"Codigo": "PALS-3600seg"}) == "ELEMENTO_DADO_DE_BAJA_ALSINA"
+        assert st.construir_crosswalk([o], st.IndiceMaestro(MAESTRO)).empty
 
     def test_familia_por_descripcion_es_ambigua(self):
         occ = [_xw("REM-PIL", "REM-CH-1D", "REM", "Chupete", clas="REMEROS"),
-               _xw("REM-PIL", "REM-TS 1-V1", "REM", "TV Led / lado derecho", clas="REMEROS")]
+               _xw("REM-PIL", "REM-PANT-9", "REM", "TV Led / lado derecho", clas="REMEROS")]
         xw = self._run(occ)
-        r = xw.loc["REM-TS 1-V1"]
+        r = xw.loc["REM-PANT-9"]
         assert r["Confianza"] == "MEDIA" and r["ElementoID_OCU26"] == ""
-        assert r["Candidatos"] == "REM-DB-1, REM-DB-3"
+        assert r["Candidatos"] == "REM-DB-1, REM-DB-3, REM-DB-5"
 
     def test_medio_contradictorio_baja_a_media(self):
         xw = self._run([_xw("CENCO F", "UNI-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")])
@@ -349,7 +385,8 @@ class TestDedup:
 def _campanas(rows):
     df = pd.DataFrame(columns=CAMPANAS_HEADERS)
     for k, (ot, eid, ini, fin) in enumerate(rows):
-        df.loc[k] = {"CargaID": f"HIST-{k}", "IDCampaña": float(ot), "ElementoID": eid,
+        df.loc[k] = {"CargaID": f"HIST-{k:08d}", "IDCampaña": float(ot), "ElementoID": eid,
+                     "ClaveNegocio": st.clave_negocio(ot, eid, ini, fin),
                      "FechaInicio": pd.Timestamp(ini), "FechaFin": pd.Timestamp(fin), "FechaIndefinida": "No"}
     return df
 
@@ -379,7 +416,7 @@ class TestClasificacion:
             self._o(*uni, D(2026, 8, 1), D(2026, 8, 1), D(2026, 8, 31), 4800),            # nueva -> IMPORTAR
             self._o(*uni, D(2026, 3, 1), D(2026, 3, 1), D(2026, 3, 31), 4300),            # ya cargada
             self._o(*uni, D(2025, 11, 1), D(2025, 11, 1), D(2025, 11, 30), 4100),         # fuera de 2026
-            self._o(*uni, D(2026, 9, 1), D(2026, 9, 1), D(2026, 9, 30), 4810, bonif=True),  # B -> REVISAR
+            self._o(*uni, D(2026, 9, 1), D(2026, 9, 1), D(2026, 9, 30), 4810, bonif=True),  # B -> se importa
             self._o("CENCO F", "UNI-ASC -1", "UNICENTER", "Ascensor", D(2026, 8, 1), D(2026, 8, 1), D(2026, 8, 31), 4729),
             self._o("TRIPSTORE Y LS D", "Pantalla 4 - V3", "CALAFATE", "Pantalla", D(2026, 8, 1), D(2026, 8, 1),
                     D(2026, 8, 31), 4900, clas="LONDON SUPPLY"),
@@ -391,7 +428,8 @@ class TestClasificacion:
         assert estado[(4800, "UN-TRIEDRO-1A-2")] == ("IMPORTAR", "NUEVA_ASIGNACION")
         assert estado[(4300, "UN-TRIEDRO-1A-2")] == ("YA_EXISTE", "YA_EXISTE_EXACTO")
         assert estado[(4100, "UN-TRIEDRO-1A-2")] == ("NO_IMPORTAR", "FUERA_DE_2026")
-        assert estado[(4810, "UN-TRIEDRO-1A-2")][0] == "REVISAR" and "OT_BONIFICADA_PREFIJO_B" in estado[(4810, "UN-TRIEDRO-1A-2")][1]
+        assert estado[(4810, "UN-TRIEDRO-1A-2")] == ("IMPORTAR", "NUEVA_ASIGNACION")
+        assert df.loc[df["IDCampaña"] == 4810, "TRZ_OT_Bonificada"].tolist() == ["SI"]
         assert estado[(4729, "UNI-ASC -1")][0] == "REVISAR" and "ELEMENTO_NO_INEQUIVOCO" in estado[(4729, "UNI-ASC -1")][1]
         assert estado[(4900, "Pantalla 4 - V3")] == ("NO_IMPORTAR", "FUERA_DE_ALCANCE_LONDON/LS")
         assert estado[(None, "UNI-TRIEDRO-1A-2")] == ("NO_IMPORTAR", "NO_COMERCIAL_SIN_OT")
@@ -403,11 +441,166 @@ class TestClasificacion:
         df.insert(0, "StagingID", "STG2B-000001")
         df["TRZ_Medio_OCU26"] = "Digital"
         df["TRZ_CircuitoDashboard_OCU26"] = "Shoppings Digital"
-        imp = st.preparar_importar(df, {"UNI-TRIEDRO-1A-2": "Digital"})
+        carga = dt.datetime(2026, 10, 7, 12, 0, 0)
+        imp = st.preparar_importar(df, {"UNI-TRIEDRO-1A-2": "Digital"}, carga, 23127)
         assert list(imp.columns[: len(CAMPANAS_HEADERS)]) == CAMPANAS_HEADERS
         r = imp.iloc[0]
         assert (r["IDCampaña"], r["ElementoID"], r["FechaInicio"], r["FechaFin"]) == (4800, "UNI-TRIEDRO-1A-2", D(2026, 8, 1), D(2026, 8, 31))
+        assert type(r["IDCampaña"]) is int
         assert r["ClaveNegocio"] == "4800|UNI-TRIEDRO-1A-2|2026-08-01|2026-08-31||"
         assert r["TipoCargaDeclarado"] == "Digital" and r["FechaIndefinida"] == "No" and r["Campaña"] == "PLAYSTATION"
-        for vacia in ("CargaID", "Cliente", "Marca", "Agencia", "Proveedor", "EstadoValidacion", "Estado"):
+        assert (r["CargaID"], r["FechaHoraCarga"], r["UsuarioCarga"], r["FuenteCarga"], r["EstadoValidacion"], r["Estado"]) == (
+            "HIST-00023127", carga, "MIGRACION_OCUPACION_2026", "Migración histórica - OCUPACION_2026", "OK", "Finalizada")
+        for vacia in ("Cliente", "Marca", "Agencia", "Proveedor", "Observaciones", "ObservacionValidacion", "SalidasVendidas"):
             assert pd.isna(r[vacia]), vacia
+
+    def test_bonificada_lleva_observacion(self):
+        uni = ("CENCO D", "UN-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")
+        df = self._clasificar([self._o(*uni, D(2026, 11, 1), D(2026, 11, 1), D(2026, 11, 30), 4726, bonif=True)])
+        df.insert(0, "StagingID", "STG2B-000001")
+        imp = st.preparar_importar(df, {"UNI-TRIEDRO-1A-2": "Digital"}, dt.datetime(2026, 10, 7), 1)
+        r = imp.iloc[0]
+        assert r["IDCampaña"] == 4726 and r["Observaciones"] == "OT bonificada (B) en OCUPACIÓN 2026"
+        assert r["Estado"] == "Activa" and pd.isna(r["Proveedor"])
+
+    def test_extension_actualiza_fila_existente(self):
+        uni = ("CENCO D", "UN-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")
+        occ = [self._o(*uni, D(2026, m, 1), D(2026, 3, 1), D(2026, 6, 30) if m < 6 else D(2026, 8, 31), 4317)
+               for m in (3, 4, 5, 6, 7, 8)]
+        df = self._clasificar(occ, [(4317, "UNI-TRIEDRO-1A-2", D(2026, 3, 1), D(2026, 6, 30))])
+        r = df.iloc[0]
+        assert (r["Estado_Staging"], r["Operacion"], r["Motivo"]) == ("IMPORTAR", st.OP_UPDATE, "EXTENSION_FECHAFIN_DE_FILA_EXISTENTE")
+        assert (r["TRZ_CargaID_Extendida"], r["TRZ_FechaFin_Anterior"], r["FechaFin"]) == ("HIST-00000000", D(2026, 6, 30), D(2026, 8, 31))
+        df.insert(0, "StagingID", "STG2B-000001")
+        ext = st.preparar_extensiones(df)
+        assert ext.iloc[0]["ClaveNegocio_Nueva"] == "4317|UNI-TRIEDRO-1A-2|2026-03-01|2026-08-31||"
+        assert st.preparar_importar(df, {}, dt.datetime(2026, 10, 7), 1).empty  # no se crea fila nueva
+
+    def test_extension_que_cambia_inicio_va_a_revisar(self):
+        uni = ("CENCO D", "UN-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")
+        occ = [self._o(*uni, D(2026, m, 1), D(2026, 2, 1), D(2026, 8, 31), 4317) for m in range(2, 9)]
+        df = self._clasificar(occ, [(4317, "UNI-TRIEDRO-1A-2", D(2026, 3, 1), D(2026, 6, 30))])
+        r = df.iloc[0]
+        assert r["Estado_Staging"] == "REVISAR" and "EXTENSION_CAMBIA_FECHAINICIO" in r["Motivo"]
+
+    def test_conflicto_con_otra_campana_en_estatico(self):
+        cf = ("CENCO F", "UN-LONAER3x5-K1", "UNICENTER", "Pasillo PACO")
+        occ = [self._o(*cf, D(2026, 10, 1), D(2026, 10, 1), D(2026, 12, 31), 4859),
+               self._o(*cf, D(2026, 11, 1), D(2026, 10, 1), D(2026, 12, 31), 4859),
+               self._o(*cf, D(2026, 12, 1), D(2026, 10, 1), D(2026, 12, 31), 4859)]
+        idx_m = st.IndiceMaestro(MAESTRO)
+        idx_c = st.IndiceCampanas(_campanas([(4758, "UNI-LONAER3x5-K1", D(2026, 9, 1), D(2026, 12, 31))]))
+        df = st.consolidar(occ, st.construir_crosswalk(occ, idx_m), idx_m, idx_c, {h: VENTANA for h in st.HOJAS_PROCESAR})
+        assert (df.iloc[0]["Estado_Staging"], df.iloc[0]["Operacion"]) == ("IMPORTAR", st.OP_INSERT)
+        st.marcar_conflictos_estaticos(df, idx_c, {e: r["Medio"] for e, r in idx_m.por_id.items()})
+        assert (df.iloc[0]["Estado_Staging"], df.iloc[0]["Motivo"]) == (
+            "REVISAR", "SOLAPA_OTRA_CAMPANA_EN_ELEMENTO_ESTATICO:4758")
+
+    def test_digital_admite_campanas_simultaneas(self):
+        uni = ("CENCO D", "UN-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")
+        occ = [self._o(*uni, D(2026, 8, 1), D(2026, 8, 1), D(2026, 8, 31), 4800)]
+        idx_m = st.IndiceMaestro(MAESTRO)
+        idx_c = st.IndiceCampanas(_campanas([(4700, "UNI-TRIEDRO-1A-2", D(2026, 7, 1), D(2026, 9, 30))]))
+        df = st.consolidar(occ, st.construir_crosswalk(occ, idx_m), idx_m, idx_c, {h: VENTANA for h in st.HOJAS_PROCESAR})
+        st.marcar_conflictos_estaticos(df, idx_c, {e: r["Medio"] for e, r in idx_m.por_id.items()})
+        assert df.iloc[0]["Estado_Staging"] == "IMPORTAR"
+
+    def test_pals_no_importar(self):
+        df = self._clasificar([self._o("PLED", "PALS-3600seg-V2", "ALS", "PLED", D(2026, 8, 1), D(2026, 8, 1), D(2026, 8, 31), 4800)])
+        assert (df.iloc[0]["Estado_Staging"], df.iloc[0]["Motivo"]) == ("NO_IMPORTAR", "ELEMENTO_DADO_DE_BAJA_ALSINA")
+
+
+class TestExtensionReglas:
+    F = staticmethod(lambda ini, fin, cid="HIST-1": st.FilaCampana(cid, ini, fin, False, f"1|E|{ini}|{fin}||"))
+
+    def test_casos(self):
+        f = self.F(D(2026, 3, 1), D(2026, 6, 30))
+        assert st.evaluar_extension([f], D(2026, 3, 1), D(2026, 9, 30)) == (f, "")
+        assert st.evaluar_extension([f], D(2026, 7, 1), D(2026, 9, 30)) == (f, "")  # continuidad contigua
+        assert st.evaluar_extension([f], D(2026, 2, 1), D(2026, 9, 30))[1] == "EXTENSION_CAMBIA_FECHAINICIO"
+        assert st.evaluar_extension([f], D(2026, 5, 1), D(2026, 9, 30))[1] == "EXTENSION_INICIO_NO_COINCIDE"
+        assert st.evaluar_extension([f], D(2026, 8, 1), D(2026, 9, 30))[1] == "EXTENSION_SIN_FILA_CONTINUA"
+        g = self.F(D(2026, 3, 1), D(2026, 7, 21), "HIST-2")
+        assert st.evaluar_extension([f, g], D(2026, 3, 1), D(2026, 9, 30))[1] == "EXTENSION_AMBIGUA_VARIAS_FILAS_EXISTENTES"
+        h = self.F(D(2026, 9, 1), D(2026, 9, 30), "HIST-3")
+        assert st.evaluar_extension([f, h], D(2026, 3, 1), D(2026, 8, 15))[1] == ""
+        assert st.evaluar_extension([f, h], D(2026, 3, 1), D(2026, 9, 15))[1] == "EXTENSION_AMBIGUA_VARIAS_FILAS_EXISTENTES"
+        assert st.clave_con_fin("4317|E|2026-03-01|2026-06-30||", D(2026, 8, 31)) == "4317|E|2026-03-01|2026-08-31||"
+
+    def test_estado_por_fechas(self):
+        carga = dt.datetime(2026, 10, 7, 9, 0)
+        assert st.estado_por_fechas(D(2026, 10, 6), carga) == "Finalizada"
+        assert st.estado_por_fechas(D(2026, 10, 7), carga) == "Activa"
+
+
+# ---------------------------------------------------------------------------
+# Escritura quirurgica del xlsx (solo CAMPANAS + tblCampanas)
+# ---------------------------------------------------------------------------
+
+def _workbook_sintetico(path):
+    import openpyxl
+    from openpyxl.worksheet.table import Table
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    m = wb.create_sheet("MAESTRO_ELEMENTOS")
+    m.append(["ElementoID", "Medio"])
+    m.append(["E1", "Digital"])
+    m.add_table(Table(displayName="tblElementos", ref="A1:B2"))
+    c = wb.create_sheet("CAMPANAS")
+    c.append(CAMPANAS_HEADERS)
+    for k, (ot, ini, fin) in enumerate([(4317, D(2026, 3, 1), D(2026, 6, 30)), (4500, D(2026, 1, 1), D(2026, 1, 31))]):
+        fila = {h: None for h in CAMPANAS_HEADERS}
+        fila.update({"CargaID": f"HIST-{k + 1:08d}", "ClaveNegocio": st.clave_negocio(ot, "E1", ini, fin),
+                     "IDCampaña": ot, "ElementoID": "E1", "FechaInicio": dt.datetime.combine(ini, dt.time()),
+                     "FechaFin": dt.datetime.combine(fin, dt.time()), "FechaHoraCarga": dt.datetime(2026, 8, 18, 14, 53, 36)})
+        c.append([fila[h] for h in CAMPANAS_HEADERS])
+    c.add_table(Table(displayName="tblCampanas", ref="A1:AD3"))
+    p = wb.create_sheet("PARAMETROS")
+    p.append(["Categoria", "Valor"])
+    p.append(["Estado", "Activa"])
+    p.add_table(Table(displayName="tblParametros", ref="A1:B2"))
+    wb.save(path)
+
+
+def test_escritura_quirurgica_campanas(tmp_path):
+    import zipfile
+
+    base, nuevo = tmp_path / "base.xlsx", tmp_path / "nuevo.xlsx"
+    _workbook_sintetico(base)
+    upd = pd.DataFrame([{"CargaID": "HIST-00000001", "PosicionFila": 0, "FechaFin_Anterior": D(2026, 6, 30),
+                         "FechaFin_Nueva": D(2026, 8, 31), "ClaveNegocio_Anterior": "4317|E1|2026-03-01|2026-06-30||",
+                         "ClaveNegocio_Nueva": "4317|E1|2026-03-01|2026-08-31||"}])
+    ins = pd.DataFrame([{h: None for h in CAMPANAS_HEADERS}])
+    ins.loc[0, ["CargaID", "ClaveNegocio", "IDCampaña", "ElementoID", "Campaña", "Observaciones"]] = [
+        "HIST-00000003", "4726|E1|2026-11-01|2026-11-30||", 4726, "E1", "A & B <x>", "OT bonificada (B) en OCUPACIÓN 2026"]
+    ins["FechaInicio"], ins["FechaFin"] = [D(2026, 11, 1)], [D(2026, 11, 30)]
+    ins["FechaHoraCarga"] = [dt.datetime(2026, 10, 7, 13, 0, 5)]
+    st.construir_xlsx_actualizado(base, nuevo, upd, ins)
+
+    with zipfile.ZipFile(base) as za, zipfile.ZipFile(nuevo) as zb:
+        assert za.namelist() == zb.namelist()
+        distintas = {n for n in za.namelist() if za.read(n) != zb.read(n)}
+        hoja, tabla = st._parte_hoja_y_tabla(za, "CAMPANAS", "tblCampanas")
+        assert distintas == {hoja, tabla}
+        assert 'ref="A1:AD4"' in zb.read(tabla).decode()
+    c = pd.read_excel(nuevo, sheet_name="CAMPANAS")
+    assert list(c.columns) == CAMPANAS_HEADERS and len(c) == 3
+    assert c.loc[0, "FechaFin"] == pd.Timestamp(2026, 8, 31) and c.loc[0, "ClaveNegocio"].endswith("2026-08-31||")
+    assert c.loc[0, "FechaInicio"] == pd.Timestamp(2026, 3, 1)  # inicio original intacto
+    assert c.loc[1, "FechaFin"] == pd.Timestamp(2026, 1, 31)    # otra fila intacta
+    r = c.loc[2]
+    assert (r["CargaID"], r["IDCampaña"], r["Campaña"], r["FechaInicio"]) == ("HIST-00000003", 4726, "A & B <x>", pd.Timestamp(2026, 11, 1))
+    assert r["FechaHoraCarga"].round("s") == pd.Timestamp(2026, 10, 7, 13, 0, 5)
+    for hoja_ in ("MAESTRO_ELEMENTOS", "PARAMETROS"):
+        assert pd.read_excel(base, sheet_name=hoja_).equals(pd.read_excel(nuevo, sheet_name=hoja_))
+
+
+def test_escritura_aborta_si_la_fila_no_coincide(tmp_path):
+    base = tmp_path / "base.xlsx"
+    _workbook_sintetico(base)
+    upd = pd.DataFrame([{"CargaID": "HIST-00000001", "PosicionFila": 0, "FechaFin_Anterior": D(2026, 5, 31),
+                         "FechaFin_Nueva": D(2026, 8, 31), "ClaveNegocio_Anterior": "4317|E1|2026-03-01|2026-06-30||",
+                         "ClaveNegocio_Nueva": "x"}])
+    with pytest.raises(st.StagingError):
+        st.construir_xlsx_actualizado(base, tmp_path / "n.xlsx", upd, pd.DataFrame(columns=CAMPANAS_HEADERS))

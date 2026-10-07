@@ -1,16 +1,21 @@
-"""Staging de migracion historica de campanas OCU26 - Etapa 2B.
+"""Staging y aplicacion de la migracion historica de campanas OCU26 (Etapa 2B / 2B.1).
 
 Lee OCUPACION_2026.xlsx (fuente historica, grilla mensual por elemento) y
 OCU26_BASE_DATOS.xlsx (MAESTRO_ELEMENTOS + CAMPANAS) y genera un staging
-clasificado (IMPORTAR / YA_EXISTE / REVISAR / NO_IMPORTAR) listo para una
-carga posterior a CAMPANAS. NO importa nada.
+clasificado (IMPORTAR / YA_EXISTE / REVISAR / NO_IMPORTAR). IMPORTAR tiene dos
+operaciones: INSERT (asignacion nueva) y UPDATE_FECHAFIN (extension de una fila
+existente de CAMPANAS).
 
-Estrictamente READ-ONLY sobre ambos Excel: verifica SHA-256 al inicio y al
-final. Solo escribe en el directorio --salida.
+Sin --aplicar es READ-ONLY sobre ambos Excel (SHA-256 al inicio y al final) y
+solo escribe en --salida. Con --aplicar modifica UNICAMENTE la hoja CAMPANAS
+(y su tabla tblCampanas) de la base: edicion quirurgica del xlsx (las demas
+partes del zip se copian sin cambios), escritura en temporal, validacion
+completa y reemplazo atomico. Exige que la base tenga el SHA esperado.
 
 Uso:
     python scripts/staging_import_historico.py --fuente <OCUPACION_2026.xlsx>
         --salida <dir> [--base <OCU26_BASE_DATOS.xlsx>] [--sha-base <sha256>]
+        [--aplicar]
 
 La base se resuelve igual que el resto del pipeline (validate_input.
 resolve_input_path). Ninguna ruta personal se versiona.
@@ -19,16 +24,22 @@ Reglas:
 - Hojas: CENCO F, CENCO D, PLED, REM-PIL, TRIPSTORE Y LS D (solo filas
   TRIPSTORE), AEROPUERTOS F/D. YPF, LS F, CENCOMEDIA no se procesan; filas
   London/LS o Cencomedia dentro de hojas procesadas -> NO_IMPORTAR.
-- OT = IDCampana. Prefijos de la celda OT (PUBLI, PORCO, ...) se conservan
-  como trazabilidad; "B <n>" (bonificada) nunca se asume IDCampana.
+- OT = IDCampana (solo el numero). Prefijos (PUBLI, PORCO, ...) quedan como
+  trazabilidad. "B <n>" = pauta bonificada: IDCampana <n> y nota en
+  Observaciones.
 - ElementoOrigen se resuelve contra MAESTRO_ELEMENTOS por evidencia: codigo
   exacto, normalizacion de espacios, prefijo UN->UNI confirmado (nunca replace
-  global), sufijo de slot -Vn, y para PLED la Descripcion del maestro.
+  global), sufijo de slot -Vn, PLED por Descripcion del maestro, Descripcion +
+  posicion, slots hermanos, y la regla de negocio REM-TS n -> REM-DB-n (solo si
+  existe en el maestro). PALS-3600seg (Alsina) esta dado de baja: NO_IMPORTAR.
   Solo confianza ALTA llega a IMPORTAR.
-- Fechas: se consolidan rangos INICIO/FIN identicos o contiguos por
-  IDCampana + ElementoID; los huecos generan periodos separados; toda
-  contradiccion, mes sin presencia o fecha no interpretable -> REVISAR.
-- Deduplicacion contra CAMPANAS por IDCampana + ElementoID + fechas.
+- Fechas: se consolidan rangos INICIO/FIN identicos, contiguos o con FIN que
+  se extiende bloque a bloque; huecos intermedios dentro de un mismo rango se
+  aceptan; huecos reales generan periodos separados; toda contradiccion,
+  inicio arrastrado o fecha no interpretable -> REVISAR.
+- Deduplicacion contra CAMPANAS por IDCampana + ElementoID + fechas; la
+  continuidad demostrada de una fila existente con FIN posterior es un UPDATE
+  de FechaFin (+ ClaveNegocio), nunca una fila nueva.
 """
 
 from __future__ import annotations
@@ -36,6 +47,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import numbers
 import re
 import sys
 import unicodedata
@@ -44,6 +56,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+import numpy as np
 import openpyxl
 import pandas as pd
 
@@ -81,7 +94,16 @@ CLAS_EXCLUIDAS: dict[str, str] = {
 # (decoracion navidena, institucional del soporte/shopping).
 PATRON_NO_COMERCIAL = re.compile(r"\bDECO\b|NAVIDE|\bINSTI|INSTITUCIONAL|\bCENCO\b|CENCOSUD|LANDMARK")
 
+# Elementos historicos dados de baja (no existen ni deben volver al maestro).
+ELEMENTOS_DADOS_DE_BAJA: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"^PALS-\d+SEG(-V\d+)?$"), "ELEMENTO_DADO_DE_BAJA_ALSINA"),
+]
+# Regla de negocio confirmada: REM-TS <n> (y slots -Vk) = REM-DB-<n>.
+PATRON_REM_TS = re.compile(r"^REM-TS[\s-]*(\d+)(?:-V\d+)?$")
+NOTA_BONIFICADA = "OT bonificada (B) en OCUPACIÓN 2026"
+
 ESTADOS = ("IMPORTAR", "YA_EXISTE", "REVISAR", "NO_IMPORTAR")
+OP_INSERT, OP_UPDATE = "INSERT", "UPDATE_FECHAFIN"
 
 MESES_ES = {
     "ENE": 1, "FEB": 2, "MAR": 3, "ABR": 4, "MAY": 5, "JUN": 6,
@@ -350,6 +372,10 @@ def alcance_fila(hoja: str, attrs: dict[str, str]) -> str:
     clas = normalizar_codigo(attrs.get("Clas", ""))
     if clas in CLAS_EXCLUIDAS:
         return CLAS_EXCLUIDAS[clas]
+    codigo = normalizar_codigo(attrs.get("Codigo", ""))
+    for patron, motivo in ELEMENTOS_DADOS_DE_BAJA:
+        if patron.match(codigo):
+            return motivo
     if hoja == "TRIPSTORE Y LS D" and clas != "TRIPSTORE":
         return "LONDON/LS"
     return "EN_ALCANCE"
@@ -477,8 +503,17 @@ def posicion_codigo(codigo: str) -> str:
     return m.group(1) if m else ""
 
 
+def destino_rem_ts(codigo: str) -> str | None:
+    """REM-TS <n> / REM-TS <n>-Vk -> 'REM-DB-<n>' (se conserva el numero)."""
+    m = PATRON_REM_TS.match(normalizar_codigo(codigo))
+    return f"REM-DB-{int(m.group(1))}" if m else None
+
+
 def candidatos_por_codigo(codigo: str, hoja: str, idx: IndiceMaestro) -> tuple[list[str], str]:
     """Busqueda por evidencia de codigo, en orden de fuerza. -> (candidatos, metodo)."""
+    rem = destino_rem_ts(codigo)
+    if rem:
+        return ([rem], "REGLA_REM_TS_A_REM_DB") if rem in idx.por_id else ([], "REM_TS_DESTINO_INEXISTENTE")
     exactos = [e for e in idx.por_id if e == texto(codigo)]
     if exactos:
         return exactos, "EXACTO"
@@ -575,7 +610,7 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
 
     # 3) sin match de codigo -> evidencia de ubicacion + descripcion
     for key, (cands, metodo, attrs) in list(pre.items()):
-        if not cands:
+        if not cands and metodo != "REM_TS_DESTINO_INEXISTENTE":
             c2, m2 = candidatos_por_descripcion(key[0], key[1], attrs, idx, ubic_alias)
             if c2:
                 pre[key] = (c2, m2, attrs)
@@ -610,6 +645,8 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
                 problemas.append("Solo coincide la Descripcion (sin evidencia de codigo/posicion)")
             elif metodo not in ("EXACTO", "NORMALIZACION_ESPACIOS") and desc and texto(r.get("Descripcion")) and sim == 0:
                 problemas.append(f"Descripciones sin palabras en comun ('{desc}' vs '{texto(r.get('Descripcion'))}')")
+            if metodo == "REGLA_REM_TS_A_REM_DB":
+                obs.append(f"Regla de negocio REM-TS n -> REM-DB-n (mismo soporte): '{codigo}' -> {eid}")
             if "UN_UNI" in metodo:
                 obs.append(f"UN->UNI confirmado contra maestro: '{codigo}' -> {eid}")
             if "SUFIJO_SLOT" in metodo:
@@ -625,6 +662,9 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
         elif cands:
             m.metodo, m.confianza = metodo + ("" if metodo == "DESCRIPCION_FAMILIA" else "_AMBIGUO"), "MEDIA"
             obs.append("Multiples candidatos razonables, sin equivalencia comprobable: " + ", ".join(cands))
+        elif metodo == "REM_TS_DESTINO_INEXISTENTE":
+            m.metodo = metodo
+            obs.append(f"Regla REM-TS n -> REM-DB-n: {destino_rem_ts(codigo)} no existe en MAESTRO_ELEMENTOS (no se inventa)")
         else:
             sugeridos = sugerir_candidatos(hoja, attrs, idx, ubic_alias)
             m.candidatos = [s for s, _ in sugeridos]
@@ -740,6 +780,7 @@ class Periodo:
     regla: str
     pares: list[tuple[dt.date, dt.date]]
     dudas: list[str] = field(default_factory=list)
+    info: list[str] = field(default_factory=list)  # evidencia aceptada (no bloquea)
 
 
 @dataclass
@@ -817,9 +858,24 @@ def reconstruir_periodos(ocurrencias: list[Ocurrencia], ventana: Iterable[dt.dat
         per = Periodo(ini=ini, fin=fin, regla=regla, pares=cl)
         if regla == "RANGOS_SOLAPADOS":
             per.dudas.append("RANGOS_DISTINTOS_SOLAPADOS")
-        sin_presencia = [m for m in meses_entre(ini, fin) if m in ventana and m not in presencia]
-        if sin_presencia:
-            per.dudas.append("MESES_SIN_PRESENCIA:" + fmt_meses(sin_presencia))
+        meses_per = meses_entre(ini, fin)
+        pres_per = [m for m in presencia if m in meses_per]
+        sin_presencia = [m for m in meses_per if m in ventana and m not in presencia]
+        # Huecos intermedios: la misma OT con el mismo rango aparece antes y
+        # despues -> continuidad demostrada. Huecos al inicio (inicio
+        # arrastrado) o al final (fin no confirmado) siguen siendo duda.
+        intermedios = [m for m in sin_presencia if pres_per and pres_per[0] < m < pres_per[-1]]
+        extremos = [m for m in sin_presencia if m not in intermedios]
+        if intermedios:
+            per.info.append("MESES_INTERMEDIOS_SIN_PRESENCIA_ACEPTADOS:" + fmt_meses(intermedios))
+        if extremos:
+            per.dudas.append("MESES_SIN_PRESENCIA:" + fmt_meses(extremos))
+        # El mes del FIN solo aparece en celdas con otra OT (traspaso): el FIN
+        # declarado en bloques anteriores no es atribuible a esta OT.
+        mes_fin = inicio_mes(fin)
+        occ_fin = [o for o in ocurrencias if o.mes == mes_fin]
+        if mes_fin in ventana and occ_fin and all(o.compartida for o in occ_fin):
+            per.dudas.append("FIN_EN_MES_SOLO_CELDA_COMPARTIDA:" + mes_fin.strftime("%Y-%m"))
         periodos.append(per)
     fuera = [m for m in presencia if not any(_intersecta_mes(p.ini, p.fin, m) for p in periodos)]
     if fuera:
@@ -859,6 +915,8 @@ class FilaCampana:
     ini: dt.date | None
     fin: dt.date | None
     indefinida: bool
+    clave: str = ""
+    pos: int = -1  # posicion 0-based en la hoja CAMPANAS (sin encabezado)
 
 
 def _a_fecha(v: Any) -> dt.date | None:
@@ -888,7 +946,8 @@ class IndiceCampanas:
         self.por_ot_elem: dict[tuple[int, str], list[FilaCampana]] = defaultdict(list)
         self.elems_por_ot: dict[int, set[str]] = defaultdict(set)
         self.atributos_por_ot: dict[int, set[tuple[str, ...]]] = defaultdict(set)
-        for r in campanas.to_dict("records"):
+        self.por_elem: dict[str, list[tuple[int, FilaCampana]]] = defaultdict(list)
+        for pos, r in enumerate(campanas.to_dict("records")):
             ot = _a_ot(r.get("IDCampaña"))
             if ot is None:
                 continue
@@ -896,8 +955,10 @@ class IndiceCampanas:
             self.por_ot_elem[(ot, eid)].append(FilaCampana(
                 carga_id=texto(r.get("CargaID")), ini=_a_fecha(r.get("FechaInicio")),
                 fin=_a_fecha(r.get("FechaFin")), indefinida=texto(r.get("FechaIndefinida")) == "Si",
+                clave=texto(r.get("ClaveNegocio")), pos=pos,
             ))
             self.elems_por_ot[ot].add(eid)
+            self.por_elem[eid].append((ot, self.por_ot_elem[(ot, eid)][-1]))
             self.atributos_por_ot[ot].add(tuple(texto(r.get(c)) for c in ("Campaña", "Cliente", "Marca", "Agencia", "Proveedor")))
 
 
@@ -970,6 +1031,51 @@ def comparar_con_campanas(
     return ResultadoDedup("OTRAS_FECHAS", ids)
 
 
+UN_DIA = dt.timedelta(days=1)
+
+
+def evaluar_extension(
+    filas: list[FilaCampana], ini: dt.date, fin: dt.date
+) -> tuple[FilaCampana | None, str]:
+    """La fuente demuestra que UNA fila existente (mismo IDCampana + ElementoID)
+    continuo hasta un FIN posterior.
+
+    Requisitos: exactamente una fila solapada o contigua; mismo INICIO (o el
+    periodo de la fuente arranca el dia siguiente a su FIN); FIN nuevo
+    posterior; la fila extendida no pisa otra fila de la misma OT+elemento.
+    -> (fila_a_extender, "") o (None, motivo REVISAR).
+    """
+    tocadas = [f for f in filas if f.ini and (f.fin or f.indefinida)
+               and f.ini <= fin and ini <= (f.fin or dt.date.max - UN_DIA) + UN_DIA]
+    if not tocadas:
+        return None, "EXTENSION_SIN_FILA_CONTINUA"
+    if len(tocadas) > 1:
+        return None, "EXTENSION_AMBIGUA_VARIAS_FILAS_EXISTENTES"
+    f = tocadas[0]
+    if f.indefinida or f.fin is None:
+        return None, "EXTENSION_SOBRE_FILA_INDEFINIDA"
+    if ini < f.ini:
+        return None, "EXTENSION_CAMBIA_FECHAINICIO"
+    if ini != f.ini and ini != f.fin + UN_DIA:
+        return None, "EXTENSION_INICIO_NO_COINCIDE"
+    if fin <= f.fin:
+        return None, "EXTENSION_SIN_FIN_POSTERIOR"
+    for g in filas:
+        if g is not f and g.ini and g.ini <= fin and (g.fin or dt.date.max) >= f.ini:
+            return None, "EXTENSION_SOLAPA_OTRA_FILA"
+    partes = f.clave.split("|")
+    if len(partes) != 6 or partes[3] != f.fin.isoformat():
+        return None, "EXTENSION_CLAVENEGOCIO_NO_ESTANDAR"
+    return f, ""
+
+
+def clave_con_fin(clave: str, fin: dt.date) -> str:
+    """Recalcula ClaveNegocio cambiando solo el segmento FechaFin."""
+    partes = clave.split("|")
+    partes[3] = fin.isoformat()
+    return "|".join(partes)
+
+
 def clave_negocio(ot: int, eid: str, ini: dt.date, fin: dt.date) -> str:
     """Mismo formato que la migracion historica: OT|Elemento|Ini|Fin|HoraIni|HoraFin."""
     return f"{ot}|{eid}|{ini.isoformat()}|{fin.isoformat()}||"
@@ -1006,7 +1112,8 @@ def consolidar(
         if o.token is None:
             grupos[("SIN_OT", elem_key, o.texto_no_ot or o.ot_raw or "PAUTA:" + o.pauta.upper())].append(o)
         else:
-            grupos[("OT", elem_key, o.token.numero, o.token.bonificada)].append(o)
+            # "B 4726" y "4726" son la misma OT: la B solo marca bonificacion.
+            grupos[("OT", elem_key, o.token.numero)].append(o)
 
     registros = []
     for key, occ in grupos.items():
@@ -1038,7 +1145,6 @@ def consolidar(
             "TRZ_CandidatosElemento": x.get("Candidatos", ""),
         }
         ot = key[2] if tipo == "OT" else (key[3] if tipo == "FILA_SIN_CODIGO" and isinstance(key[3], int) else None)
-        bonificada = bool(key[3]) if tipo == "OT" else False
         eid = x.get("ElementoID_OCU26", "") if x.get("Confianza") == "ALTA" else ""
         fechas = reconstruir_periodos(occ, ventana)
         periodos: list[Periodo | None] = fechas.periodos or [None]
@@ -1046,6 +1152,8 @@ def consolidar(
         for per in periodos:
             occ_p = occ if per is None else [o for o in occ if _intersecta_mes(per.ini, per.fin, o.mes)] or occ
             pres = sorted({o.mes for o in occ_p}) if per is not None else fechas.presencia
+            bonificada = any(o.token is not None and o.token.bonificada for o in occ_p)
+            pautas = _uniq(o.pauta for o in occ_p if not o.compartida)
             reg = dict(base)
             reg.update({
                 "IDCampaña": ot,
@@ -1053,15 +1161,19 @@ def consolidar(
                 "FechaInicio": per.ini if per else None,
                 "FechaFin": per.fin if per else None,
                 "TRZ_OT_Bonificada": "SI" if bonificada else "NO",
+                "TRZ_Campaña_Propuesta": pautas[0] if len(pautas) == 1 and "/" not in pautas[0] else "",
                 "TRZ_MesesPresencia": fmt_meses(pres),
                 "TRZ_ReglaFechas": per.regla if per else "NO_DETERMINABLE",
                 "TRZ_ParesInicioFin": "; ".join(f"{a}→{b}" for a, b in (per.pares if per else [])),
                 "TRZ_ProblemasFechas": " | ".join(fechas.problemas + (per.dudas if per else [])),
+                "TRZ_EvidenciaFechasAceptada": " | ".join(per.info) if per else "",
                 "TRZ_PeriodosDisjuntos": "SI" if fechas.disjuntos else "NO",
             })
-            estado, motivos, dd = clasificar(reg, tipo, ot, bonificada, eid, x, alcance, fechas, per, pres, idx_c)
+            estado, motivos, dd, ext = clasificar(reg, tipo, ot, eid, x, alcance, fechas, per, pres, idx_c)
             reg["Estado_Staging"] = estado
+            reg["Operacion"] = (OP_UPDATE if ext else OP_INSERT) if estado == "IMPORTAR" else ""
             reg["_motivos"] = motivos
+            reg["_ext"] = ext
             reg["TRZ_Dedup"] = dd.resultado if dd else ""
             reg["TRZ_CargaID_Existentes"] = dd.carga_ids if dd else ""
             reg["TRZ_TramosNoCubiertosEnCAMPANAS"] = "; ".join(f"{a}→{b}" for a, b in dd.no_cubierto) if dd else ""
@@ -1074,8 +1186,15 @@ def consolidar(
             )
             regs_grupo.append(reg)
         promover_periodos_disjuntos(regs_grupo)
+        resolver_conflictos_extension(regs_grupo)
         for reg in regs_grupo:
             reg["Motivo"] = " | ".join(reg.pop("_motivos"))
+            ext = reg.pop("_ext")
+            reg["TRZ_CargaID_Extendida"] = ext.carga_id if ext and reg["Operacion"] == OP_UPDATE else ""
+            reg["TRZ_FechaInicio_Existente"] = ext.ini if ext and reg["Operacion"] == OP_UPDATE else None
+            reg["TRZ_FechaFin_Anterior"] = ext.fin if ext and reg["Operacion"] == OP_UPDATE else None
+            reg["TRZ_ClaveNegocio_Anterior"] = ext.clave if ext and reg["Operacion"] == OP_UPDATE else ""
+            reg["TRZ_PosicionFilaExistente"] = ext.pos if ext and reg["Operacion"] == OP_UPDATE else None
         registros.extend(regs_grupo)
     return pd.DataFrame(registros)
 
@@ -1092,64 +1211,85 @@ def promover_periodos_disjuntos(regs_grupo: list[dict]) -> None:
         return
     for r in regs_grupo:
         if r["Estado_Staging"] == "REVISAR" and r["_motivos"] == [MOTIVO_SOLO_OTRAS_FECHAS]:
-            r["Estado_Staging"] = "IMPORTAR"
+            r["Estado_Staging"], r["Operacion"] = "IMPORTAR", OP_INSERT
             r["_motivos"] = ["NUEVO_PERIODO_DISJUNTO_DE_OT_YA_CARGADA"]
 
 
-def clasificar(reg, tipo, ot, bonificada, eid, x, alcance, fechas, per, pres, idx_c) -> tuple[str, list[str], ResultadoDedup | None]:
+def resolver_conflictos_extension(regs_grupo: list[dict]) -> None:
+    """Dos periodos de la fuente no pueden extender la misma fila existente."""
+    usos = Counter(r["_ext"].carga_id for r in regs_grupo if r["Operacion"] == OP_UPDATE)
+    for r in regs_grupo:
+        if r["Operacion"] == OP_UPDATE and usos[r["_ext"].carga_id] > 1:
+            r["Estado_Staging"], r["Operacion"] = "REVISAR", ""
+            r["_motivos"] = ["EXTENSION_CONFLICTO_VARIOS_PERIODOS_MISMA_FILA"]
+
+
+def clasificar(reg, tipo, ot, eid, x, alcance, fechas, per, pres, idx_c):
+    """-> (estado, motivos, ResultadoDedup|None, FilaCampana a extender|None)."""
     motivos: list[str] = []
     # 1) Fuera de alcance -> NO_IMPORTAR
     excl = [a for a in alcance if a not in ("EN_ALCANCE", "FILA_SIN_CODIGO")]
     if excl:
-        return "NO_IMPORTAR", [f"FUERA_DE_ALCANCE_{a}" for a in excl], None
+        return "NO_IMPORTAR", [a if a.startswith("ELEMENTO_DADO_DE_BAJA") else f"FUERA_DE_ALCANCE_{a}" for a in excl], None, None
     if tipo == "SIN_OT":
         txt = sin_acentos(f"{reg['TRZ_OT_Raw']} {reg['TRZ_Pauta_Origen']}").upper()
         if PATRON_NO_COMERCIAL.search(txt):
-            return "NO_IMPORTAR", ["NO_COMERCIAL_SIN_OT"], None
+            return "NO_IMPORTAR", ["NO_COMERCIAL_SIN_OT"], None, None
     anios = {m.year for m in pres}
     en_2026 = per is not None and per.ini <= dt.date(ANIO_ALCANCE, 12, 31) and per.fin >= dt.date(ANIO_ALCANCE, 1, 1)
     if ANIO_ALCANCE not in anios and not en_2026:
-        return "NO_IMPORTAR", ["FUERA_DE_2026"], None
+        return "NO_IMPORTAR", ["FUERA_DE_2026"], None, None
     if tipo == "FILA_SIN_CODIGO":
-        return "REVISAR", ["ESTRUCTURA_FILA_SIN_CODIGO_ELEMENTO"], None
+        return "REVISAR", ["ESTRUCTURA_FILA_SIN_CODIGO_ELEMENTO"], None, None
     if tipo == "SIN_OT":
-        return "REVISAR", ["SIN_OT_NUMERICA"], None
+        return "REVISAR", ["SIN_OT_NUMERICA"], None, None
 
     # 2) Deduplicacion (solo con elemento resuelto)
     dd: ResultadoDedup | None = None
+    filas = idx_c.por_ot_elem.get((ot, eid), []) if eid else []
     if eid:
-        dd = comparar_con_campanas(idx_c.por_ot_elem.get((ot, eid), []),
-                                   per.ini if per else None, per.fin if per else None, pres)
+        dd = comparar_con_campanas(filas, per.ini if per else None, per.fin if per else None, pres)
         if dd.resultado in ("EXACTO", "CUBIERTO"):
             m = ["YA_EXISTE_EXACTO" if dd.resultado == "EXACTO" else "YA_EXISTE_CUBIERTO_FECHAS_DISTINTAS"]
             if per is None:
                 m.append("FECHAS_ORIGEN_NO_DETERMINABLES")
-            return "YA_EXISTE", m, dd
+            return "YA_EXISTE", m, dd, None
     else:
         cands = [c for c in texto(x.get("Candidatos", "")).split(", ") if c] if x else []
         hits = [c for c in cands if (ot, c) in idx_c.por_ot_elem]
         if hits:
             motivos.append("OT_EXISTE_EN_CAMPANAS_CON_CANDIDATO:" + ",".join(hits))
 
-    # 3) Problemas -> REVISAR
+    # 3) Problemas propios del registro
     if not eid:
         conf = x.get("Confianza", "BAJA") if x else "BAJA"
         motivos.insert(0, f"ELEMENTO_NO_INEQUIVOCO_{conf}")
-    if bonificada:
-        motivos.append("OT_BONIFICADA_PREFIJO_B")
     if per is None:
         motivos.append("FECHAS_NO_DETERMINABLES")
     elif fechas.problemas or per.dudas:
         motivos.append("FECHAS_DUDOSAS")
-    if dd and dd.resultado == "PARCIAL":
-        motivos.append("EXISTE_EN_CAMPANAS_COBERTURA_PARCIAL")
-    if dd and dd.resultado == "OTRAS_FECHAS":
-        motivos.append(MOTIVO_SOLO_OTRAS_FECHAS)
     if per is not None and not en_2026:
         motivos.append("PERIODO_FUERA_DE_2026_CON_PRESENCIA_2026")
+
+    # 4) Existe la misma OT + elemento con otras fechas: extension o revision
+    if dd and dd.resultado in ("PARCIAL", "OTRAS_FECHAS"):
+        if not motivos:
+            fila, motivo_ext = evaluar_extension(filas, per.ini, per.fin)
+            if fila is not None:
+                return "IMPORTAR", ["EXTENSION_FECHAFIN_DE_FILA_EXISTENTE"], dd, fila
+        else:
+            motivo_ext = ""
+        if dd.resultado == "PARCIAL":
+            motivos.append("EXISTE_EN_CAMPANAS_COBERTURA_PARCIAL")
+            if motivo_ext:
+                motivos.append(motivo_ext)
+        else:
+            motivos.append(MOTIVO_SOLO_OTRAS_FECHAS)
+            if motivo_ext and motivo_ext != "EXTENSION_SIN_FILA_CONTINUA":
+                motivos.append(motivo_ext)
     if motivos:
-        return "REVISAR", motivos, dd
-    return "IMPORTAR", ["NUEVA_ASIGNACION"], dd
+        return "REVISAR", motivos, dd, None
+    return "IMPORTAR", ["NUEVA_ASIGNACION"], dd, None
 
 
 # ---------------------------------------------------------------------------
@@ -1157,32 +1297,60 @@ def clasificar(reg, tipo, ot, bonificada, eid, x, alcance, fechas, per, pres, id
 # ---------------------------------------------------------------------------
 
 TRZ_ORDEN = [
-    "StagingID", "Estado_Staging", "Motivo", "IDCampaña", "ElementoID", "FechaInicio", "FechaFin",
+    "StagingID", "Estado_Staging", "Operacion", "Motivo", "IDCampaña", "ElementoID", "FechaInicio", "FechaFin",
     "TRZ_Medio_OCU26", "TRZ_CircuitoDashboard_OCU26", "TRZ_HojaOrigen", "TRZ_ElementoOrigen", "TRZ_MedioOrigen", "TRZ_CircuitoOrigen", "TRZ_UbicacionOrigen",
     "TRZ_DescripcionOrigen", "TRZ_MetodoMatch", "TRZ_ConfianzaMatch", "TRZ_CandidatosElemento",
-    "TRZ_OT_Raw", "TRZ_PrefijoOT_Origen", "TRZ_OT_Bonificada", "TRZ_Pauta_Origen", "TRZ_Obs_Origen",
-    "TRZ_MesesPresencia", "TRZ_ReglaFechas", "TRZ_ParesInicioFin", "TRZ_ProblemasFechas",
+    "TRZ_OT_Raw", "TRZ_PrefijoOT_Origen", "TRZ_OT_Bonificada", "TRZ_Pauta_Origen", "TRZ_Campaña_Propuesta", "TRZ_Obs_Origen",
+    "TRZ_MesesPresencia", "TRZ_ReglaFechas", "TRZ_ParesInicioFin", "TRZ_ProblemasFechas", "TRZ_EvidenciaFechasAceptada",
     "TRZ_PeriodosDisjuntos", "TRZ_CeldaCompartida", "TRZ_Dedup", "TRZ_CargaID_Existentes",
-    "TRZ_TramosNoCubiertosEnCAMPANAS",
+    "TRZ_TramosNoCubiertosEnCAMPANAS", "TRZ_CargaID_Extendida", "TRZ_FechaInicio_Existente", "TRZ_FechaFin_Anterior",
+    "TRZ_ClaveNegocio_Anterior",
     "TRZ_OT_en_CAMPANAS", "TRZ_OT_otros_ElementoID", "TRZ_Ref_Atributos_OT_CAMPANAS",
     "TRZ_AlcanceOrigen", "TRZ_TipoGrupo", "TRZ_Ocurrencias", "TRZ_FilasOrigen", "TRZ_RefCeldas",
 ]
 
+# Convencion vigente de CAMPANAS para cargas por lote (ver MIGRACION_YPF /
+# MIGRACION_OCU26): CargaID HIST-######## correlativo, UsuarioCarga
+# MIGRACION_<FUENTE>, FechaHoraCarga = momento de la carga, EstadoValidacion
+# OK. Estado: Finalizada si FechaFin < fecha de carga, si no Activa
+# (Reservada es un estado comercial que la fuente no informa).
+USUARIO_CARGA = "MIGRACION_OCUPACION_2026"
+FUENTE_CARGA = "Migración histórica - OCUPACION_2026"
+ESTADO_VALIDACION_OK = "OK"
+PREFIJO_CARGA_ID = "HIST-"
 
-def preparar_importar(df: pd.DataFrame, medio_por_id: dict[str, str]) -> pd.DataFrame:
-    """Columnas CAMPANAS exactas (orden vigente) + columnas TRZ_ separadas."""
-    imp = df[df["Estado_Staging"] == "IMPORTAR"].copy()
+
+def estado_por_fechas(fin: dt.date, fecha_carga: dt.datetime) -> str:
+    return "Finalizada" if fin < fecha_carga.date() else "Activa"
+
+
+def siguiente_carga_id(campanas: pd.DataFrame) -> int:
+    nums = campanas["CargaID"].map(texto).str.extract(r"^HIST-(\d+)$")[0].dropna().astype(int)
+    if len(nums) != len(campanas):
+        raise StagingError("CAMPANAS: hay CargaID fuera de la convencion HIST-########")
+    return int(nums.max()) + 1
+
+
+def preparar_importar(df: pd.DataFrame, medio_por_id: dict[str, str], fecha_carga: dt.datetime, primer_id: int) -> pd.DataFrame:
+    """INSERT: columnas CAMPANAS exactas (orden vigente) + columnas TRZ_ separadas."""
+    imp = df[(df["Estado_Staging"] == "IMPORTAR") & (df["Operacion"] == OP_INSERT)].copy()
     destino = pd.DataFrame(index=imp.index, columns=CAMPANAS_HEADERS, dtype=object)
-    destino["IDCampaña"] = imp["IDCampaña"].astype(int)
-    destino["ElementoID"] = imp["ElementoID"]
-    destino["FechaInicio"] = imp["FechaInicio"]
-    destino["FechaFin"] = imp["FechaFin"]
+    destino["CargaID"] = [f"{PREFIJO_CARGA_ID}{primer_id + k:08d}" for k in range(len(imp))]
     destino["ClaveNegocio"] = [clave_negocio(int(o), e, a, b) for o, e, a, b in
                                zip(imp["IDCampaña"], imp["ElementoID"], imp["FechaInicio"], imp["FechaFin"])]
+    destino["FechaHoraCarga"] = fecha_carga
+    destino["UsuarioCarga"] = USUARIO_CARGA
+    destino["FuenteCarga"] = FUENTE_CARGA
+    destino["EstadoValidacion"] = ESTADO_VALIDACION_OK
+    destino["IDCampaña"] = pd.Series([int(v) for v in imp["IDCampaña"]], index=imp.index, dtype=object)
+    destino["Campaña"] = [p or None for p in imp["TRZ_Campaña_Propuesta"]]
+    destino["ElementoID"] = imp["ElementoID"]
     destino["TipoCargaDeclarado"] = imp["ElementoID"].map(medio_por_id)
+    destino["FechaInicio"] = imp["FechaInicio"]
+    destino["FechaFin"] = imp["FechaFin"]
     destino["FechaIndefinida"] = "No"
-    # Campaña = PAUTA literal de origen solo si es unica para la asignacion.
-    destino["Campaña"] = [p if p and "||" not in p else None for p in imp["TRZ_Pauta_Origen"]]
+    destino["Estado"] = [estado_por_fechas(f, fecha_carga) for f in imp["FechaFin"]]
+    destino["Observaciones"] = [NOTA_BONIFICADA if b == "SI" else None for b in imp["TRZ_OT_Bonificada"]]
     trz = imp[[c for c in TRZ_ORDEN if c in imp.columns and c not in ("IDCampaña", "ElementoID", "FechaInicio", "FechaFin")]]
     out = pd.concat([destino, trz], axis=1)
     if out["ClaveNegocio"].duplicated().any():
@@ -1191,22 +1359,47 @@ def preparar_importar(df: pd.DataFrame, medio_por_id: dict[str, str]) -> pd.Data
     return out
 
 
-def construir_staging(fuente: Path, base: Path) -> dict[str, Any]:
+def preparar_extensiones(df: pd.DataFrame) -> pd.DataFrame:
+    """UPDATE: solo FechaFin y ClaveNegocio de la fila existente."""
+    ext = df[(df["Estado_Staging"] == "IMPORTAR") & (df["Operacion"] == OP_UPDATE)].copy()
+    out = pd.DataFrame({
+        "StagingID": ext["StagingID"],
+        "CargaID": ext["TRZ_CargaID_Extendida"],
+        "IDCampaña": ext["IDCampaña"].astype(int),
+        "ElementoID": ext["ElementoID"],
+        "FechaInicio": ext["TRZ_FechaInicio_Existente"].map(_a_fecha),
+        "FechaFin_Anterior": ext["TRZ_FechaFin_Anterior"].map(_a_fecha),
+        "FechaFin_Nueva": ext["FechaFin"].map(_a_fecha),
+        "ClaveNegocio_Anterior": ext["TRZ_ClaveNegocio_Anterior"],
+        "ClaveNegocio_Nueva": [clave_con_fin(c, f) for c, f in zip(ext["TRZ_ClaveNegocio_Anterior"], ext["FechaFin"])],
+        "PosicionFila": ext["TRZ_PosicionFilaExistente"].astype(int),
+        "PeriodoFuente": [f"{a}→{b}" for a, b in zip(ext["FechaInicio"], ext["FechaFin"])],
+    })
+    trz = ext[[c for c in TRZ_ORDEN if c.startswith("TRZ_") and c in ext.columns and c not in (
+        "TRZ_CargaID_Extendida", "TRZ_FechaInicio_Existente", "TRZ_FechaFin_Anterior", "TRZ_ClaveNegocio_Anterior")]]
+    return pd.concat([out, trz], axis=1)
+
+
+def construir_staging(fuente: Path, base: Path, fecha_carga: dt.datetime | None = None) -> dict[str, Any]:
+    fecha_carga = (fecha_carga or dt.datetime.now()).replace(microsecond=0)
     ocurrencias, ventanas, no_procesadas = leer_fuente(fuente)
     maestro = pd.read_excel(base, sheet_name="MAESTRO_ELEMENTOS")
     campanas = pd.read_excel(base, sheet_name="CAMPANAS")
+    parametros = pd.read_excel(base, sheet_name="PARAMETROS")
     if list(campanas.columns) != CAMPANAS_HEADERS:
         raise StagingError("CAMPANAS: encabezados distintos del esquema vigente")
     idx_m = IndiceMaestro(maestro)
     idx_c = IndiceCampanas(campanas)
     xw = construir_crosswalk(ocurrencias, idx_m)
     asign = consolidar(ocurrencias, xw, idx_m, idx_c, ventanas)
+    marcar_conflictos_estaticos(asign, idx_c, {e: texto(r.get("Medio")) for e, r in idx_m.por_id.items()})
     orden = {e: k for k, e in enumerate(ESTADOS)}
     asign["_o"] = asign["Estado_Staging"].map(orden)
+    asign["_op"] = asign["Operacion"].map({OP_INSERT: 0, OP_UPDATE: 1}).fillna(2)
     asign["_ini"] = asign["FechaInicio"].map(lambda d: d or dt.date.min)
     asign["_ot"] = asign["IDCampaña"].map(lambda v: -1 if v is None or pd.isna(v) else int(v))
-    asign = asign.sort_values(["_o", "TRZ_HojaOrigen", "_ot", "ElementoID", "TRZ_ElementoOrigen", "_ini", "TRZ_RefCeldas"],
-                              kind="stable").drop(columns=["_o", "_ini", "_ot"]).reset_index(drop=True)
+    asign = asign.sort_values(["_o", "_op", "TRZ_HojaOrigen", "_ot", "ElementoID", "TRZ_ElementoOrigen", "_ini", "TRZ_RefCeldas"],
+                              kind="stable").drop(columns=["_o", "_op", "_ini", "_ot"]).reset_index(drop=True)
     asign.insert(0, "StagingID", [f"STG2B-{k + 1:06d}" for k in range(len(asign))])
     asign["IDCampaña"] = asign["IDCampaña"].map(lambda v: None if v is None or pd.isna(v) else int(v)).astype(object)
     medio_por_id = {e: texto(r.get("Medio")) for e, r in idx_m.por_id.items()}
@@ -1214,7 +1407,8 @@ def construir_staging(fuente: Path, base: Path) -> dict[str, Any]:
     asign["TRZ_Medio_OCU26"] = asign["ElementoID"].map(lambda e: medio_por_id.get(e, "") if e else "")
     asign["TRZ_CircuitoDashboard_OCU26"] = asign["ElementoID"].map(lambda e: circ_por_id.get(e, "") if e else "")
     hojas = {
-        "IMPORTAR": preparar_importar(asign, medio_por_id),
+        "IMPORTAR": preparar_importar(asign, medio_por_id, fecha_carga, siguiente_carga_id(campanas)),
+        "EXTENSIONES_UPDATE": preparar_extensiones(asign),
         "YA_EXISTE": asign[asign["Estado_Staging"] == "YA_EXISTE"][TRZ_ORDEN],
         "REVISAR": asign[asign["Estado_Staging"] == "REVISAR"][TRZ_ORDEN],
         "NO_IMPORTAR": asign[asign["Estado_Staging"] == "NO_IMPORTAR"][TRZ_ORDEN],
@@ -1222,7 +1416,354 @@ def construir_staging(fuente: Path, base: Path) -> dict[str, Any]:
     return {
         "ocurrencias": ocurrencias, "ventanas": ventanas, "no_procesadas": no_procesadas,
         "crosswalk": xw, "asignaciones": asign, "hojas": hojas, "campanas": campanas,
+        "maestro": maestro, "parametros": parametros, "fecha_carga": fecha_carga,
     }
+
+
+def marcar_conflictos_estaticos(asign: pd.DataFrame, idx_c: IndiceCampanas, medio_por_id: dict[str, str]) -> None:
+    """En elementos estaticos, los dias nuevos (INSERT o tramo agregado por un
+    UPDATE) no pueden pisar otra campana (otra OT) ya cargada o propuesta:
+    seria doble ocupacion no demostrada -> REVISAR."""
+    imp = asign[(asign["Estado_Staging"] == "IMPORTAR")]
+    nuevos: dict[str, list[tuple[int, dt.date, dt.date, int]]] = defaultdict(list)
+    for k, r in imp.iterrows():
+        if medio_por_id.get(r["ElementoID"]) != "Estático":
+            continue
+        desde = r["FechaInicio"] if r["Operacion"] == OP_INSERT else r["TRZ_FechaFin_Anterior"] + UN_DIA
+        nuevos[r["ElementoID"]].append((int(r["IDCampaña"]), desde, r["FechaFin"], k))
+    for eid, lst in nuevos.items():
+        for ot, a, b, k in lst:
+            otros = {o for o, f in idx_c.por_elem.get(eid, [])
+                     if o != ot and f.ini and f.ini <= b and (f.fin or dt.date.max) >= a}
+            otros |= {o2 for o2, a2, b2, k2 in lst if o2 != ot and a2 <= b and a <= b2}
+            if otros:
+                op = asign.at[k, "Operacion"]
+                asign.at[k, "Estado_Staging"], asign.at[k, "Operacion"] = "REVISAR", ""
+                asign.at[k, "Motivo"] = ("EXTENSION_" if op == OP_UPDATE else "") + \
+                    "SOLAPA_OTRA_CAMPANA_EN_ELEMENTO_ESTATICO:" + ",".join(str(o) for o in sorted(otros))
+
+
+# ---------------------------------------------------------------------------
+# Aplicacion sobre la base (solo hoja CAMPANAS)
+# ---------------------------------------------------------------------------
+
+def _serial(v: dt.date | dt.datetime) -> str:
+    if isinstance(v, dt.datetime):
+        d = v - dt.datetime(1899, 12, 30)
+        return repr(d.days + d.seconds / 86400)
+    return str((v - _EXCEL_EPOCH).days)
+
+
+def _xml_texto(s: str) -> str:
+    from xml.sax.saxutils import escape
+    preserve = ' xml:space="preserve"' if s != s.strip() else ""
+    return f"<t{preserve}>{escape(s)}</t>"
+
+
+def _celda_xml(ref: str, valor: Any, estilo: str) -> str:
+    if valor is None or (isinstance(valor, float) and valor != valor) or (isinstance(valor, str) and valor == ""):
+        return f'<c r="{ref}" s="{estilo}"/>'
+    if isinstance(valor, (dt.date, dt.datetime, pd.Timestamp)):
+        v = valor.to_pydatetime() if isinstance(valor, pd.Timestamp) else valor
+        return f'<c r="{ref}" s="{estilo}"><v>{_serial(v)}</v></c>'
+    if isinstance(valor, (bool, np.bool_)):
+        raise StagingError(f"Valor booleano no esperado en {ref}")
+    if isinstance(valor, numbers.Integral):
+        return f'<c r="{ref}" s="{estilo}"><v>{int(valor)}</v></c>'
+    if isinstance(valor, numbers.Real):
+        return f'<c r="{ref}" s="{estilo}"><v>{float(valor)!r}</v></c>'
+    return f'<c r="{ref}" s="{estilo}" t="inlineStr"><is>{_xml_texto(str(valor))}</is></c>'
+
+
+def _shared_strings(z) -> list[str]:
+    import html
+    if "xl/sharedStrings.xml" not in z.namelist():
+        return []
+    xml = z.read("xl/sharedStrings.xml").decode("utf-8")
+    out = []
+    for si in re.finditer(r"<si>(.*?)</si>|<si/>", xml, re.S):
+        cuerpo = si.group(1) or ""
+        cuerpo = re.sub(r"<rPh\b.*?</rPh>", "", cuerpo, flags=re.S)
+        out.append(html.unescape("".join(re.findall(r"<t(?:\s[^>]*)?>(.*?)</t>", cuerpo, re.S))))
+    return out
+
+
+def _parte_hoja_y_tabla(z, hoja: str, tabla: str) -> tuple[str, str]:
+    """Resuelve via workbook.xml + rels el XML de la hoja y de su tabla."""
+    wb = z.read("xl/workbook.xml").decode("utf-8")
+    m = re.search(rf'<sheet [^>]*name="{re.escape(hoja)}"[^>]*r:id="([^"]+)"', wb)
+    if not m:
+        raise StagingError(f"No se encontro la hoja {hoja} en workbook.xml")
+    import posixpath
+
+    def resolver(origen: str, target: str) -> str:
+        # Targets OPC: absolutos ("/xl/...") o relativos a la carpeta de la parte origen.
+        if target.startswith("/"):
+            return target.lstrip("/")
+        return posixpath.normpath(posixpath.join(posixpath.dirname(origen), target))
+
+    rels = z.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+    t = re.search(rf'<Relationship [^>]*Id="{m.group(1)}"[^>]*Target="([^"]+)"', rels) or \
+        re.search(rf'<Relationship [^>]*Target="([^"]+)"[^>]*Id="{m.group(1)}"', rels)
+    hoja_xml = resolver("xl/workbook.xml", t.group(1))
+    hrels = z.read(posixpath.join(posixpath.dirname(hoja_xml), "_rels", posixpath.basename(hoja_xml) + ".rels")).decode("utf-8")
+    for target in re.findall(r'Target="([^"]*tables/[^"]+)"', hrels):
+        tabla_xml = resolver(hoja_xml, target)
+        if f'name="{tabla}"' in z.read(tabla_xml).decode("utf-8"):
+            return hoja_xml, tabla_xml
+    raise StagingError(f"No se encontro la tabla {tabla} de la hoja {hoja}")
+
+
+def construir_xlsx_actualizado(base: Path, destino: Path, updates: pd.DataFrame, inserts: pd.DataFrame) -> None:
+    """Escribe en `destino` una copia de `base` donde SOLO cambian el XML de
+    CAMPANAS y el de tblCampanas. Las demas partes se copian sin cambios."""
+    import zipfile
+
+    with zipfile.ZipFile(base) as zin:
+        hoja_xml, tabla_xml = _parte_hoja_y_tabla(zin, "CAMPANAS", "tblCampanas")
+        sst = _shared_strings(zin)
+        sheet = zin.read(hoja_xml).decode("utf-8")
+        table = zin.read(tabla_xml).decode("utf-8")
+
+        filas = {int(m.group(1)): m for m in re.finditer(r'<row r="(\d+)"[^>]*>.*?</row>', sheet, re.S)}
+        ultima = max(filas)
+        if ultima != len(filas):
+            raise StagingError("CAMPANAS: filas no contiguas en el XML; no se puede editar con seguridad")
+        letras = [openpyxl.utils.get_column_letter(k + 1) for k in range(len(CAMPANAS_HEADERS))]
+        # Estilo por columna: el de la ultima fila (ultima carga); si falta,
+        # el mas frecuente de la columna en las filas de datos; si no, 0.
+        estilos = dict(re.findall(r'<c r="([A-Z]+)\d+"[^>]*? s="(\d+)"', filas[ultima].group(0)))
+        if set(letras) - set(estilos):
+            frec: dict[str, Counter] = defaultdict(Counter)
+            for r_, m_ in filas.items():
+                if r_ > 1:
+                    for col_, st_ in re.findall(r'<c r="([A-Z]+)\d+"[^>]*? s="(\d+)"', m_.group(0)):
+                        frec[col_][st_] += 1
+            for col_ in letras:
+                if col_ not in estilos:
+                    estilos[col_] = frec[col_].most_common(1)[0][0] if frec[col_] else "0"
+
+        def valor_celda(row_xml: str, ref: str) -> str:
+            m = re.search(rf'<c r="{ref}"([^>]*?)(?:/>|>(.*?)</c>)', row_xml, re.S)
+            if not m or m.group(2) is None:
+                return ""
+            v = re.search(r"<v>(.*?)</v>", m.group(2), re.S)
+            if 't="s"' in m.group(1):
+                return sst[int(v.group(1))]
+            if 't="inlineStr"' in m.group(1):
+                return "".join(re.findall(r"<t(?:\s[^>]*)?>(.*?)</t>", m.group(2), re.S))
+            return v.group(1) if v else ""
+
+        reemplazos: dict[int, str] = {}
+        col_fin = letras[CAMPANAS_HEADERS.index("FechaFin")]
+        col_clave = letras[CAMPANAS_HEADERS.index("ClaveNegocio")]
+        col_id = letras[CAMPANAS_HEADERS.index("CargaID")]
+        for u in updates.itertuples(index=False):
+            r = int(u.PosicionFila) + 2
+            row_xml = filas[r].group(0)
+            if valor_celda(row_xml, f"{col_id}{r}") != u.CargaID:
+                raise StagingError(f"UPDATE {u.CargaID}: la fila {r} no corresponde")
+            if valor_celda(row_xml, f"{col_clave}{r}") != u.ClaveNegocio_Anterior:
+                raise StagingError(f"UPDATE {u.CargaID}: ClaveNegocio actual distinta de la esperada")
+            if valor_celda(row_xml, f"{col_fin}{r}") != _serial(_a_fecha(u.FechaFin_Anterior)):
+                raise StagingError(f"UPDATE {u.CargaID}: FechaFin actual distinta de la esperada")
+            for col, nuevo in ((col_fin, _celda_xml(f"{col_fin}{r}", _a_fecha(u.FechaFin_Nueva), estilos[col_fin])),
+                               (col_clave, _celda_xml(f"{col_clave}{r}", u.ClaveNegocio_Nueva, estilos[col_clave]))):
+                row_xml, n = re.subn(rf'<c r="{col}{r}"[^>]*?(?:/>|>.*?</c>)', lambda _m, s=nuevo: s, row_xml, count=1, flags=re.S)
+                if n != 1:
+                    raise StagingError(f"UPDATE {u.CargaID}: no se encontro la celda {col}{r}")
+            reemplazos[r] = row_xml
+
+        partes, cursor = [], 0
+        for r in sorted(reemplazos):
+            m = filas[r]
+            partes += [sheet[cursor:m.start()], reemplazos[r]]
+            cursor = m.end()
+        partes.append(sheet[cursor:])
+        sheet = "".join(partes)
+
+        nuevas = []
+        for k, row in enumerate(inserts[CAMPANAS_HEADERS].itertuples(index=False)):
+            r = ultima + 1 + k
+            celdas = "".join(_celda_xml(f"{c}{r}", v, estilos[c]) for c, v in zip(letras, row))
+            nuevas.append(f'<row r="{r}" spans="1:{len(letras)}">{celdas}</row>')
+        if sheet.count("</sheetData>") != 1:
+            raise StagingError("CAMPANAS: estructura sheetData inesperada")
+        sheet = sheet.replace("</sheetData>", "".join(nuevas) + "</sheetData>")
+        fin_ref = f"A1:{letras[-1]}{ultima + len(inserts)}"
+        sheet, n1 = re.subn(r'(<dimension ref=")[^"]+(")', rf"\g<1>{fin_ref}\g<2>", sheet, count=1)
+        table, n2 = re.subn(r'(<table [^>]*\bref=")[^"]+(")', rf"\g<1>{fin_ref}\g<2>", table, count=1)
+        table, n3 = re.subn(r'(<autoFilter [^>]*\bref=")[^"]+(")', rf"\g<1>{fin_ref}\g<2>", table, count=1)
+        if (n1, n2) != (1, 1) or n3 != table.count("<autoFilter "):
+            raise StagingError("No se pudo actualizar dimension/ref de tblCampanas")
+
+        with zipfile.ZipFile(destino, "w") as zout:
+            for info in zin.infolist():
+                data = zin.read(info.filename)
+                if info.filename == hoja_xml:
+                    data = sheet.encode("utf-8")
+                elif info.filename == tabla_xml:
+                    data = table.encode("utf-8")
+                zout.writestr(info, data)
+
+
+def _norm_valor(v: Any, columna: str) -> Any:
+    if v is None or v is pd.NaT or (isinstance(v, float) and v != v):
+        return None
+    if isinstance(v, (pd.Timestamp, dt.datetime)):
+        v = pd.Timestamp(v).round("ms").to_pydatetime()
+        if columna in ("FechaInicio", "FechaFin") and v.time() == dt.time(0):
+            return v.date()
+        return v
+    if isinstance(v, numbers.Real) and not isinstance(v, bool) and float(v).is_integer():
+        return int(v)
+    return v
+
+
+def _norm_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Normaliza para comparar contenido (fechas, NaN/NaT a None, enteros)."""
+    out = pd.DataFrame(index=range(len(df)))
+    for c in df.columns:
+        out[c] = pd.Series([_norm_valor(v, c) for v in df[c].tolist()], dtype=object)
+    return out
+
+
+def validar_operaciones(res: dict[str, Any]) -> list[str]:
+    """Cruces en memoria ANTES de escribir. Cualquier error aborta."""
+    errores: list[str] = []
+    camp: pd.DataFrame = res["campanas"]
+    maestro: pd.DataFrame = res["maestro"]
+    ins: pd.DataFrame = res["hojas"]["IMPORTAR"]
+    upd: pd.DataFrame = res["hojas"]["EXTENSIONES_UPDATE"]
+    m_ids = maestro["ElementoID"].map(texto)
+    if m_ids.duplicated().any():
+        errores.append("MAESTRO_ELEMENTOS con ElementoID duplicados")
+    medio = dict(zip(m_ids, maestro["Medio"].map(texto)))
+    circ = dict(zip(m_ids, maestro["CircuitoDashboard"].map(texto)))
+
+    if ins["CargaID"].duplicated().any() or set(ins["CargaID"]) & set(camp["CargaID"].map(texto)):
+        errores.append("CargaID nuevos duplicados o ya existentes")
+    if upd["CargaID"].duplicated().any():
+        errores.append("Una fila existente se extiende mas de una vez")
+    claves_previas = set(camp["ClaveNegocio"].map(texto)) - set(upd["ClaveNegocio_Anterior"])
+    claves_nuevas = list(ins["ClaveNegocio"]) + list(upd["ClaveNegocio_Nueva"])
+    if len(set(claves_nuevas)) != len(claves_nuevas) or set(claves_nuevas) & claves_previas:
+        errores.append("ClaveNegocio nuevas duplicadas o en colision con CAMPANAS")
+    for r in ins.itertuples(index=False):
+        e = r.ElementoID
+        if e not in medio:
+            errores.append(f"INSERT {r.CargaID}: ElementoID huerfano {e}")
+            continue
+        if circ[e] in CIRCUITOS_FUERA_DE_ALCANCE:
+            errores.append(f"INSERT {r.CargaID}: circuito fuera de alcance {circ[e]}")
+        if r.TipoCargaDeclarado != medio[e]:
+            errores.append(f"INSERT {r.CargaID}: TipoCargaDeclarado != Medio")
+        if not isinstance(r.IDCampaña, numbers.Integral) or r.IDCampaña <= 0:
+            errores.append(f"INSERT {r.CargaID}: IDCampaña no numerica")
+        if not (r.FechaInicio <= r.FechaFin):
+            errores.append(f"INSERT {r.CargaID}: FechaInicio > FechaFin")
+        if e.upper().startswith(("REM-TS", "PALS")) or "LONDON" in r.TRZ_AlcanceOrigen or "CENCOMEDIA" in r.TRZ_AlcanceOrigen:
+            errores.append(f"INSERT {r.CargaID}: elemento/alcance prohibido {e}")
+        if r.Estado not in ("Activa", "Finalizada") or r.EstadoValidacion != ESTADO_VALIDACION_OK:
+            errores.append(f"INSERT {r.CargaID}: Estado/EstadoValidacion fuera de vocabulario")
+    por_id = {texto(v): k for k, v in enumerate(camp["CargaID"])}
+    for u in upd.itertuples(index=False):
+        k = por_id.get(u.CargaID)
+        if k is None or k != u.PosicionFila:
+            errores.append(f"UPDATE {u.CargaID}: fila inexistente o desplazada")
+            continue
+        fila = camp.iloc[k]
+        if _a_fecha(fila["FechaFin"]) != u.FechaFin_Anterior or _a_fecha(fila["FechaInicio"]) != u.FechaInicio:
+            errores.append(f"UPDATE {u.CargaID}: fechas actuales distintas de las esperadas")
+        if not u.FechaFin_Nueva > u.FechaFin_Anterior:
+            errores.append(f"UPDATE {u.CargaID}: FechaFin nueva no es posterior")
+        if _a_ot(fila["IDCampaña"]) != u.IDCampaña or texto(fila["ElementoID"]) != u.ElementoID:
+            errores.append(f"UPDATE {u.CargaID}: IDCampaña/ElementoID no coinciden")
+
+    # Sin solapamientos nuevos entre filas de la misma IDCampaña + ElementoID.
+    esperado = campanas_esperadas(camp, upd, ins)
+    nuevas_o_tocadas = set(ins["CargaID"]) | set(upd["CargaID"])
+    for (ot, e), g in esperado.groupby([esperado["IDCampaña"].map(_a_ot), esperado["ElementoID"].map(texto)]):
+        if len(g) < 2 or not (set(g["CargaID"]) & nuevas_o_tocadas):
+            continue
+        ivs = sorted((_a_fecha(a) or dt.date.min, _a_fecha(b) or dt.date.max, cid)
+                     for a, b, cid in zip(g["FechaInicio"], g["FechaFin"], g["CargaID"]))
+        for (a1, b1, c1), (a2, b2, c2) in zip(ivs, ivs[1:]):
+            if a2 <= b1 and ({c1, c2} & nuevas_o_tocadas):
+                errores.append(f"Solapamiento nuevo {ot}|{e}: {c1} y {c2}")
+    return errores
+
+
+def campanas_esperadas(camp: pd.DataFrame, upd: pd.DataFrame, ins: pd.DataFrame) -> pd.DataFrame:
+    esperado = camp.copy()
+    for u in upd.itertuples(index=False):
+        esperado.at[esperado.index[u.PosicionFila], "FechaFin"] = pd.Timestamp(u.FechaFin_Nueva)
+        esperado.at[esperado.index[u.PosicionFila], "ClaveNegocio"] = u.ClaveNegocio_Nueva
+    nuevas = ins[CAMPANAS_HEADERS].copy()
+    for c in ("FechaInicio", "FechaFin"):
+        nuevas[c] = pd.to_datetime(nuevas[c])
+    return pd.concat([esperado, nuevas], ignore_index=True)
+
+
+def verificar_xlsx(base: Path, nuevo: Path, res: dict[str, Any]) -> dict[str, Any]:
+    """Controles posteriores a la escritura sobre el archivo nuevo."""
+    import zipfile
+    from validate_input import validate_input
+
+    ctrl: dict[str, Any] = {}
+    with zipfile.ZipFile(base) as za, zipfile.ZipFile(nuevo) as zb:
+        hoja_xml, tabla_xml = _parte_hoja_y_tabla(za, "CAMPANAS", "tblCampanas")
+        if [i.filename for i in za.infolist()] != [i.filename for i in zb.infolist()]:
+            raise StagingError("El zip nuevo no tiene las mismas partes")
+        distintas = [n for n in za.namelist() if za.read(n) != zb.read(n)]
+        ctrl["partes_modificadas"] = distintas
+        if set(distintas) - {hoja_xml, tabla_xml}:
+            raise StagingError(f"Cambiaron partes no permitidas: {set(distintas) - {hoja_xml, tabla_xml}}")
+        ref = re.search(r'<table [^>]*\bref="([^"]+)"', zb.read(tabla_xml).decode("utf-8")).group(1)
+    upd, ins = res["hojas"]["EXTENSIONES_UPDATE"], res["hojas"]["IMPORTAR"]
+    esperado = campanas_esperadas(res["campanas"], upd, ins)
+    leido = pd.read_excel(nuevo, sheet_name="CAMPANAS")
+    if list(leido.columns) != CAMPANAS_HEADERS:
+        raise StagingError("CAMPANAS escrita con encabezados distintos")
+    a, b = _norm_df(esperado), _norm_df(leido)
+    if a.shape != b.shape or not a.equals(b):
+        dif = [(i, c) for c in a.columns for i in range(min(len(a), len(b))) if a.at[i, c] != b.at[i, c]][:10]
+        raise StagingError(f"CAMPANAS escrita no coincide con lo esperado: {a.shape} vs {b.shape} {dif}")
+    for hoja in ("MAESTRO_ELEMENTOS", "PARAMETROS"):
+        if not _norm_df(pd.read_excel(base, sheet_name=hoja)).equals(_norm_df(pd.read_excel(nuevo, sheet_name=hoja))):
+            raise StagingError(f"{hoja} cambio")
+    ctrl["tabla_ref"] = ref
+    ctrl["tabla_cubre_filas"] = ref.endswith(str(len(leido) + 1))
+    v = validate_input(nuevo)
+    ctrl["validate_input"] = v["result"]
+    ctrl["validate_errors"] = v["errors"]
+    ctrl["validate_warnings"] = v["warnings"]
+    if v["result"] == "INVALID" or not ctrl["tabla_cubre_filas"]:
+        raise StagingError(f"validate_input rechaza la base nueva: {v['errors'][:5]}")
+    ctrl["filas_antes"], ctrl["filas_despues"] = len(res["campanas"]), len(leido)
+    return ctrl
+
+
+def aplicar_en_base(base: Path, res: dict[str, Any]) -> dict[str, Any]:
+    """Valida en memoria, escribe temporal, verifica y reemplaza atomicamente."""
+    import os
+
+    errores = validar_operaciones(res)
+    if errores:
+        raise StagingError("Validacion previa fallida, base NO modificada: " + "; ".join(errores[:10]))
+    tmp = base.with_name(f".{base.stem}.tmp-etapa2b1{base.suffix}")
+    try:
+        construir_xlsx_actualizado(base, tmp, res["hojas"]["EXTENSIONES_UPDATE"], res["hojas"]["IMPORTAR"])
+        ctrl = verificar_xlsx(base, tmp, res)
+        os.replace(tmp, base)
+    except StagingError:
+        raise
+    except Exception as exc:  # cualquier fallo inesperado aborta sin tocar la base
+        raise StagingError(f"Fallo inesperado ({type(exc).__name__}: {exc}); base NO modificada") from exc
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+    return ctrl
 
 
 # ---------------------------------------------------------------------------
@@ -1260,6 +1801,8 @@ def calcular_resumen(res: dict[str, Any]) -> dict[str, Any]:
             "Asignaciones consolidadas": len(sub_a),
             "OT distintas": len(_ots(sub_a)),
             **ce,
+            "IMPORTAR INSERT": int(((sub_a["Estado_Staging"] == "IMPORTAR") & (sub_a["Operacion"] == OP_INSERT)).sum()),
+            "IMPORTAR UPDATE FechaFin": int(((sub_a["Estado_Staging"] == "IMPORTAR") & (sub_a["Operacion"] == OP_UPDATE)).sum()),
             "OT distintas IMPORTAR": len(imp_ots),
             "OT nuevas (inexistentes en CAMPANAS)": len(imp_ots - campanas_ots),
             "Elementos historicos distintos (en alcance)": len(sub_xw),
@@ -1341,7 +1884,29 @@ def calcular_resumen(res: dict[str, Any]) -> dict[str, Any]:
         "YPF excluido": "SI" if "YPF" not in hojas_proc and "YPF" not in imp_alc else "NO",
         "CENCOMEDIA excluido": "SI" if "CENCOMEDIA" not in hojas_proc and "CENCOMEDIA" not in imp_alc else "NO",
     }
+    imp = a[a["Estado_Staging"] == "IMPORTAR"]
+    ins = imp[imp["Operacion"] == OP_INSERT]
+    rem = a[a["TRZ_MetodoMatch"] == "REGLA_REM_TS_A_REM_DB"]
+    operaciones = {
+        "Filas a INSERTAR": len(ins),
+        "Filas con FechaFin a ACTUALIZAR": int((imp["Operacion"] == OP_UPDATE).sum()),
+        "OT nuevas (inexistentes en CAMPANAS)": len(_ots(ins) - campanas_ots),
+        "Asignaciones con OT bonificada (B) procesadas": int((a["TRZ_OT_Bonificada"] == "SI").sum()),
+        "  de ellas insertadas": int((ins["TRZ_OT_Bonificada"] == "SI").sum()),
+        "  de ellas UPDATE / YA_EXISTE / REVISAR / NO_IMPORTAR": " / ".join(
+            str(int(((a["TRZ_OT_Bonificada"] == "SI") & cond).sum())) for cond in (
+                (a["Estado_Staging"] == "IMPORTAR") & (a["Operacion"] == OP_UPDATE), a["Estado_Staging"] == "YA_EXISTE",
+                a["Estado_Staging"] == "REVISAR", a["Estado_Staging"] == "NO_IMPORTAR")),
+        "Asignaciones REM-TS -> REM-DB migradas (INSERT+UPDATE)": int((rem["Estado_Staging"] == "IMPORTAR").sum()),
+        "  REM-TS -> REM-DB ya existentes / REVISAR": f"{int((rem['Estado_Staging'] == 'YA_EXISTE').sum())} / {int((rem['Estado_Staging'] == 'REVISAR').sum())}",
+        "Codigos REM-TS sin REM-DB en maestro (REVISAR)": int((xw["MetodoMatch"] == "REM_TS_DESTINO_INEXISTENTE").sum()),
+        "Asignaciones PALS/Alsina descartadas": int(a["Motivo"].str.contains("ELEMENTO_DADO_DE_BAJA_ALSINA").sum()),
+        "Periodos disjuntos insertados": int(ins["Motivo"].str.contains("NUEVO_PERIODO_DISJUNTO").sum()),
+    }
+    extensiones = res["hojas"]["EXTENSIONES_UPDATE"][
+        ["IDCampaña", "ElementoID", "CargaID", "FechaInicio", "FechaFin_Anterior", "FechaFin_Nueva"]]
     return {
+        "operaciones": operaciones, "extensiones": extensiones,
         "general": general_df, "por_mes": por_mes, "por_medio": por_medio, "por_circuito": por_circuito,
         "motivos_revisar": motivos_df, "problemas_fechas": probs_df, "motivos_no_importar": motivos_no_df,
         "ots_dudosas": ots_dudosas, "ots_disjuntas": ots_disjuntas, "no_encontrados": no_encontrados,
@@ -1378,10 +1943,14 @@ def _escribir_df(ws, df: pd.DataFrame, fila: int, destino: set[str] | None = Non
 def escribir_excel(path: Path, res: dict[str, Any], resumen: dict[str, Any], meta: list[tuple[str, str]]) -> None:
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    for nombre in ESTADOS:
+    for nombre in ("IMPORTAR", "EXTENSIONES_UPDATE", "YA_EXISTE", "REVISAR", "NO_IMPORTAR"):
         df = res["hojas"][nombre]
         ws = wb.create_sheet(nombre)
-        _escribir_df(ws, df, 1, destino=set(CAMPANAS_HEADERS) if nombre == "IMPORTAR" else {"IDCampaña", "ElementoID", "FechaInicio", "FechaFin"})
+        destino = {"IMPORTAR": set(CAMPANAS_HEADERS),
+                   "EXTENSIONES_UPDATE": {"CargaID", "IDCampaña", "ElementoID", "FechaFin_Anterior", "FechaFin_Nueva",
+                                          "ClaveNegocio_Anterior", "ClaveNegocio_Nueva"}}.get(
+            nombre, {"IDCampaña", "ElementoID", "FechaInicio", "FechaFin"})
+        _escribir_df(ws, df, 1, destino=destino)
         ws.freeze_panes = "B2"
         if len(df.columns):
             ws.auto_filter.ref = f"A1:{col_letra(len(df.columns) - 1)}{len(df) + 1}"
@@ -1401,6 +1970,9 @@ def escribir_excel(path: Path, res: dict[str, Any], resumen: dict[str, Any], met
     f = 1
     bloques: list[tuple[str, pd.DataFrame]] = [
         ("METADATOS", pd.DataFrame(meta, columns=["Clave", "Valor"])),
+        ("OPERACIONES SOBRE CAMPANAS (ETAPA 2B.1)", pd.DataFrame(list(resumen["operaciones"].items()), columns=["Concepto", "Valor"])),
+        ("REVISAR ANTES -> DESPUES", resumen.get("comparacion_revisar", pd.DataFrame())),
+        ("EXTENSIONES DE FechaFin", resumen["extensiones"]),
         ("CONFIRMACIONES DE ALCANCE", pd.DataFrame(list(resumen["confirmaciones"].items()), columns=["Control", "Resultado"])),
         ("HOJAS NO PROCESADAS", pd.DataFrame(sorted(resumen["no_procesadas"].items()), columns=["Hoja", "Tratamiento"])),
         ("RESULTADOS GENERALES Y POR HOJA", resumen["general"]),
@@ -1447,8 +2019,15 @@ def escribir_md(path: Path, res: dict[str, Any], resumen: dict[str, Any], meta: 
     tot = g.iloc[0]
     xw = res["crosswalk"]
     l: list[str] = []
-    l.append("# Resumen de importacion historica OCU26 - Etapa 2B (staging, sin importar)\n")
+    l.append("# Resumen de importacion historica OCU26 - Etapa 2B / 2B.1\n")
     l.append(_md_tabla(pd.DataFrame(meta, columns=["Clave", "Valor"])))
+    l.append("\n## Operaciones sobre CAMPANAS\n")
+    l.append(_md_tabla(pd.DataFrame(list(resumen["operaciones"].items()), columns=["Concepto", "Valor"])))
+    if "comparacion_revisar" in resumen:
+        l.append("\n### REVISAR antes -> despues\n")
+        l.append(_md_tabla(resumen["comparacion_revisar"]))
+    l.append(f"\n### Extensiones de FechaFin ({len(resumen['extensiones'])})\n")
+    l.append(_md_tabla(resumen["extensiones"]))
     l.append("\n## Confirmaciones de alcance\n")
     l.append(_md_tabla(pd.DataFrame(list(resumen["confirmaciones"].items()), columns=["Control", "Resultado"])))
     l.append("\nHojas no procesadas:\n")
@@ -1510,30 +2089,136 @@ REGLAS_MD = """
 
 - **Grano**: una asignacion = IDCampaña (OT) + ElementoID + periodo. Las filas
   de caras (estatico) o slots -Vn (digital) del mismo elemento se consolidan.
-- **OT**: numero de la celda del bloque mensual. Prefijos (PUBLI, PORCO,
-  SEGNO, ...) se conservan en `TRZ_PrefijoOT_Origen` (no se copian a
-  Proveedor). `B <n>` = OT bonificada: REVISAR (no existe como IDCampaña en
-  CAMPANAS).
+- **OT = IDCampaña** (solo el numero). Prefijos (PUBLI, PORCO, SEGNO, ...)
+  se conservan en `TRZ_PrefijoOT_Origen` (no se copian a Proveedor). `B <n>` =
+  pauta bonificada: IDCampaña <n>, se procesa normalmente y en INSERT lleva
+  Observaciones = "OT bonificada (B) en OCUPACIÓN 2026".
+- **Elementos**: REM-TS n (y sus slots) = REM-DB-n por regla de negocio, solo
+  si REM-DB-n existe en el maestro (si no, REVISAR). PALS-3600seg (Alsina) esta
+  dado de baja: NO_IMPORTAR (ELEMENTO_DADO_DE_BAJA_ALSINA). Ningun elemento se
+  crea.
 - **Fechas**: pares INICIO/FIN identicos o contiguos se consolidan; pares sin
   contacto = periodos separados (huecos reales); mismo INICIO con FIN que
-  crece bloque a bloque = extension (vale el ultimo FIN). Cualquier otro
-  solape, mes del rango sin presencia de la OT, presencia fuera de rango,
+  crece bloque a bloque = extension (vale el ultimo FIN); meses intermedios
+  sin la OT entre bloques de la misma OT y mismo rango = continuidad. Cualquier
+  otro solape, meses al inicio/fin del rango sin la OT, presencia fuera de rango,
   fecha vacia/indeterminada/no interpretable o fechas solo en celdas con
   varias OT -> REVISAR.
 - **Dedup contra CAMPANAS** (IDCampaña + ElementoID): mismas fechas o rango
-  contenido en filas existentes -> YA_EXISTE; cobertura parcial (p.ej.
-  extension no cargada) u otras fechas -> REVISAR (no se modifica CAMPANAS),
-  salvo periodo disjunto de una OT cuyo otro periodo ya esta cargado ->
-  IMPORTAR.
-- **IMPORTAR**: elemento ALTA + OT numerica + fechas inequivocas + periodo en
-  2026 + ausente en CAMPANAS. Columnas destino = esquema CAMPANAS vigente.
-  Derivadas con certeza: IDCampaña, ElementoID, FechaInicio, FechaFin,
-  ClaveNegocio (misma formula que la migracion historica, verificada contra
-  CAMPANAS), TipoCargaDeclarado (= Medio del maestro), FechaIndefinida = No,
-  Campaña = PAUTA literal de origen (solo si es unica). Vacias a proposito:
-  CargaID, FechaHoraCarga, UsuarioCarga, FuenteCarga, EstadoValidacion (se
-  asignan al importar) y Cliente, Marca, Agencia, Proveedor, Estado, etc.
+  contenido en filas existentes -> YA_EXISTE. Continuidad demostrada de UNA
+  fila existente (mismo inicio o inicio = fin + 1 dia, FIN posterior, sin
+  contradicciones ni solapes con otras filas) -> UPDATE de FechaFin y
+  ClaveNegocio de esa fila (nunca una fila nueva). Periodo disjunto de una OT
+  cuyo otro periodo ya esta cargado -> INSERT. Resto -> REVISAR.
+- **INSERT**: elemento ALTA + OT numerica + fechas inequivocas + periodo en
+  2026 + ausente en CAMPANAS. 30 columnas CAMPANAS. IDCampaña, ElementoID,
+  FechaInicio, FechaFin, ClaveNegocio (formula vigente), TipoCargaDeclarado (=
+  Medio del maestro), FechaIndefinida = No, Campaña = PAUTA solo si es
+  inequivoca. Convencion de carga por lote: CargaID HIST-######## correlativo,
+  FechaHoraCarga = momento de la carga, UsuarioCarga = MIGRACION_OCUPACION_2026,
+  FuenteCarga = "Migración histórica - OCUPACION_2026", EstadoValidacion = OK,
+  Estado = Finalizada si FechaFin < fecha de carga, si no Activa. Cliente,
+  Marca, Agencia, Proveedor y demas campos comerciales quedan vacios.
 """
+
+
+def leer_revisar_previo(xlsx: Path) -> Counter | None:
+    """Motivos de REVISAR del staging anterior (para medir la mejora)."""
+    if not xlsx.is_file():
+        return None
+    try:
+        rv = pd.read_excel(xlsx, sheet_name="REVISAR")
+    except ValueError:
+        return None
+    c = Counter(re.sub(r":.*", "", m) for ms in rv["Motivo"].fillna("") for m in str(ms).split(" | ") if m)
+    c["__TOTAL__"] = len(rv)
+    return c
+
+
+def comparar_revisar(previo: Counter | None, actual: pd.DataFrame) -> pd.DataFrame:
+    act = Counter(re.sub(r":.*", "", m) for ms in actual["Motivo"] for m in ms.split(" | ") if m)
+    filas = [{"Motivo": "TOTAL REVISAR (asignaciones)", "Antes": (previo or {}).get("__TOTAL__", ""), "Despues": len(actual)}]
+    for m in sorted(set(act) | set(k for k in (previo or {}) if k != "__TOTAL__")):
+        filas.append({"Motivo": m, "Antes": (previo or {}).get(m, 0), "Despues": act.get(m, 0)})
+    return pd.DataFrame(filas)
+
+
+def estadisticas_base(path: Path) -> dict[str, Any]:
+    c = pd.read_excel(path, sheet_name="CAMPANAS")
+    return {
+        "filas": len(c),
+        "ot_distintas": c["IDCampaña"].map(_a_ot).dropna().nunique(),
+        "fecha_hora_carga_max": c["FechaHoraCarga"].max(),
+        "sha256": sha256_file(path),
+    }
+
+
+def escribir_reporte_aplicacion(path: Path, antes: dict, despues: dict | None, ctrl: dict | None,
+                                resumen: dict, res: dict, controles: list[tuple[str, str]], error: str = "") -> None:
+    l = ["# Reporte de aplicacion - Etapa 2B.1 (historico OCUPACION 2026 -> CAMPANAS)\n",
+         f"Fecha de carga: {res['fecha_carga']:%Y-%m-%d %H:%M:%S}\n"]
+    if error:
+        l.append(f"\n**APLICACION ABORTADA - base NO modificada**: {error}\n")
+    l.append("\n## Base antes\n")
+    l.append(_md_tabla(pd.DataFrame([antes])))
+    l.append("\n## Operaciones\n")
+    l.append(_md_tabla(pd.DataFrame(list(resumen["operaciones"].items()), columns=["Concepto", "Valor"])))
+    l.append(f"\n### Filas existentes con FechaFin extendida ({len(resumen['extensiones'])})\n")
+    l.append(_md_tabla(resumen["extensiones"]))
+    if despues:
+        l.append("\n## Base despues\n")
+        l.append(_md_tabla(pd.DataFrame([despues])))
+    if ctrl:
+        l.append("\n## Controles de escritura\n")
+        l.append(f"- Partes del xlsx modificadas: {', '.join(ctrl['partes_modificadas'])}\n")
+        l.append(f"- tblCampanas ref: {ctrl['tabla_ref']} (cubre todas las filas: {ctrl['tabla_cubre_filas']})\n")
+        l.append(f"- validate_input: {ctrl['validate_input']} ({len(ctrl['validate_errors'])} errores, "
+                 f"{len(ctrl['validate_warnings'])} advertencias)\n")
+    if controles:
+        l.append("\n## Validaciones obligatorias\n")
+        l.append(_md_tabla(pd.DataFrame(controles, columns=["Control", "Resultado"])))
+    l.append("\n## Pendientes (REVISAR)\n")
+    l.append(_md_tabla(resumen["comparacion_revisar"]))
+    l.append("\n### Elementos sin match / ambiguos restantes\n")
+    l.append(_md_tabla(pd.concat([resumen["no_encontrados"][["HojaOrigen", "ElementoOrigen", "Observacion"]],
+                                  resumen["ambiguos"][["HojaOrigen", "ElementoOrigen", "Observacion"]]])))
+    l.append(f"\n### OTs con fechas todavia ambiguas ({len(resumen['ots_dudosas'])})\n\n")
+    l.append(", ".join(str(o) for o in resumen["ots_dudosas"]) + "\n")
+    path.write_text("".join(x if x.endswith("\n") else x + "\n" for x in l), encoding="utf-8")
+
+
+def controles_post(base: Path, res: dict[str, Any], sha_fuente: str, fuente: Path) -> list[tuple[str, str]]:
+    """Validaciones obligatorias sobre la base ya reemplazada."""
+    c = pd.read_excel(base, sheet_name="CAMPANAS")
+    m = pd.read_excel(base, sheet_name="MAESTRO_ELEMENTOS")
+    p = pd.read_excel(base, sheet_name="PARAMETROS")
+    ins, upd = res["hojas"]["IMPORTAR"], res["hojas"]["EXTENSIONES_UPDATE"]
+    nuevas = c[c["CargaID"].isin(ins["CargaID"])]
+    m_ids = set(m["ElementoID"].map(texto))
+    circ = dict(zip(m["ElementoID"].map(texto), m["CircuitoDashboard"].map(texto)))
+    claves_antes = res["campanas"]["ClaveNegocio"].map(texto)
+    dup_antes = int(claves_antes.duplicated().sum())
+    dup_despues = int(c["ClaveNegocio"].map(texto).duplicated().sum())
+    ok = lambda b: "OK" if b else "FALLA"  # noqa: E731
+    nuevas_ids = nuevas["IDCampaña"]
+    return [
+        ("Fuente OCUPACION 2026 mismo SHA", ok(sha256_file(fuente) == sha_fuente)),
+        ("MAESTRO_ELEMENTOS identico", ok(_norm_df(m).equals(_norm_df(res["maestro"])))),
+        ("PARAMETROS identico", ok(_norm_df(p).equals(_norm_df(res["parametros"])))),
+        ("0 ElementoID huerfanos", ok(set(c["ElementoID"].map(texto)) <= m_ids)),
+        ("ElementoID unicos del maestro sin cambios", ok(set(res["maestro"]["ElementoID"].map(texto)) == m_ids)),
+        (f"0 ClaveNegocio duplicadas nuevas (antes {dup_antes}, despues {dup_despues})", ok(dup_despues <= dup_antes)),
+        ("0 CargaID duplicados", ok(not c["CargaID"].duplicated().any())),
+        ("Ninguna fila nueva London/YPF/Cencomedia", ok(not nuevas["ElementoID"].map(lambda e: circ.get(texto(e), "")).isin(
+            CIRCUITOS_FUERA_DE_ALCANCE).any() and not ins["TRZ_AlcanceOrigen"].str.contains("LONDON|CENCOMEDIA|YPF").any())),
+        ("Ninguna PALS/Alsina importada", ok(not nuevas["ElementoID"].map(texto).str.upper().str.startswith("PALS").any())),
+        ("B no aparece en IDCampaña / IDCampaña nuevas numericas", ok(nuevas_ids.map(lambda v: _a_ot(v) is not None).all())),
+        ("REM-TS no aparece como ElementoID", ok(not c["ElementoID"].map(texto).str.upper().str.startswith("REM-TS").any())),
+        (f"Extensiones sin filas duplicadas (filas = antes {len(res['campanas'])} + inserts {len(ins)})",
+         ok(len(c) == len(res["campanas"]) + len(ins))),
+        ("Filas extendidas con FechaFin nueva", ok(all(
+            _a_fecha(c.loc[c["CargaID"] == u.CargaID, "FechaFin"].iloc[0]) == u.FechaFin_Nueva for u in upd.itertuples()))),
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1542,6 +2227,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", default=None, help="OCU26_BASE_DATOS.xlsx (default: resolucion del pipeline)")
     ap.add_argument("--salida", required=True, help="Directorio de salida del staging")
     ap.add_argument("--sha-base", default=EXPECTED_BASE_SHA256, help="SHA-256 esperado de la base")
+    ap.add_argument("--aplicar", action="store_true", help="Aplicar INSERT/UPDATE sobre la hoja CAMPANAS de la base")
     args = ap.parse_args(argv)
 
     fuente = Path(args.fuente)
@@ -1557,30 +2243,63 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: SHA de la base {sha_base} != esperado {args.sha_base}. Tarea detenida.", file=sys.stderr)
         return 2
 
-    res = construir_staging(fuente, base)
-    resumen = calcular_resumen(res)
     salida = Path(args.salida)
     salida.mkdir(parents=True, exist_ok=True)
     xlsx = salida / "OCU26_HISTORICO_STAGING.xlsx"
     csv = salida / "OCU26_HISTORICO_IMPORTAR.csv"
     md = salida / "RESUMEN_IMPORTACION_HISTORICA.md"
+    previo = leer_revisar_previo(xlsx)
 
-    sha_fuente_fin, sha_base_fin = sha256_file(fuente), sha256_file(base)
+    res = construir_staging(fuente, base)
+    resumen = calcular_resumen(res)
+    resumen["comparacion_revisar"] = comparar_revisar(previo, res["hojas"]["REVISAR"])
+    antes = {"filas": len(res["campanas"]), "ot_distintas": res["campanas"]["IDCampaña"].map(_a_ot).dropna().nunique(),
+             "fecha_hora_carga_max": res["campanas"]["FechaHoraCarga"].max(), "sha256": sha_base}
     meta = [
-        ("Fuente", str(fuente)), ("SHA-256 fuente (inicio)", sha_fuente), ("SHA-256 fuente (fin)", sha_fuente_fin),
-        ("Base OCU26", str(base)), ("SHA-256 base (inicio)", sha_base), ("SHA-256 base (fin)", sha_base_fin),
-        ("SHA-256 base esperado", args.sha_base), ("Anio de alcance", str(ANIO_ALCANCE)),
-        ("Generado", dt.datetime.now().strftime("%Y-%m-%d %H:%M")), ("Importacion realizada", "NO (solo staging)"),
+        ("Fuente", str(fuente)), ("SHA-256 fuente", sha_fuente),
+        ("Base OCU26", str(base)), ("SHA-256 base de partida", sha_base),
+        ("Anio de alcance", str(ANIO_ALCANCE)), ("Fecha de carga (FechaHoraCarga)", f"{res['fecha_carga']:%Y-%m-%d %H:%M:%S}"),
+        ("Aplicacion a la base", "SI (--aplicar)" if args.aplicar else "NO (solo staging)"),
     ]
     escribir_excel(xlsx, res, resumen, meta)
     escribir_csv(csv, res["hojas"]["IMPORTAR"])
     escribir_md(md, res, resumen, meta)
-    if (sha256_file(fuente), sha256_file(base)) != (sha_fuente, sha_base):
-        print("ERROR: un Excel fuente cambio durante el proceso", file=sys.stderr)
-        return 3
     print(resumen["general"].to_string(index=False))
-    print(f"Escritos: {xlsx}\n          {csv}\n          {md}")
-    return 0
+    for k, v in resumen["operaciones"].items():
+        print(f"  {k}: {v}")
+
+    rc = 0
+    if args.aplicar:
+        reporte = salida / "REPORTE_APLICACION_ETAPA2B1.md"
+        ops_csv = salida / "OCU26_HISTORICO_OPERACIONES_APLICADAS.csv"
+        try:
+            ctrl = aplicar_en_base(base, res)
+        except StagingError as exc:
+            escribir_reporte_aplicacion(reporte, antes, None, None, resumen, res, [], error=str(exc))
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 4
+        despues = estadisticas_base(base)
+        controles = controles_post(base, res, sha_fuente, fuente)
+        controles.append(("validate_input base final", ctrl["validate_input"]))
+        escribir_reporte_aplicacion(reporte, antes, despues, ctrl, resumen, res, controles)
+        ops = pd.concat([
+            res["hojas"]["IMPORTAR"][["CargaID", "IDCampaña", "ElementoID", "FechaInicio", "FechaFin", "ClaveNegocio"]]
+            .assign(Operacion=OP_INSERT),
+            res["hojas"]["EXTENSIONES_UPDATE"].rename(columns={"FechaFin_Nueva": "FechaFin", "ClaveNegocio_Nueva": "ClaveNegocio"})
+            [["CargaID", "IDCampaña", "ElementoID", "FechaInicio", "FechaFin", "ClaveNegocio", "FechaFin_Anterior", "ClaveNegocio_Anterior"]]
+            .assign(Operacion=OP_UPDATE),
+        ], ignore_index=True)
+        ops.to_csv(ops_csv, index=False, encoding="utf-8-sig")
+        print(f"BASE DESPUES: {despues}")
+        for k, v in controles:
+            print(f"  [{v}] {k}")
+        if any(v == "FALLA" for _, v in controles):
+            rc = 5
+    if sha256_file(fuente) != sha_fuente:
+        print("ERROR: la fuente cambio durante el proceso", file=sys.stderr)
+        return 3
+    print(f"Escritos en {salida}")
+    return rc
 
 
 if __name__ == "__main__":
