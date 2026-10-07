@@ -40,3 +40,4 @@ y PARAMETROS idénticos a la pre-carga. `FechaHoraCarga` máxima: 2026-10-07.
 ## Pendientes
 
 458 asignaciones en REVISAR (136 OT); detalle en `REPORTE_CIERRE_ETAPA2B2.md`.
+Depuradas en la Etapa 2C: ver `ETAPA2C_REVISION_FINAL_HISTORICO.md`.
