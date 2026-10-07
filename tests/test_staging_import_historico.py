@@ -79,6 +79,9 @@ MAESTRO = _maestro([
     ["REM-DB-1", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
     ["REM-DB-3", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
     ["REM-DB-5", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
+    ["REM-DB-6", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
+    ["REM-DB-8", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
+    ["REM-DB-10", "Shoppings Digital", "REMEROS", "REMEROS", "TV Led", "Digital"],
     ["REM-CH-1D", "Shoppings Estático", "REMEROS", "REMEROS", "Chupete", "Estático"],
     ["Pantalla 4", "London Supply", "LS", "CALAFATE", "Pantalla", "Digital"],
 ])
@@ -284,24 +287,27 @@ class TestCrosswalk:
                 "UNI-TOTEMD-1G-5", "ALTA", "HERENCIA_SLOTS_HERMANOS"), cod
 
     def test_sin_hermano_alta_no_hereda(self):
-        xw = self._run([_xw("REM-PIL", "REM-TS 2-V1", "REMEROS", "TV Led / x", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS 2-V2", "REMEROS", "TV Led / x", clas="REMEROS")])
+        xw = self._run([_xw("REM-PIL", "REM-TS 7-V1", "REMEROS", "TV Led / x", clas="REMEROS"),
+                        _xw("REM-PIL", "REM-TS 7-V2", "REMEROS", "TV Led / x", clas="REMEROS")])
         assert set(xw["Confianza"]) == {"BAJA"} and set(xw["ElementoID_OCU26"]) == {""}
 
-    def test_rem_ts_a_rem_db_conserva_numero(self):
-        xw = self._run([_xw("REM-PIL", "REM-TS 1-V1", "REM", "TV Led / lado derecho", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS 1", "REM", "TV Led / lado derecho", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS -5-V3", "REM", "TV Led / izq", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS 3 -V2", "REM", "TV Led / x", clas="REMEROS"),
-                        _xw("REM-PIL", "REM-TS 4-V1", "REM", "TV Led / x", clas="REMEROS")])
-        for cod, eid in (("REM-TS 1-V1", "REM-DB-1"), ("REM-TS 1", "REM-DB-1"), ("REM-TS -5-V3", "REM-DB-5"),
-                         ("REM-TS 3 -V2", "REM-DB-3")):
+    def test_rem_ts_posicional(self):
+        # Maestro Remeros Digital: 1 / 3 / 5 / 6 / 8 / 10 -> TS1..TS6 uno a uno por posicion.
+        idx = st.IndiceMaestro(MAESTRO)
+        assert idx.rem_digital == ["REM-DB-1", "REM-DB-3", "REM-DB-5", "REM-DB-6", "REM-DB-8", "REM-DB-10"]
+        cods = ["REM-TS 1-V1", "REM-TS 2", "REM-TS 3 -V2", "REM-TS 4-V1", "REM-TS -5-V3", "REM-TS 6-V9", "REM-TS 7-V1"]
+        xw = self._run([_xw("REM-PIL", c, "REM", "TV Led / lado derecho", clas="REMEROS") for c in cods])
+        for cod, eid in zip(cods, idx.rem_digital):
             assert (xw.loc[cod, "ElementoID_OCU26"], xw.loc[cod, "Confianza"], xw.loc[cod, "MetodoMatch"]) == (
-                eid, "ALTA", "REGLA_REM_TS_A_REM_DB"), cod
-        # REM-DB-4 no existe en el maestro: no se inventa ni se aproxima a otro numero.
-        r = xw.loc["REM-TS 4-V1"]
-        assert (r["ElementoID_OCU26"], r["Confianza"], r["MetodoMatch"]) == ("", "BAJA", "REM_TS_DESTINO_INEXISTENTE")
-        assert st.destino_rem_ts("REM-TS 12-V3") == "REM-DB-12" and st.destino_rem_ts("REM-DB-1") is None
+                eid, "ALTA", "REGLA_REM_TS_POSICIONAL"), cod
+        # Fuera de las 6 posiciones: no se inventa.
+        r = xw.loc["REM-TS 7-V1"]
+        assert (r["ElementoID_OCU26"], r["Confianza"], r["MetodoMatch"]) == ("", "BAJA", "REM_TS_SIN_DESTINO")
+        assert st.numero_rem_ts("REM-TS 12-V3") == 12 and st.numero_rem_ts("REM-DB-1") is None
+
+    def test_rem_ts_no_aplica_si_el_maestro_no_tiene_seis(self):
+        idx = st.IndiceMaestro(MAESTRO[MAESTRO["ElementoID"] != "REM-DB-10"])
+        assert st.destino_rem_ts("REM-TS 1", idx)[0] is None
 
     def test_un_uni_no_es_replace_global(self):
         # UN-LONAER3x5-K2 -> UNI-LONAER3x5-K2 no existe: no se inventa ni se toma K1.
@@ -322,7 +328,7 @@ class TestCrosswalk:
         xw = self._run(occ)
         r = xw.loc["REM-PANT-9"]
         assert r["Confianza"] == "MEDIA" and r["ElementoID_OCU26"] == ""
-        assert r["Candidatos"] == "REM-DB-1, REM-DB-3, REM-DB-5"
+        assert r["Candidatos"] == "REM-DB-1, REM-DB-10, REM-DB-3, REM-DB-5, REM-DB-6, REM-DB-8"
 
     def test_medio_contradictorio_baja_a_media(self):
         xw = self._run([_xw("CENCO F", "UNI-TRIEDRO-1A-2", "UNICENTER", "Triedro Digital - Octogono Chico")])
@@ -450,7 +456,7 @@ class TestClasificacion:
         assert r["ClaveNegocio"] == "4800|UNI-TRIEDRO-1A-2|2026-08-01|2026-08-31||"
         assert r["TipoCargaDeclarado"] == "Digital" and r["FechaIndefinida"] == "No" and r["Campaña"] == "PLAYSTATION"
         assert (r["CargaID"], r["FechaHoraCarga"], r["UsuarioCarga"], r["FuenteCarga"], r["EstadoValidacion"], r["Estado"]) == (
-            "HIST-00023127", carga, "MIGRACION_OCUPACION_2026", "Migración histórica - OCUPACION_2026", "OK", "Finalizada")
+            "HIST-00023127", carga, "MIGRACION_OCUPACION_2026", "Migración histórica", "OK", "Finalizada")
         for vacia in ("Cliente", "Marca", "Agencia", "Proveedor", "Observaciones", "ObservacionValidacion", "SalidasVendidas"):
             assert pd.isna(r[vacia]), vacia
 
@@ -568,15 +574,18 @@ def test_escritura_quirurgica_campanas(tmp_path):
 
     base, nuevo = tmp_path / "base.xlsx", tmp_path / "nuevo.xlsx"
     _workbook_sintetico(base)
-    upd = pd.DataFrame([{"CargaID": "HIST-00000001", "PosicionFila": 0, "FechaFin_Anterior": D(2026, 6, 30),
-                         "FechaFin_Nueva": D(2026, 8, 31), "ClaveNegocio_Anterior": "4317|E1|2026-03-01|2026-06-30||",
-                         "ClaveNegocio_Nueva": "4317|E1|2026-03-01|2026-08-31||"}])
+    cambios = pd.DataFrame([
+        (0, "HIST-00000001", "FechaFin", D(2026, 6, 30), D(2026, 8, 31)),
+        (0, "HIST-00000001", "ClaveNegocio", "4317|E1|2026-03-01|2026-06-30||", "4317|E1|2026-03-01|2026-08-31||"),
+        (0, "HIST-00000001", "Estado", None, "Activa"),
+        (1, "HIST-00000002", "ElementoID", "E1", "E2"),
+    ], columns=st.CAMBIOS_COLUMNAS)
     ins = pd.DataFrame([{h: None for h in CAMPANAS_HEADERS}])
     ins.loc[0, ["CargaID", "ClaveNegocio", "IDCampaña", "ElementoID", "Campaña", "Observaciones"]] = [
         "HIST-00000003", "4726|E1|2026-11-01|2026-11-30||", 4726, "E1", "A & B <x>", "OT bonificada (B) en OCUPACIÓN 2026"]
     ins["FechaInicio"], ins["FechaFin"] = [D(2026, 11, 1)], [D(2026, 11, 30)]
     ins["FechaHoraCarga"] = [dt.datetime(2026, 10, 7, 13, 0, 5)]
-    st.construir_xlsx_actualizado(base, nuevo, upd, ins)
+    st.construir_xlsx_actualizado(base, nuevo, cambios, ins)
 
     with zipfile.ZipFile(base) as za, zipfile.ZipFile(nuevo) as zb:
         assert za.namelist() == zb.namelist()
@@ -588,7 +597,8 @@ def test_escritura_quirurgica_campanas(tmp_path):
     assert list(c.columns) == CAMPANAS_HEADERS and len(c) == 3
     assert c.loc[0, "FechaFin"] == pd.Timestamp(2026, 8, 31) and c.loc[0, "ClaveNegocio"].endswith("2026-08-31||")
     assert c.loc[0, "FechaInicio"] == pd.Timestamp(2026, 3, 1)  # inicio original intacto
-    assert c.loc[1, "FechaFin"] == pd.Timestamp(2026, 1, 31)    # otra fila intacta
+    assert c.loc[0, "Estado"] == "Activa"
+    assert c.loc[1, "FechaFin"] == pd.Timestamp(2026, 1, 31) and c.loc[1, "ElementoID"] == "E2"
     r = c.loc[2]
     assert (r["CargaID"], r["IDCampaña"], r["Campaña"], r["FechaInicio"]) == ("HIST-00000003", 4726, "A & B <x>", pd.Timestamp(2026, 11, 1))
     assert r["FechaHoraCarga"].round("s") == pd.Timestamp(2026, 10, 7, 13, 0, 5)
@@ -599,8 +609,23 @@ def test_escritura_quirurgica_campanas(tmp_path):
 def test_escritura_aborta_si_la_fila_no_coincide(tmp_path):
     base = tmp_path / "base.xlsx"
     _workbook_sintetico(base)
-    upd = pd.DataFrame([{"CargaID": "HIST-00000001", "PosicionFila": 0, "FechaFin_Anterior": D(2026, 5, 31),
-                         "FechaFin_Nueva": D(2026, 8, 31), "ClaveNegocio_Anterior": "4317|E1|2026-03-01|2026-06-30||",
-                         "ClaveNegocio_Nueva": "x"}])
-    with pytest.raises(st.StagingError):
-        st.construir_xlsx_actualizado(base, tmp_path / "n.xlsx", upd, pd.DataFrame(columns=CAMPANAS_HEADERS))
+    vacio = pd.DataFrame(columns=CAMPANAS_HEADERS)
+    for cambio in [(0, "HIST-00000001", "FechaFin", D(2026, 5, 31), D(2026, 8, 31)),   # valor anterior distinto
+                   (0, "HIST-00000002", "Estado", None, "Activa"),                     # CargaID de otra fila
+                   (5, "HIST-00000009", "Estado", None, "Activa")]:                    # fila inexistente
+        with pytest.raises(st.StagingError):
+            st.construir_xlsx_actualizado(base, tmp_path / "n.xlsx", pd.DataFrame([cambio], columns=st.CAMBIOS_COLUMNAS), vacio)
+
+
+def test_cambios_desde_extensiones_aplica_estado_y_respeta_reservada():
+    camp = _campanas([(1, "E", D(2026, 3, 1), D(2026, 6, 30)), (2, "E", D(2026, 3, 1), D(2026, 6, 30)),
+                      (3, "E", D(2026, 3, 1), D(2026, 6, 30))])
+    camp["Estado"] = ["Finalizada", "Reservada", "Activa"]
+    upd = pd.DataFrame([{"PosicionFila": k, "CargaID": f"HIST-{k:08d}", "FechaFin_Anterior": D(2026, 6, 30),
+                         "FechaFin_Nueva": fin, "ClaveNegocio_Anterior": "a", "ClaveNegocio_Nueva": "b"}
+                        for k, fin in ((0, D(2026, 12, 31)), (1, D(2026, 12, 31)), (2, D(2026, 9, 30)))])
+    ch = st.cambios_desde_extensiones(upd, camp, dt.datetime(2026, 10, 7, 13, 29))
+    est = ch[ch["Columna"] == "Estado"]
+    assert est[["CargaID", "Anterior", "Nuevo"]].values.tolist() == [
+        ["HIST-00000000", "Finalizada", "Activa"], ["HIST-00000002", "Activa", "Finalizada"]]
+    assert set(ch["Columna"]) == {"FechaFin", "ClaveNegocio", "Estado"}

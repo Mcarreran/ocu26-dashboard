@@ -30,8 +30,9 @@ Reglas:
 - ElementoOrigen se resuelve contra MAESTRO_ELEMENTOS por evidencia: codigo
   exacto, normalizacion de espacios, prefijo UN->UNI confirmado (nunca replace
   global), sufijo de slot -Vn, PLED por Descripcion del maestro, Descripcion +
-  posicion, slots hermanos, y la regla de negocio REM-TS n -> REM-DB-n (solo si
-  existe en el maestro). PALS-3600seg (Alsina) esta dado de baja: NO_IMPORTAR.
+  posicion, slots hermanos, y la regla de negocio posicional de Remeros:
+  REM-TS n = n-esimo de los 6 soportes Remeros Digital del maestro ordenados
+  por numero. PALS-3600seg (Alsina) esta dado de baja: NO_IMPORTAR.
   Solo confianza ALTA llega a IMPORTAR.
 - Fechas: se consolidan rangos INICIO/FIN identicos, contiguos o con FIN que
   se extiende bloque a bloque; huecos intermedios dentro de un mismo rango se
@@ -98,8 +99,11 @@ PATRON_NO_COMERCIAL = re.compile(r"\bDECO\b|NAVIDE|\bINSTI|INSTITUCIONAL|\bCENCO
 ELEMENTOS_DADOS_DE_BAJA: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^PALS-\d+SEG(-V\d+)?$"), "ELEMENTO_DADO_DE_BAJA_ALSINA"),
 ]
-# Regla de negocio confirmada: REM-TS <n> (y slots -Vk) = REM-DB-<n>.
+# Regla de negocio confirmada (Etapa 2B.2): los historicos REM-TS 1..6 son,
+# uno a uno y por posicion, los 6 soportes Remeros Digital actuales del maestro
+# ordenados por su numeracion (p.ej. 1/3/5/6/8/10 -> TS1=1, TS2=3, TS3=5...).
 PATRON_REM_TS = re.compile(r"^REM-TS[\s-]*(\d+)(?:-V\d+)?$")
+CANTIDAD_REM_DIGITAL = 6
 NOTA_BONIFICADA = "OT bonificada (B) en OCUPACIÓN 2026"
 
 ESTADOS = ("IMPORTAR", "YA_EXISTE", "REVISAR", "NO_IMPORTAR")
@@ -467,6 +471,10 @@ class IndiceMaestro:
         self.por_id = {r["ElementoID"]: r for r in df.to_dict("records")}
         self.por_compacto: dict[str, list[str]] = defaultdict(list)
         self.pled_por_desc: dict[str, list[str]] = defaultdict(list)
+        self.rem_digital = sorted(
+            (e for e, r in self.por_id.items()
+             if normalizar_codigo(r.get("Subcircuito")) == "REMEROS" and texto(r.get("Medio")) == "Digital"),
+            key=lambda e: (int(m.group(1)) if (m := re.search(r"(\d+)$", e)) else 10**9, e))
         for eid, r in self.por_id.items():
             self.por_compacto[compactar_codigo(eid)].append(eid)
             if texto(r.get("CircuitoDashboard")) == "Pantalla Led":
@@ -503,17 +511,29 @@ def posicion_codigo(codigo: str) -> str:
     return m.group(1) if m else ""
 
 
-def destino_rem_ts(codigo: str) -> str | None:
-    """REM-TS <n> / REM-TS <n>-Vk -> 'REM-DB-<n>' (se conserva el numero)."""
+def numero_rem_ts(codigo: str) -> int | None:
+    """'REM-TS 3-V2' / 'REM-TS -5-V1' / 'REM-TS 4 -V2' -> 3 / 5 / 4."""
     m = PATRON_REM_TS.match(normalizar_codigo(codigo))
-    return f"REM-DB-{int(m.group(1))}" if m else None
+    return int(m.group(1)) if m else None
+
+
+def destino_rem_ts(codigo: str, idx: "IndiceMaestro") -> tuple[str | None, str]:
+    """REM-TS n -> soporte Remeros Digital en la posicion n. -> (ElementoID, motivo si no aplica)."""
+    n = numero_rem_ts(codigo)
+    if n is None:
+        return None, ""
+    if len(idx.rem_digital) != CANTIDAD_REM_DIGITAL:
+        return None, f"el maestro tiene {len(idx.rem_digital)} soportes Remeros Digital (se esperan {CANTIDAD_REM_DIGITAL})"
+    if not 1 <= n <= CANTIDAD_REM_DIGITAL:
+        return None, f"REM-TS {n} fuera de las posiciones 1..{CANTIDAD_REM_DIGITAL}"
+    return idx.rem_digital[n - 1], ""
 
 
 def candidatos_por_codigo(codigo: str, hoja: str, idx: IndiceMaestro) -> tuple[list[str], str]:
     """Busqueda por evidencia de codigo, en orden de fuerza. -> (candidatos, metodo)."""
-    rem = destino_rem_ts(codigo)
-    if rem:
-        return ([rem], "REGLA_REM_TS_A_REM_DB") if rem in idx.por_id else ([], "REM_TS_DESTINO_INEXISTENTE")
+    if numero_rem_ts(codigo) is not None:
+        rem, _ = destino_rem_ts(codigo, idx)
+        return ([rem], "REGLA_REM_TS_POSICIONAL") if rem else ([], "REM_TS_SIN_DESTINO")
     exactos = [e for e in idx.por_id if e == texto(codigo)]
     if exactos:
         return exactos, "EXACTO"
@@ -610,7 +630,7 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
 
     # 3) sin match de codigo -> evidencia de ubicacion + descripcion
     for key, (cands, metodo, attrs) in list(pre.items()):
-        if not cands and metodo != "REM_TS_DESTINO_INEXISTENTE":
+        if not cands and metodo != "REM_TS_SIN_DESTINO":
             c2, m2 = candidatos_por_descripcion(key[0], key[1], attrs, idx, ubic_alias)
             if c2:
                 pre[key] = (c2, m2, attrs)
@@ -645,8 +665,10 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
                 problemas.append("Solo coincide la Descripcion (sin evidencia de codigo/posicion)")
             elif metodo not in ("EXACTO", "NORMALIZACION_ESPACIOS") and desc and texto(r.get("Descripcion")) and sim == 0:
                 problemas.append(f"Descripciones sin palabras en comun ('{desc}' vs '{texto(r.get('Descripcion'))}')")
-            if metodo == "REGLA_REM_TS_A_REM_DB":
-                obs.append(f"Regla de negocio REM-TS n -> REM-DB-n (mismo soporte): '{codigo}' -> {eid}")
+            if metodo == "REGLA_REM_TS_POSICIONAL":
+                n = numero_rem_ts(codigo)
+                obs.append(f"Regla de negocio posicional: REM-TS {n} = posicion {n} de Remeros Digital "
+                           f"({' / '.join(idx.rem_digital)}) -> {eid}")
             if "UN_UNI" in metodo:
                 obs.append(f"UN->UNI confirmado contra maestro: '{codigo}' -> {eid}")
             if "SUFIJO_SLOT" in metodo:
@@ -662,9 +684,9 @@ def construir_crosswalk(ocurrencias: list[Ocurrencia], idx: IndiceMaestro) -> pd
         elif cands:
             m.metodo, m.confianza = metodo + ("" if metodo == "DESCRIPCION_FAMILIA" else "_AMBIGUO"), "MEDIA"
             obs.append("Multiples candidatos razonables, sin equivalencia comprobable: " + ", ".join(cands))
-        elif metodo == "REM_TS_DESTINO_INEXISTENTE":
+        elif metodo == "REM_TS_SIN_DESTINO":
             m.metodo = metodo
-            obs.append(f"Regla REM-TS n -> REM-DB-n: {destino_rem_ts(codigo)} no existe en MAESTRO_ELEMENTOS (no se inventa)")
+            obs.append(f"Regla posicional REM-TS no aplicable: {destino_rem_ts(codigo, idx)[1]} (no se inventa)")
         else:
             sugeridos = sugerir_candidatos(hoja, attrs, idx, ubic_alias)
             m.candidatos = [s for s, _ in sugeridos]
@@ -1315,7 +1337,10 @@ TRZ_ORDEN = [
 # OK. Estado: Finalizada si FechaFin < fecha de carga, si no Activa
 # (Reservada es un estado comercial que la fuente no informa).
 USUARIO_CARGA = "MIGRACION_OCUPACION_2026"
-FUENTE_CARGA = "Migración histórica - OCUPACION_2026"
+# Vocabulario cerrado de PARAMETROS (FuenteCarga): "Migración histórica" /
+# "Microsoft Forms". La procedencia OCUPACION_2026 queda en UsuarioCarga, igual
+# que MIGRACION_YPF / MIGRACION_OCU26 (decision Etapa 2B.2).
+FUENTE_CARGA = "Migración histórica"
 ESTADO_VALIDACION_OK = "OK"
 PREFIJO_CARGA_ID = "HIST-"
 
@@ -1514,9 +1539,34 @@ def _parte_hoja_y_tabla(z, hoja: str, tabla: str) -> tuple[str, str]:
     raise StagingError(f"No se encontro la tabla {tabla} de la hoja {hoja}")
 
 
-def construir_xlsx_actualizado(base: Path, destino: Path, updates: pd.DataFrame, inserts: pd.DataFrame) -> None:
+COLUMNAS_FECHA = ("FechaInicio", "FechaFin")
+CAMBIOS_COLUMNAS = ["PosicionFila", "CargaID", "Columna", "Anterior", "Nuevo"]
+
+
+def _texto_esperado(v: Any) -> str:
+    """Texto de celda que devuelve el lector del XML para un valor dado."""
+    if v is None or v is pd.NaT or (isinstance(v, float) and v != v) or (isinstance(v, str) and v == ""):
+        return ""
+    if isinstance(v, (pd.Timestamp, dt.datetime)):
+        v = pd.Timestamp(v).to_pydatetime()
+        return _serial(v.date()) if v.time() == dt.time(0) else _serial(v)
+    if isinstance(v, dt.date):
+        return _serial(v)
+    if isinstance(v, numbers.Integral) and not isinstance(v, bool):
+        return str(int(v))
+    if isinstance(v, numbers.Real) and not isinstance(v, bool):
+        return str(int(v)) if float(v).is_integer() else repr(float(v))
+    return str(v)
+
+
+def construir_xlsx_actualizado(base: Path, destino: Path, cambios: pd.DataFrame, inserts: pd.DataFrame) -> None:
     """Escribe en `destino` una copia de `base` donde SOLO cambian el XML de
-    CAMPANAS y el de tblCampanas. Las demas partes se copian sin cambios."""
+    CAMPANAS y el de tblCampanas. Las demas partes se copian sin cambios.
+
+    cambios: PosicionFila (0-based), CargaID, Columna, Anterior, Nuevo. Cada
+    celda se verifica contra su valor Anterior antes de reemplazarla y conserva
+    su estilo. inserts: filas nuevas con las columnas de CAMPANAS."""
+    import html
     import zipfile
 
     with zipfile.ZipFile(base) as zin:
@@ -1530,8 +1580,8 @@ def construir_xlsx_actualizado(base: Path, destino: Path, updates: pd.DataFrame,
         if ultima != len(filas):
             raise StagingError("CAMPANAS: filas no contiguas en el XML; no se puede editar con seguridad")
         letras = [openpyxl.utils.get_column_letter(k + 1) for k in range(len(CAMPANAS_HEADERS))]
-        # Estilo por columna: el de la ultima fila (ultima carga); si falta,
-        # el mas frecuente de la columna en las filas de datos; si no, 0.
+        # Estilo por columna para filas nuevas: el de la ultima fila (ultima
+        # carga); si falta, el mas frecuente de la columna; si no, 0.
         estilos = dict(re.findall(r'<c r="([A-Z]+)\d+"[^>]*? s="(\d+)"', filas[ultima].group(0)))
         if set(letras) - set(estilos):
             frec: dict[str, Counter] = defaultdict(Counter)
@@ -1543,35 +1593,51 @@ def construir_xlsx_actualizado(base: Path, destino: Path, updates: pd.DataFrame,
                 if col_ not in estilos:
                     estilos[col_] = frec[col_].most_common(1)[0][0] if frec[col_] else "0"
 
+        def celda(row_xml: str, ref: str):
+            return re.search(rf'<c r="{ref}"([^>]*?)(?:/>|>(.*?)</c>)', row_xml, re.S)
+
         def valor_celda(row_xml: str, ref: str) -> str:
-            m = re.search(rf'<c r="{ref}"([^>]*?)(?:/>|>(.*?)</c>)', row_xml, re.S)
+            m = celda(row_xml, ref)
             if not m or m.group(2) is None:
                 return ""
             v = re.search(r"<v>(.*?)</v>", m.group(2), re.S)
             if 't="s"' in m.group(1):
                 return sst[int(v.group(1))]
             if 't="inlineStr"' in m.group(1):
-                return "".join(re.findall(r"<t(?:\s[^>]*)?>(.*?)</t>", m.group(2), re.S))
+                return html.unescape("".join(re.findall(r"<t(?:\s[^>]*)?>(.*?)</t>", m.group(2), re.S)))
             return v.group(1) if v else ""
 
-        reemplazos: dict[int, str] = {}
-        col_fin = letras[CAMPANAS_HEADERS.index("FechaFin")]
-        col_clave = letras[CAMPANAS_HEADERS.index("ClaveNegocio")]
         col_id = letras[CAMPANAS_HEADERS.index("CargaID")]
-        for u in updates.itertuples(index=False):
-            r = int(u.PosicionFila) + 2
+        reemplazos: dict[int, str] = {}
+        for pos, grupo in cambios.groupby("PosicionFila", sort=True):
+            r = int(pos) + 2
+            if r not in filas:
+                raise StagingError(f"Cambio sobre fila inexistente {r}")
             row_xml = filas[r].group(0)
-            if valor_celda(row_xml, f"{col_id}{r}") != u.CargaID:
-                raise StagingError(f"UPDATE {u.CargaID}: la fila {r} no corresponde")
-            if valor_celda(row_xml, f"{col_clave}{r}") != u.ClaveNegocio_Anterior:
-                raise StagingError(f"UPDATE {u.CargaID}: ClaveNegocio actual distinta de la esperada")
-            if valor_celda(row_xml, f"{col_fin}{r}") != _serial(_a_fecha(u.FechaFin_Anterior)):
-                raise StagingError(f"UPDATE {u.CargaID}: FechaFin actual distinta de la esperada")
-            for col, nuevo in ((col_fin, _celda_xml(f"{col_fin}{r}", _a_fecha(u.FechaFin_Nueva), estilos[col_fin])),
-                               (col_clave, _celda_xml(f"{col_clave}{r}", u.ClaveNegocio_Nueva, estilos[col_clave]))):
-                row_xml, n = re.subn(rf'<c r="{col}{r}"[^>]*?(?:/>|>.*?</c>)', lambda _m, s=nuevo: s, row_xml, count=1, flags=re.S)
-                if n != 1:
-                    raise StagingError(f"UPDATE {u.CargaID}: no se encontro la celda {col}{r}")
+            ids = set(grupo["CargaID"])
+            if len(ids) != 1 or valor_celda(row_xml, f"{col_id}{r}") != next(iter(ids)):
+                raise StagingError(f"Cambio {ids}: la fila {r} no corresponde")
+            if grupo["Columna"].duplicated().any():
+                raise StagingError(f"Cambio {ids}: columna repetida en la misma fila")
+            for ch in grupo.itertuples(index=False):
+                col = letras[CAMPANAS_HEADERS.index(ch.Columna)]
+                ref = f"{col}{r}"
+                if valor_celda(row_xml, ref) != _texto_esperado(ch.Anterior):
+                    raise StagingError(f"Cambio {ch.CargaID}.{ch.Columna}: valor actual distinto del esperado")
+                m = celda(row_xml, ref)
+                nuevo = _a_fecha(ch.Nuevo) if ch.Columna in COLUMNAS_FECHA else ch.Nuevo
+                if m:
+                    s_attr = re.search(r'\bs="(\d+)"', m.group(1))
+                    row_xml = row_xml[:m.start()] + _celda_xml(ref, nuevo, s_attr.group(1) if s_attr else estilos[col]) + row_xml[m.end():]
+                else:
+                    # Celda ausente (vacia): se inserta respetando el orden de columnas.
+                    objetivo = openpyxl.utils.column_index_from_string(col)
+                    punto = row_xml.rindex("</row>")
+                    for mc in re.finditer(r'<c r="([A-Z]+)\d+"', row_xml):
+                        if openpyxl.utils.column_index_from_string(mc.group(1)) > objetivo:
+                            punto = mc.start()
+                            break
+                    row_xml = row_xml[:punto] + _celda_xml(ref, nuevo, estilos[col]) + row_xml[punto:]
             reemplazos[r] = row_xml
 
         partes, cursor = [], 0
@@ -1612,7 +1678,7 @@ def _norm_valor(v: Any, columna: str) -> Any:
         return None
     if isinstance(v, (pd.Timestamp, dt.datetime)):
         v = pd.Timestamp(v).round("ms").to_pydatetime()
-        if columna in ("FechaInicio", "FechaFin") and v.time() == dt.time(0):
+        if columna in COLUMNAS_FECHA and v.time() == dt.time(0):
             return v.date()
         return v
     if isinstance(v, numbers.Real) and not isinstance(v, bool) and float(v).is_integer():
@@ -1628,44 +1694,98 @@ def _norm_df(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def validar_operaciones(res: dict[str, Any]) -> list[str]:
-    """Cruces en memoria ANTES de escribir. Cualquier error aborta."""
+def cambios_desde_extensiones(upd: pd.DataFrame, camp: pd.DataFrame, fecha_carga: dt.datetime) -> pd.DataFrame:
+    """UPDATE de extension: FechaFin, ClaveNegocio y Estado (solo si la regla lo
+    exige; Reservada nunca se toca)."""
+    filas = []
+    for u in upd.itertuples(index=False):
+        pos = int(u.PosicionFila)
+        filas += [(pos, u.CargaID, "FechaFin", u.FechaFin_Anterior, u.FechaFin_Nueva),
+                  (pos, u.CargaID, "ClaveNegocio", u.ClaveNegocio_Anterior, u.ClaveNegocio_Nueva)]
+        actual = texto(camp.iloc[pos]["Estado"])
+        nuevo = estado_por_fechas(_a_fecha(u.FechaFin_Nueva), fecha_carga)
+        if actual in ("Activa", "Finalizada") and actual != nuevo:
+            filas.append((pos, u.CargaID, "Estado", actual, nuevo))
+    return pd.DataFrame(filas, columns=CAMBIOS_COLUMNAS)
+
+
+def campanas_esperadas(camp: pd.DataFrame, cambios: pd.DataFrame, ins: pd.DataFrame) -> pd.DataFrame:
+    esperado = camp.copy()
+    for ch in cambios.itertuples(index=False):
+        valor = pd.Timestamp(_a_fecha(ch.Nuevo)) if ch.Columna in COLUMNAS_FECHA else ch.Nuevo
+        esperado.at[esperado.index[int(ch.PosicionFila)], ch.Columna] = valor
+    nuevas = ins[CAMPANAS_HEADERS].copy()
+    for c in COLUMNAS_FECHA:
+        nuevas[c] = pd.to_datetime(nuevas[c])
+    return pd.concat([esperado, nuevas], ignore_index=True)
+
+
+def validar_estado_final(camp: pd.DataFrame, esperado: pd.DataFrame, maestro: pd.DataFrame,
+                         parametros: pd.DataFrame, tocadas: set[str]) -> list[str]:
+    """Controles de integridad sobre el CAMPANAS resultante (en memoria)."""
     errores: list[str] = []
-    camp: pd.DataFrame = res["campanas"]
-    maestro: pd.DataFrame = res["maestro"]
-    ins: pd.DataFrame = res["hojas"]["IMPORTAR"]
-    upd: pd.DataFrame = res["hojas"]["EXTENSIONES_UPDATE"]
     m_ids = maestro["ElementoID"].map(texto)
     if m_ids.duplicated().any():
         errores.append("MAESTRO_ELEMENTOS con ElementoID duplicados")
     medio = dict(zip(m_ids, maestro["Medio"].map(texto)))
     circ = dict(zip(m_ids, maestro["CircuitoDashboard"].map(texto)))
+    vocab = defaultdict(set)
+    for cat, val in zip(parametros["Categoria"].map(texto), parametros["Valor"].map(texto)):
+        vocab[cat].add(val)
 
-    if ins["CargaID"].duplicated().any() or set(ins["CargaID"]) & set(camp["CargaID"].map(texto)):
-        errores.append("CargaID nuevos duplicados o ya existentes")
+    if esperado["CargaID"].map(texto).duplicated().any():
+        errores.append("CargaID duplicados")
+    claves = esperado["ClaveNegocio"].map(texto)
+    dup = claves[claves.duplicated(keep=False)]
+    if dup.duplicated().sum() > camp["ClaveNegocio"].map(texto).duplicated().sum():
+        errores.append("ClaveNegocio duplicadas nuevas")
+    if set(esperado.loc[claves.duplicated(keep=False), "CargaID"]) & tocadas:
+        errores.append("Una fila nueva/modificada tiene ClaveNegocio duplicada")
+    for r in esperado[esperado["CargaID"].isin(tocadas)].itertuples(index=False):
+        e, ot = texto(r.ElementoID), _a_ot(r.IDCampaña)
+        if e not in medio:
+            errores.append(f"{r.CargaID}: ElementoID huerfano {e}")
+            continue
+        if circ[e] in CIRCUITOS_FUERA_DE_ALCANCE or e.upper().startswith(("REM-TS", "PALS")):
+            errores.append(f"{r.CargaID}: elemento fuera de alcance {e}")
+        if texto(r.TipoCargaDeclarado) != medio[e]:
+            errores.append(f"{r.CargaID}: TipoCargaDeclarado != Medio")
+        if ot is None or ot <= 0:
+            errores.append(f"{r.CargaID}: IDCampaña no numerica")
+        ini, fin = _a_fecha(r.FechaInicio), _a_fecha(r.FechaFin)
+        if not (ini and fin and ini <= fin):
+            errores.append(f"{r.CargaID}: fechas invalidas")
+        partes = texto(r.ClaveNegocio).split("|")
+        if len(partes) != 6 or partes[:4] != [str(ot), e, ini.isoformat() if ini else "", fin.isoformat() if fin else ""]:
+            errores.append(f"{r.CargaID}: ClaveNegocio inconsistente con sus campos")
+        for campo in ("Estado", "EstadoValidacion", "FuenteCarga", "TipoCargaDeclarado"):
+            if vocab.get(campo) and texto(getattr(r, campo)) not in vocab[campo]:
+                errores.append(f"{r.CargaID}: {campo} fuera del vocabulario de PARAMETROS")
+    # Sin solapamientos nuevos entre filas de la misma IDCampaña + ElementoID.
+    for (ot, e), g in esperado.groupby([esperado["IDCampaña"].map(_a_ot), esperado["ElementoID"].map(texto)]):
+        if len(g) < 2 or not (set(g["CargaID"]) & tocadas):
+            continue
+        ivs = sorted((_a_fecha(a) or dt.date.min, _a_fecha(b) or dt.date.max, cid)
+                     for a, b, cid in zip(g["FechaInicio"], g["FechaFin"], g["CargaID"]))
+        for (a1, b1, c1), (a2, b2, c2) in zip(ivs, ivs[1:]):
+            if a2 <= b1 and ({c1, c2} & tocadas):
+                errores.append(f"Solapamiento nuevo {ot}|{e}: {c1} y {c2}")
+    return errores
+
+
+def validar_operaciones(res: dict[str, Any]) -> list[str]:
+    """Cruces en memoria ANTES de escribir (camino Etapa 2B.1). Cualquier error aborta."""
+    errores: list[str] = []
+    camp: pd.DataFrame = res["campanas"]
+    ins: pd.DataFrame = res["hojas"]["IMPORTAR"]
+    upd: pd.DataFrame = res["hojas"]["EXTENSIONES_UPDATE"]
+    if set(ins["CargaID"]) & set(camp["CargaID"].map(texto)):
+        errores.append("CargaID nuevos ya existentes")
     if upd["CargaID"].duplicated().any():
         errores.append("Una fila existente se extiende mas de una vez")
-    claves_previas = set(camp["ClaveNegocio"].map(texto)) - set(upd["ClaveNegocio_Anterior"])
-    claves_nuevas = list(ins["ClaveNegocio"]) + list(upd["ClaveNegocio_Nueva"])
-    if len(set(claves_nuevas)) != len(claves_nuevas) or set(claves_nuevas) & claves_previas:
-        errores.append("ClaveNegocio nuevas duplicadas o en colision con CAMPANAS")
     for r in ins.itertuples(index=False):
-        e = r.ElementoID
-        if e not in medio:
-            errores.append(f"INSERT {r.CargaID}: ElementoID huerfano {e}")
-            continue
-        if circ[e] in CIRCUITOS_FUERA_DE_ALCANCE:
-            errores.append(f"INSERT {r.CargaID}: circuito fuera de alcance {circ[e]}")
-        if r.TipoCargaDeclarado != medio[e]:
-            errores.append(f"INSERT {r.CargaID}: TipoCargaDeclarado != Medio")
-        if not isinstance(r.IDCampaña, numbers.Integral) or r.IDCampaña <= 0:
-            errores.append(f"INSERT {r.CargaID}: IDCampaña no numerica")
-        if not (r.FechaInicio <= r.FechaFin):
-            errores.append(f"INSERT {r.CargaID}: FechaInicio > FechaFin")
-        if e.upper().startswith(("REM-TS", "PALS")) or "LONDON" in r.TRZ_AlcanceOrigen or "CENCOMEDIA" in r.TRZ_AlcanceOrigen:
-            errores.append(f"INSERT {r.CargaID}: elemento/alcance prohibido {e}")
-        if r.Estado not in ("Activa", "Finalizada") or r.EstadoValidacion != ESTADO_VALIDACION_OK:
-            errores.append(f"INSERT {r.CargaID}: Estado/EstadoValidacion fuera de vocabulario")
+        if "LONDON" in r.TRZ_AlcanceOrigen or "CENCOMEDIA" in r.TRZ_AlcanceOrigen:
+            errores.append(f"INSERT {r.CargaID}: alcance prohibido")
     por_id = {texto(v): k for k, v in enumerate(camp["CargaID"])}
     for u in upd.itertuples(index=False):
         k = por_id.get(u.CargaID)
@@ -1679,33 +1799,14 @@ def validar_operaciones(res: dict[str, Any]) -> list[str]:
             errores.append(f"UPDATE {u.CargaID}: FechaFin nueva no es posterior")
         if _a_ot(fila["IDCampaña"]) != u.IDCampaña or texto(fila["ElementoID"]) != u.ElementoID:
             errores.append(f"UPDATE {u.CargaID}: IDCampaña/ElementoID no coinciden")
-
-    # Sin solapamientos nuevos entre filas de la misma IDCampaña + ElementoID.
-    esperado = campanas_esperadas(camp, upd, ins)
-    nuevas_o_tocadas = set(ins["CargaID"]) | set(upd["CargaID"])
-    for (ot, e), g in esperado.groupby([esperado["IDCampaña"].map(_a_ot), esperado["ElementoID"].map(texto)]):
-        if len(g) < 2 or not (set(g["CargaID"]) & nuevas_o_tocadas):
-            continue
-        ivs = sorted((_a_fecha(a) or dt.date.min, _a_fecha(b) or dt.date.max, cid)
-                     for a, b, cid in zip(g["FechaInicio"], g["FechaFin"], g["CargaID"]))
-        for (a1, b1, c1), (a2, b2, c2) in zip(ivs, ivs[1:]):
-            if a2 <= b1 and ({c1, c2} & nuevas_o_tocadas):
-                errores.append(f"Solapamiento nuevo {ot}|{e}: {c1} y {c2}")
+    cambios = cambios_desde_extensiones(upd, camp, res["fecha_carga"])
+    esperado = campanas_esperadas(camp, cambios, ins)
+    errores += validar_estado_final(camp, esperado, res["maestro"], res["parametros"],
+                                    set(ins["CargaID"]) | set(upd["CargaID"]))
     return errores
 
 
-def campanas_esperadas(camp: pd.DataFrame, upd: pd.DataFrame, ins: pd.DataFrame) -> pd.DataFrame:
-    esperado = camp.copy()
-    for u in upd.itertuples(index=False):
-        esperado.at[esperado.index[u.PosicionFila], "FechaFin"] = pd.Timestamp(u.FechaFin_Nueva)
-        esperado.at[esperado.index[u.PosicionFila], "ClaveNegocio"] = u.ClaveNegocio_Nueva
-    nuevas = ins[CAMPANAS_HEADERS].copy()
-    for c in ("FechaInicio", "FechaFin"):
-        nuevas[c] = pd.to_datetime(nuevas[c])
-    return pd.concat([esperado, nuevas], ignore_index=True)
-
-
-def verificar_xlsx(base: Path, nuevo: Path, res: dict[str, Any]) -> dict[str, Any]:
+def verificar_xlsx(base: Path, nuevo: Path, camp: pd.DataFrame, cambios: pd.DataFrame, ins: pd.DataFrame) -> dict[str, Any]:
     """Controles posteriores a la escritura sobre el archivo nuevo."""
     import zipfile
     from validate_input import validate_input
@@ -1720,8 +1821,7 @@ def verificar_xlsx(base: Path, nuevo: Path, res: dict[str, Any]) -> dict[str, An
         if set(distintas) - {hoja_xml, tabla_xml}:
             raise StagingError(f"Cambiaron partes no permitidas: {set(distintas) - {hoja_xml, tabla_xml}}")
         ref = re.search(r'<table [^>]*\bref="([^"]+)"', zb.read(tabla_xml).decode("utf-8")).group(1)
-    upd, ins = res["hojas"]["EXTENSIONES_UPDATE"], res["hojas"]["IMPORTAR"]
-    esperado = campanas_esperadas(res["campanas"], upd, ins)
+    esperado = campanas_esperadas(camp, cambios, ins)
     leido = pd.read_excel(nuevo, sheet_name="CAMPANAS")
     if list(leido.columns) != CAMPANAS_HEADERS:
         raise StagingError("CAMPANAS escrita con encabezados distintos")
@@ -1740,21 +1840,18 @@ def verificar_xlsx(base: Path, nuevo: Path, res: dict[str, Any]) -> dict[str, An
     ctrl["validate_warnings"] = v["warnings"]
     if v["result"] == "INVALID" or not ctrl["tabla_cubre_filas"]:
         raise StagingError(f"validate_input rechaza la base nueva: {v['errors'][:5]}")
-    ctrl["filas_antes"], ctrl["filas_despues"] = len(res["campanas"]), len(leido)
+    ctrl["filas_antes"], ctrl["filas_despues"] = len(camp), len(leido)
     return ctrl
 
 
-def aplicar_en_base(base: Path, res: dict[str, Any]) -> dict[str, Any]:
-    """Valida en memoria, escribe temporal, verifica y reemplaza atomicamente."""
+def aplicar_operaciones(base: Path, camp: pd.DataFrame, cambios: pd.DataFrame, ins: pd.DataFrame, etiqueta: str) -> dict[str, Any]:
+    """Escribe temporal, verifica y reemplaza atomicamente. La base no se toca si algo falla."""
     import os
 
-    errores = validar_operaciones(res)
-    if errores:
-        raise StagingError("Validacion previa fallida, base NO modificada: " + "; ".join(errores[:10]))
-    tmp = base.with_name(f".{base.stem}.tmp-etapa2b1{base.suffix}")
+    tmp = base.with_name(f".{base.stem}.tmp-{etiqueta}{base.suffix}")
     try:
-        construir_xlsx_actualizado(base, tmp, res["hojas"]["EXTENSIONES_UPDATE"], res["hojas"]["IMPORTAR"])
-        ctrl = verificar_xlsx(base, tmp, res)
+        construir_xlsx_actualizado(base, tmp, cambios, ins)
+        ctrl = verificar_xlsx(base, tmp, camp, cambios, ins)
         os.replace(tmp, base)
     except StagingError:
         raise
@@ -1764,6 +1861,15 @@ def aplicar_en_base(base: Path, res: dict[str, Any]) -> dict[str, Any]:
         if tmp.exists():
             tmp.unlink()
     return ctrl
+
+
+def aplicar_en_base(base: Path, res: dict[str, Any]) -> dict[str, Any]:
+    """Camino Etapa 2B.1: valida en memoria y aplica INSERT + extensiones."""
+    errores = validar_operaciones(res)
+    if errores:
+        raise StagingError("Validacion previa fallida, base NO modificada: " + "; ".join(errores[:10]))
+    cambios = cambios_desde_extensiones(res["hojas"]["EXTENSIONES_UPDATE"], res["campanas"], res["fecha_carga"])
+    return aplicar_operaciones(base, res["campanas"], cambios, res["hojas"]["IMPORTAR"], "etapa2b1")
 
 
 # ---------------------------------------------------------------------------
@@ -1886,7 +1992,7 @@ def calcular_resumen(res: dict[str, Any]) -> dict[str, Any]:
     }
     imp = a[a["Estado_Staging"] == "IMPORTAR"]
     ins = imp[imp["Operacion"] == OP_INSERT]
-    rem = a[a["TRZ_MetodoMatch"] == "REGLA_REM_TS_A_REM_DB"]
+    rem = a[a["TRZ_MetodoMatch"] == "REGLA_REM_TS_POSICIONAL"]
     operaciones = {
         "Filas a INSERTAR": len(ins),
         "Filas con FechaFin a ACTUALIZAR": int((imp["Operacion"] == OP_UPDATE).sum()),
@@ -1899,7 +2005,7 @@ def calcular_resumen(res: dict[str, Any]) -> dict[str, Any]:
                 a["Estado_Staging"] == "REVISAR", a["Estado_Staging"] == "NO_IMPORTAR")),
         "Asignaciones REM-TS -> REM-DB migradas (INSERT+UPDATE)": int((rem["Estado_Staging"] == "IMPORTAR").sum()),
         "  REM-TS -> REM-DB ya existentes / REVISAR": f"{int((rem['Estado_Staging'] == 'YA_EXISTE').sum())} / {int((rem['Estado_Staging'] == 'REVISAR').sum())}",
-        "Codigos REM-TS sin REM-DB en maestro (REVISAR)": int((xw["MetodoMatch"] == "REM_TS_DESTINO_INEXISTENTE").sum()),
+        "Codigos REM-TS sin destino posicional (REVISAR)": int((xw["MetodoMatch"] == "REM_TS_SIN_DESTINO").sum()),
         "Asignaciones PALS/Alsina descartadas": int(a["Motivo"].str.contains("ELEMENTO_DADO_DE_BAJA_ALSINA").sum()),
         "Periodos disjuntos insertados": int(ins["Motivo"].str.contains("NUEVO_PERIODO_DISJUNTO").sum()),
     }
@@ -2093,8 +2199,9 @@ REGLAS_MD = """
   se conservan en `TRZ_PrefijoOT_Origen` (no se copian a Proveedor). `B <n>` =
   pauta bonificada: IDCampaña <n>, se procesa normalmente y en INSERT lleva
   Observaciones = "OT bonificada (B) en OCUPACIÓN 2026".
-- **Elementos**: REM-TS n (y sus slots) = REM-DB-n por regla de negocio, solo
-  si REM-DB-n existe en el maestro (si no, REVISAR). PALS-3600seg (Alsina) esta
+- **Elementos**: REM-TS n (y sus slots) = n-esimo soporte Remeros Digital del
+  maestro ordenado por numero (regla posicional confirmada; 1/3/5/6/8/10).
+  PALS-3600seg (Alsina) esta
   dado de baja: NO_IMPORTAR (ELEMENTO_DADO_DE_BAJA_ALSINA). Ningun elemento se
   crea.
 - **Fechas**: pares INICIO/FIN identicos o contiguos se consolidan; pares sin
@@ -2116,7 +2223,7 @@ REGLAS_MD = """
   Medio del maestro), FechaIndefinida = No, Campaña = PAUTA solo si es
   inequivoca. Convencion de carga por lote: CargaID HIST-######## correlativo,
   FechaHoraCarga = momento de la carga, UsuarioCarga = MIGRACION_OCUPACION_2026,
-  FuenteCarga = "Migración histórica - OCUPACION_2026", EstadoValidacion = OK,
+  FuenteCarga = "Migración histórica" (vocabulario PARAMETROS), EstadoValidacion = OK,
   Estado = Finalizada si FechaFin < fecha de carga, si no Activa. Cliente,
   Marca, Agencia, Proveedor y demas campos comerciales quedan vacios.
 """

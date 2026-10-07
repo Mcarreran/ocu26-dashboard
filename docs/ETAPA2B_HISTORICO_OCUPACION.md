@@ -1,39 +1,42 @@
-# OCU26 — Etapa 2B / 2B.1: histórico OCUPACIÓN 2026 aplicado a CAMPANAS (2026-10-07)
+# OCU26 — Etapa 2B / 2B.1 / 2B.2: histórico OCUPACIÓN 2026 aplicado a CAMPANAS (2026-10-07)
 
-Rama `etapa2-ocu26`. Sin push. Script: `scripts/staging_import_historico.py`
-(tests: `tests/test_staging_import_historico.py`).
+Rama `etapa2-ocu26`. Sin push. Scripts: `scripts/staging_import_historico.py`
+(staging + aplicación 2B.1) y `scripts/cierre_historico_2b2.py` (cierre 2B.2).
+Tests: `tests/test_staging_import_historico.py`, `tests/test_cierre_historico_2b2.py`.
 
 ## Base canónica
 
-| | SHA-256 | Filas CAMPANAS |
+| Estado | SHA-256 | Filas CAMPANAS |
 |---|---|---|
 | Pre-carga (rollback en `OCU26_CORTES/CORTE_PRE_CARGA_2026-10-06/`) | `4e1ff067…adde2d` | 15.333 |
-| Post Etapa 2B.1 (`input/OCU26_BASE_DATOS.xlsx`) | `a1e207df…fb0c30` | 16.331 |
+| Post 2B.1 | `a1e207df…fb0c30` | 16.331 |
+| **Post 2B.2 (vigente, `input/OCU26_BASE_DATOS.xlsx`)** | `1c41aea8…33089c` | **16.365** |
 
-Solo cambió la hoja CAMPANAS (`xl/worksheets/sheet2.xml` + `xl/tables/table2.xml`
-del zip; el resto de las partes del xlsx se copian sin cambios). La fecha
-máxima de `FechaHoraCarga` pasa a 2026-10-07 (antes 2026-08-18).
+Solo cambia la hoja CAMPANAS (`xl/worksheets/sheet2.xml` + `xl/tables/table2.xml`
+del zip; el resto de las partes del xlsx se copian sin cambios). MAESTRO_ELEMENTOS
+y PARAMETROS idénticos a la pre-carga. `FechaHoraCarga` máxima: 2026-10-07.
 
-## Operaciones aplicadas
+## Operaciones acumuladas
 
-- 998 INSERT (`CargaID` HIST-00023127 … HIST-00024124,
-  `UsuarioCarga = MIGRACION_OCUPACION_2026`,
-  `FuenteCarga = "Migración histórica - OCUPACION_2026"`, `EstadoValidacion = OK`,
-  `Estado` = Finalizada si FechaFin < fecha de carga, si no Activa).
-- 94 UPDATE de extensión: solo `FechaFin` y `ClaveNegocio` de filas existentes.
-- Log completo: `OCU26_IMPORT_HISTORICO/STAGING_PRE_IMPORT/OCU26_HISTORICO_OPERACIONES_APLICADAS.csv`.
+- 1.032 filas nuevas `UsuarioCarga = MIGRACION_OCUPACION_2026`
+  (998 en 2B.1 + 34 Remeros en 2B.2), `FuenteCarga = Migración histórica`,
+  `EstadoValidacion = OK`, `Estado` = Finalizada si FechaFin < fecha de carga, si no Activa.
+- 94 filas existentes extendidas (FechaFin + ClaveNegocio; Estado por la regla, Reservada intacta).
+- 46 filas REM de 2B.1 reasignadas al soporte posicional (ElementoID + ClaveNegocio, mismo CargaID).
+- Logs: `OCU26_IMPORT_HISTORICO/STAGING_PRE_IMPORT/OCU26_HISTORICO_OPERACIONES_APLICADAS.csv` (2B.1)
+  y `OCU26_HISTORICO_OPERACIONES_2B2.csv` (2B.2).
 
 ## Reglas de negocio confirmadas
 
 - OT = IDCampaña (solo el número). `B <n>` = bonificada → IDCampaña `<n>` + nota en Observaciones.
-- `REM-TS n` (y slots) = `REM-DB-n` si existe en el maestro (REM-DB-2 y REM-DB-4 no existen → REVISAR).
+- Remeros, regla posicional: REM-TS 1..6 = soportes Remeros Digital del maestro ordenados por
+  número (1 / 3 / 5 / 6 / 8 / 10) → TS1=REM-DB-1, TS2=3, TS3=5, TS4=6, TS5=8, TS6=10.
 - `PALS-3600seg` (Alsina) dado de baja → NO_IMPORTAR.
-- Extensión: misma OT + elemento, mismo inicio (o continuidad contigua), FIN posterior, sin contradicciones → UPDATE.
+- Extensión: misma OT + elemento, mismo inicio (o continuidad contigua), FIN posterior → UPDATE.
 - FIN cuyo mes solo aparece en celdas con otra OT → no atribuible → REVISAR.
 - En elementos estáticos, días nuevos que pisan otra campaña cargada → REVISAR.
+- `FuenteCarga` usa el vocabulario de PARAMETROS; la procedencia va en `UsuarioCarga`.
 
 ## Pendientes
 
-492 asignaciones en REVISAR (detalle en `REPORTE_APLICACION_ETAPA2B1.md`).
-`Estado` de las filas extendidas no se tocó (36 quedan `Finalizada` con FechaFin ≥ 2026-10-07).
-`FuenteCarga` nueva no figura en el vocabulario de PARAMETROS (no validado por `validate_input`).
+458 asignaciones en REVISAR (136 OT); detalle en `REPORTE_CIERRE_ETAPA2B2.md`.
