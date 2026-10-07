@@ -212,3 +212,11 @@ input/
 input_aux/
 .env.*
 !.env.example
+
+# Etapa 2C (2026-10-07): carpetas de trabajo de la migracion historica. Viven
+# FUERA del repo; si se copian o se usan como --salida dentro de el, sus
+# reportes .md/.json (con OT y campanas) tampoco se versionan.
+OCU26_IMPORT_HISTORICO/
+OCU26_CORTES/
+PRE_SHAREPOINT/
+STAGING_PRE_IMPORT/
