@@ -85,4 +85,5 @@ post 2B.2: sobre la base post 2C ya no reconcilia (las 30 operaciones son YA_EXI
 ## Pendiente
 
 Revisión humana de `OCU26_PENDIENTES_PRE_SHAREPOINT.xlsx`; luego subida a SharePoint y
-regeneración de dashboards (etapas siguientes).
+regeneración de dashboards (etapas siguientes). Esta migración no es parte del refresh
+operativo: ver `ROADMAP_AUTOMATIZACION_OCU26.md`.
